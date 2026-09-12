@@ -16,12 +16,12 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #f0f4f8; }
 
-    /* Fundo montanhoso estilizado na Sidebar */
+    /* Fundo estilizado da Sidebar */
     .sidebar-bg {
       background: linear-gradient(180deg, #0f2038 0%, #0a1628 60%, #102a45 100%);
     }
 
-    /* ENQUADRAMENTO COMPATÍVEL COM TODOS OS NAVEGADORES (DESKTOP E MOBILE) */
+    /* ENQUADRAMENTO COMPATÍVEL COM TODOS OS NAVEGADORES */
     .gauge-wrapper {
       width: 140px !important;
       height: 140px !important;
@@ -53,24 +53,45 @@
       stroke-dasharray: 251.2;
       stroke-dashoffset: 75;
     }
+
+    /* Estilo para a marca d'água da logo */
+    .watermark-logo {
+      opacity: 0.18;
+      filter: grayscale(100%) brightness(150%);
+      pointer-events: none;
+    }
   </style>
 </head>
 <body class="flex h-screen overflow-hidden text-slate-700">
 
   <!-- SIDEBAR DA ESQUERDA (DESKTOP) -->
-  <aside class="w-60 sidebar-bg text-white flex flex-col justify-between p-4 shrink-0 hidden lg:flex shadow-xl">
-    <div>
-      <!-- LOGO -->
-      <div class="flex items-center gap-2.5 px-1 py-3 mb-6 border-b border-slate-700/50">
-        <div class="text-cyan-400">
-          <i data-lucide="snowflake" class="w-8 h-8"></i>
+  <aside class="w-60 sidebar-bg text-white flex flex-col justify-between p-4 shrink-0 hidden lg:flex shadow-xl relative overflow-hidden">
+    
+    <div class="relative z-10">
+      <!-- HEADER / BRANDING COM MARCA D'ÁGUA -->
+      <div class="relative px-1 py-3 mb-6 border-b border-slate-700/50 flex flex-col items-start">
+        <div class="flex items-center gap-2.5">
+          <div class="text-cyan-400">
+            <i data-lucide="snowflake" class="w-8 h-8"></i>
+          </div>
+          <div>
+            <h1 class="font-extrabold text-base tracking-wider leading-none text-white">REI DO GELO</h1>
+          </div>
         </div>
-        <div>
-          <h1 class="font-extrabold text-base tracking-wider leading-none text-white">REI DO GELO</h1>
+
+        <!-- MARCA D'ÁGUA DA LOGO ABAIXO DO NOME NO DESKTOP -->
+        <div class="w-full mt-3 flex justify-center items-center py-2 relative">
+          <!-- Substitua o atributo src="SUA_LOGO_AQUI.png" pela URL da sua imagem -->
+          <img src="SUA_LOGO_AQUI.png" alt="Logo Rei do Gelo" class="h-16 w-auto object-contain watermark-logo" onerror="this.style.display='none'; document.getElementById('placeholder-logo-sb').style.display='flex';">
+          
+          <!-- Elemento demonstrativo até você colar a imagem -->
+          <div id="placeholder-logo-sb" class="hidden items-center justify-center text-[10px] text-cyan-300/40 font-black tracking-widest uppercase border border-dashed border-cyan-500/20 px-3 py-1.5 rounded w-full text-center">
+            [ MARCA D'ÁGUA LOGO ]
+          </div>
         </div>
       </div>
 
-      <!-- MENU -->
+      <!-- MENU DE NAVEGAÇÃO -->
       <nav class="space-y-1 text-xs">
         <a href="#" class="flex items-center gap-3 px-3 py-2.5 bg-blue-600/90 text-white font-semibold rounded-lg shadow-sm border-l-4 border-cyan-300">
           <i data-lucide="home" class="w-4 h-4"></i> Dashboard
@@ -97,24 +118,36 @@
     </div>
 
     <!-- RODAPÉ DA SIDEBAR -->
-    <div class="pt-6 border-t border-slate-700/40">
-      <div class="w-8 h-1 bg-cyan-500 mb-3 rounded-full"></div>
+    <div class="pt-4 border-t border-slate-700/40 relative z-10">
+      <div class="w-8 h-1 bg-cyan-500 mb-2 rounded-full"></div>
       <p class="text-[11px] font-extrabold uppercase tracking-wider text-slate-200 leading-snug">
         CONTROLE E SEGURANÇA PARA O SEU PRODUTO.
       </p>
     </div>
   </aside>
 
-  <!-- CONTEÚDO PRINCIPAL (DASHBOARD) -->
+  <!-- CONTEÚDO PRINCIPAL (DASHBOARD RESPONSIVO) -->
   <main class="flex-1 overflow-y-auto p-4 lg:p-5 space-y-4">
 
-    <!-- HEADER -->
+    <!-- HEADER (TOPO PRINCIPAL / VISÍVEL EM CELULAR E DESKTOP) -->
     <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white px-5 py-3 rounded-lg border border-slate-200/80 shadow-sm gap-3">
-      <div class="flex items-center gap-3">
-        <h2 class="text-base font-extrabold text-slate-800 tracking-wide">REI DO GELO</h2>
-        <span class="text-slate-300">|</span>
-        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">MONITORAMENTO DA CÂMARA FRIA</span>
+      <div class="flex flex-col gap-1">
+        <div class="flex items-center gap-3">
+          <h2 class="text-base font-extrabold text-slate-800 tracking-wide">REI DO GELO</h2>
+          <span class="text-slate-300">|</span>
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">MONITORAMENTO DA CÂMARA FRIA</span>
+        </div>
+        
+        <!-- MARCA D'ÁGUA LOGO VISÍVEL NO CELULAR / CABEÇALHO -->
+        <div class="flex items-center gap-2 mt-0.5">
+          <!-- Substitua o atributo src="SUA_LOGO_AQUI.png" pela URL da sua imagem -->
+          <img src="SUA_LOGO_AQUI.png" alt="Logo Marca d'Água" class="h-6 w-auto object-contain opacity-20 grayscale" onerror="this.style.display='none'; document.getElementById('placeholder-logo-hdr').style.display='inline-block';">
+          <span id="placeholder-logo-hdr" class="hidden text-[9px] text-slate-400/60 font-bold uppercase tracking-widest border border-dashed border-slate-300 px-2 py-0.5 rounded">
+            [ MARCA D'ÁGUA LOGO ]
+          </span>
+        </div>
       </div>
+
       <div class="flex items-center gap-4">
         <span class="flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide">
           <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> ONLINE
@@ -134,7 +167,7 @@
         </h3>
 
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <!-- GAUGE DE TEMPERATURA DENTRO DE CONTAINER FIXO DE 140px -->
+          <!-- GAUGE DE TEMPERATURA (140px FIXO) -->
           <div class="gauge-wrapper">
             <svg class="gauge-svg" width="140" height="140" viewBox="0 0 100 100">
               <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
@@ -180,7 +213,7 @@
       <!-- CARDS DE STATUS DE HARDWARE & EQUIPAMENTOS -->
       <div class="col-span-12 xl:col-span-6 space-y-4">
         
-        <!-- 4 CARDS SUPERIORES -->
+        <!-- 4 CARDS SUPERIORES (GRID 2x2 EM MOBILE) -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
           
           <!-- Rede Elétrica -->
