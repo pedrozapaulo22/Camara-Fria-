@@ -1,485 +1,493 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="h-full bg-slate-950">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>REI DO GELO - Monitoramento da Câmara Fria</title>
-  
-  <!-- Tailwind CSS -->
+  <title>REI DO GELO — Monitoramento Inteligente</title>
+
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#0284c7',
+              600: '#026aa7',
+              900: '#0f172a',
+              950: '#0a0f1d'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-    body { font-family: 'Inter', sans-serif; background-color: #f0f4f8; }
-
-    /* Fundo estilizado da Sidebar */
-    .sidebar-bg {
-      background: linear-gradient(180deg, #0f2038 0%, #0a1628 60%, #102a45 100%);
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0b1120;
+      color: #94a3b8;
     }
 
-    /* ENQUADRAMENTO COMPATÍVEL COM TODOS OS NAVEGADORES */
-    .gauge-wrapper {
-      width: 140px !important;
-      height: 140px !important;
-      min-width: 140px !important;
-      min-height: 140px !important;
-      max-width: 140px !important;
-      max-height: 140px !important;
-      position: relative !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      flex-shrink: 0 !important;
-      margin: 0 auto !important;
+    /* Scrollbar estilizada */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    .glass-card {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
     }
 
-    .gauge-svg {
-      width: 140px !important;
-      height: 140px !important;
-      transform: rotate(-90deg);
-      display: block !important;
+    .glass-card-interactive {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .glass-card-interactive:hover {
+      border-color: rgba(56, 189, 248, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.5);
     }
 
-    .gauge-bg { fill: none; stroke: #e2e8f0; stroke-width: 9; }
-    .gauge-fill {
-      fill: none;
-      stroke: #0284c7;
-      stroke-width: 9;
-      stroke-linecap: round;
-      stroke-dasharray: 251.2;
-      stroke-dashoffset: 75;
-    }
-
-    /* Estilo para a marca d'água da logo */
-    .watermark-logo {
-      opacity: 0.18;
-      filter: grayscale(100%) brightness(150%);
-      pointer-events: none;
+    .glow-cyan {
+      box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.25);
     }
   </style>
 </head>
-<body class="flex h-screen overflow-hidden text-slate-700">
 
-  <!-- SIDEBAR DA ESQUERDA (DESKTOP) -->
-  <aside class="w-60 sidebar-bg text-white flex flex-col justify-between p-4 shrink-0 hidden lg:flex shadow-xl relative overflow-hidden">
-    
-    <div class="relative z-10">
-      <!-- HEADER / BRANDING COM MARCA D'ÁGUA -->
-      <div class="relative px-1 py-3 mb-6 border-b border-slate-700/50 flex flex-col items-start">
-        <div class="flex items-center gap-2.5">
-          <div class="text-cyan-400">
-            <i data-lucide="snowflake" class="w-8 h-8"></i>
-          </div>
-          <div>
-            <h1 class="font-extrabold text-base tracking-wider leading-none text-white">REI DO GELO</h1>
-          </div>
+<body class="h-full flex overflow-hidden antialiased">
+
+  <!-- ================= SIDEBAR (DESKTOP) ================= -->
+  <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between shrink-0 hidden lg:flex select-none z-20">
+    <div>
+      <!-- BRAND LOGO -->
+      <div class="px-6 py-5 flex items-center gap-3 border-b border-slate-800/80">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
+          <i data-lucide="snowflake" class="w-6 h-6"></i>
         </div>
-
-        <!-- MARCA D'ÁGUA DA LOGO ABAIXO DO NOME NO DESKTOP -->
-        <div class="w-full mt-3 flex justify-center items-center py-2 relative">
-          <!-- Substitua o atributo src="SUA_LOGO_AQUI.png" pela URL da sua imagem -->
-          <img src="SUA_LOGO_AQUI.png" alt="Logo Rei do Gelo" class="h-16 w-auto object-contain watermark-logo" onerror="this.style.display='none'; document.getElementById('placeholder-logo-sb').style.display='flex';">
-          
-          <!-- Elemento demonstrativo até você colar a imagem -->
-          <div id="placeholder-logo-sb" class="hidden items-center justify-center text-[10px] text-cyan-300/40 font-black tracking-widest uppercase border border-dashed border-cyan-500/20 px-3 py-1.5 rounded w-full text-center">
-            [ MARCA D'ÁGUA LOGO ]
-          </div>
+        <div>
+          <h1 class="font-black text-lg tracking-wider text-white leading-none">REI DO GELO</h1>
+          <span class="text-[10px] font-bold text-cyan-400 tracking-widest uppercase">Câmara Fria v2.4</span>
         </div>
       </div>
 
-      <!-- MENU DE NAVEGAÇÃO -->
-      <nav class="space-y-1 text-xs">
-        <a href="#" class="flex items-center gap-3 px-3 py-2.5 bg-blue-600/90 text-white font-semibold rounded-lg shadow-sm border-l-4 border-cyan-300">
-          <i data-lucide="home" class="w-4 h-4"></i> Dashboard
+      <!-- NAVEGAÇÃO PRINCIPAL -->
+      <nav class="p-4 space-y-1.5">
+        <div class="px-3 py-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">Menu Principal</div>
+        
+        <a href="#" class="flex items-center gap-3 px-3.5 py-2.5 bg-gradient-to-r from-cyan-500/10 to-transparent text-cyan-400 font-semibold rounded-xl border-l-4 border-cyan-400">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+          <span class="text-xs">Dashboard General</span>
         </a>
-        <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white rounded-lg transition">
-          <i data-lucide="thermometer" class="w-4 h-4"></i> Temperatura
+
+        <a href="#" class="flex items-center gap-3 px-3.5 py-2.5 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-xl transition">
+          <i data-lucide="thermometer" class="w-4 h-4"></i>
+          <span class="text-xs">Sensores de Temp.</span>
         </a>
-        <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white rounded-lg transition">
-          <i data-lucide="trending-up" class="w-4 h-4"></i> Trend
+
+        <a href="#" class="flex items-center gap-3 px-3.5 py-2.5 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-xl transition">
+          <i data-lucide="activity" class="w-4 h-4"></i>
+          <span class="text-xs">Telemetria & Trend</span>
         </a>
-        <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white rounded-lg transition">
-          <i data-lucide="bell" class="w-4 h-4"></i> Alarmes
+
+        <a href="#" class="flex items-center gap-3 px-3.5 py-2.5 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-xl transition justify-between">
+          <div class="flex items-center gap-3">
+            <i data-lucide="bell" class="w-4 h-4"></i>
+            <span class="text-xs">Central de Alertas</span>
+          </div>
+          <span class="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">OK</span>
         </a>
-        <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white rounded-lg transition">
-          <i data-lucide="file-text" class="w-4 h-4"></i> Relatórios
+
+        <a href="#" class="flex items-center gap-3 px-3.5 py-2.5 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-xl transition">
+          <i data-lucide="file-bar-chart" class="w-4 h-4"></i>
+          <span class="text-xs">Relatórios Técnicos</span>
         </a>
-        <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white rounded-lg transition">
-          <i data-lucide="zap" class="w-4 h-4"></i> Energia
-        </a>
-        <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white rounded-lg transition">
-          <i data-lucide="settings" class="w-4 h-4"></i> Configurações
+
+        <a href="#" class="flex items-center gap-3 px-3.5 py-2.5 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-xl transition">
+          <i data-lucide="zap" class="w-4 h-4"></i>
+          <span class="text-xs">Gestão de Energia</span>
         </a>
       </nav>
     </div>
 
-    <!-- RODAPÉ DA SIDEBAR -->
-    <div class="pt-4 border-t border-slate-700/40 relative z-10">
-      <div class="w-8 h-1 bg-cyan-500 mb-2 rounded-full"></div>
-      <p class="text-[11px] font-extrabold uppercase tracking-wider text-slate-200 leading-snug">
-        CONTROLE E SEGURANÇA PARA O SEU PRODUTO.
-      </p>
+    <!-- SIDEBAR FOOTER -->
+    <div class="p-4 border-t border-slate-800/80 bg-slate-950/40">
+      <div class="p-3 rounded-xl bg-slate-800/40 border border-slate-700/50 flex items-center gap-3">
+        <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
+        <div>
+          <p class="text-[11px] font-bold text-white">Arduino Uno Rev3</p>
+          <p class="text-[9px] text-slate-400">Firmware 1.0.8 • Online</p>
+        </div>
+      </div>
     </div>
   </aside>
 
-  <!-- CONTEÚDO PRINCIPAL (DASHBOARD RESPONSIVO) -->
-  <main class="flex-1 overflow-y-auto p-4 lg:p-5 space-y-4">
+  <!-- ================= CONTEÚDO PRINCIPAL ================= -->
+  <div class="flex-1 flex flex-col h-screen overflow-hidden">
 
-    <!-- HEADER (TOPO PRINCIPAL / VISÍVEL EM CELULAR E DESKTOP) -->
-    <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white px-5 py-3 rounded-lg border border-slate-200/80 shadow-sm gap-3">
-      <div class="flex flex-col gap-1">
-        <div class="flex items-center gap-3">
-          <h2 class="text-base font-extrabold text-slate-800 tracking-wide">REI DO GELO</h2>
-          <span class="text-slate-300">|</span>
-          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">MONITORAMENTO DA CÂMARA FRIA</span>
-        </div>
-        
-        <!-- MARCA D'ÁGUA LOGO VISÍVEL NO CELULAR / CABEÇALHO -->
-        <div class="flex items-center gap-2 mt-0.5">
-          <!-- Substitua o atributo src="SUA_LOGO_AQUI.png" pela URL da sua imagem -->
-          <img src="logo.png" alt="Logo Marca d'Água" class="h-6 w-auto object-contain opacity-20 grayscale" onerror="this.style.display='none'; document.getElementById('placeholder-logo-hdr').style.display='inline-block';">
-          <span id="placeholder-logo-hdr" class="hidden text-[9px] text-slate-400/60 font-bold uppercase tracking-widest border border-dashed border-slate-300 px-2 py-0.5 rounded">
-            [ MARCA D'ÁGUA LOGO ]
-          </span>
-        </div>
+    <!-- HEADER SUPERIOR -->
+    <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-6 py-3.5 flex items-center justify-between z-10 shrink-0">
+      <div class="flex items-center gap-4">
+        <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+          Painel de Operações — Câmara Fria #01
+        </h2>
       </div>
 
-      <div class="flex items-center gap-4">
-        <span class="flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide">
-          <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> ONLINE
-        </span>
-        <span class="text-xs font-semibold text-slate-600">10/08/2026 22:14:36</span>
-        <button class="text-slate-400 hover:text-slate-600"><i data-lucide="settings" class="w-4 h-4"></i></button>
+      <div class="flex items-center gap-5">
+        <!-- Status Badge -->
+        <div class="hidden sm:flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-xs font-semibold">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+          SISTEMA OPERANDO NORMALMENTE
+        </div>
+
+        <div class="text-right text-xs">
+          <span class="text-slate-400 font-medium block">Última atualização</span>
+          <span class="text-white font-bold tracking-tight">10/08/2026 — 22:14:36</span>
+        </div>
+
+        <button class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+          <i data-lucide="settings" class="w-4 h-4"></i>
+        </button>
       </div>
     </header>
 
-    <!-- PRIMEIRA LINHA: TEMPERATURA + CARDS SUPERIORES -->
-    <div class="grid grid-cols-12 gap-4">
+    <!-- CONTAINER SCROLLABLE COM GRID RESPONSIVO -->
+    <main class="flex-1 overflow-y-auto p-6 space-y-6">
 
-      <!-- CARD TEMPERATURA ATUAL -->
-      <div class="col-span-12 xl:col-span-6 bg-white p-4 rounded-lg border border-slate-200/80 shadow-sm flex flex-col justify-between">
-        <h3 class="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-3 flex items-center gap-1">
-          <span class="text-slate-400">:</span> TEMPERATURA ATUAL
-        </h3>
+      <!-- ================= LINHA 1: DESTAQUE PRINCIPAL & MÉTRICAS DE HARDWARE ================= -->
+      <div class="grid grid-cols-12 gap-6">
 
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <!-- GAUGE DE TEMPERATURA (140px FIXO) -->
-          <div class="gauge-wrapper">
-            <svg class="gauge-svg" width="140" height="140" viewBox="0 0 100 100">
-              <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
-              <circle class="gauge-fill" cx="50" cy="50" r="40"></circle>
-            </svg>
-            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <i data-lucide="thermometer" class="w-4 h-4 text-cyan-600 mb-0.5"></i>
-              <span class="text-xl font-black text-slate-800 leading-none">-18,6 <span class="text-xs font-bold">°C</span></span>
-              <span class="mt-1 bg-emerald-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">DENTRO DA FAIXA</span>
-              <span class="text-[10px] text-slate-400 font-semibold mt-0.5">Setpoint: -18 °C</span>
+        <!-- CARD 1: PAINEL DE TEMPERATURA ATUAL (GAUGE MODERNO) -->
+        <div class="col-span-12 xl:col-span-7 glass-card rounded-2xl p-6 relative overflow-hidden glow-cyan flex flex-col justify-between">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+            <div class="flex items-center gap-2">
+              <i data-lucide="thermometer-snowflake" class="w-5 h-5 text-cyan-400"></i>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Temperatura Interna em Tempo Real</h3>
             </div>
+            <span class="bg-cyan-500/10 text-cyan-300 text-[11px] font-extrabold px-3 py-1 rounded-full border border-cyan-500/30">
+              SETPOINT: -18,0 °C
+            </span>
           </div>
 
-          <!-- PARÂMETROS DA DIREITA -->
-          <div class="space-y-2 w-full flex-1">
-            <div class="flex items-center gap-3 bg-slate-50/80 p-2 rounded-md border border-slate-100">
-              <i data-lucide="snowflake" class="w-4 h-4 text-blue-500 shrink-0"></i>
-              <div>
-                <p class="text-[10px] text-slate-400 font-semibold">Temperatura mínima (alarme)</p>
-                <p class="text-xs font-bold text-slate-800">-22 °C</p>
-              </div>
-            </div>
-
-            <div class="flex items-center gap-3 bg-slate-50/80 p-2 rounded-md border border-slate-100">
-              <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500 shrink-0"></i>
-              <div>
-                <p class="text-[10px] text-slate-400 font-semibold">Temperatura máxima (alarme)</p>
-                <p class="text-xs font-bold text-slate-800">-15 °C</p>
-              </div>
-            </div>
-
-            <div class="flex items-center gap-3 bg-slate-50/80 p-2 rounded-md border border-slate-100">
-              <i data-lucide="sliders" class="w-4 h-4 text-cyan-600 shrink-0"></i>
-              <div>
-                <p class="text-[10px] text-slate-400 font-semibold">Faixa de operação</p>
-                <p class="text-xs font-bold text-slate-800">-22 °C a -15 °C</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- CARDS DE STATUS DE HARDWARE & EQUIPAMENTOS -->
-      <div class="col-span-12 xl:col-span-6 space-y-4">
-        
-        <!-- 4 CARDS SUPERIORES (GRID 2x2 EM MOBILE) -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          
-          <!-- Rede Elétrica -->
-          <div class="bg-emerald-50/50 border border-emerald-200/60 p-3 rounded-lg flex flex-col justify-between">
-            <div class="flex items-center justify-between">
-              <span class="text-[9px] font-bold text-emerald-700 uppercase">REDE ELÉTRICA</span>
-              <i data-lucide="zap" class="w-4 h-4 text-emerald-600"></i>
-            </div>
-            <div class="mt-2 flex items-center gap-1 text-emerald-700 font-black text-xs">
-              <i data-lucide="zap" class="w-3.5 h-3.5"></i> ATIVA
-            </div>
-          </div>
-
-          <!-- Bateria -->
-          <div class="bg-white border border-slate-200/80 p-3 rounded-lg flex flex-col justify-between shadow-sm">
-            <div class="flex items-center justify-between">
-              <span class="text-[9px] font-bold text-slate-400 uppercase">BATERIA / POWER BANK</span>
-              <i data-lucide="battery-charging" class="w-4 h-4 text-blue-600"></i>
-            </div>
-            <div class="mt-1">
-              <div class="text-sm font-black text-slate-800 flex items-center gap-1">
-                <span class="w-5 h-2.5 bg-emerald-500 rounded-sm inline-block"></span> 87%
-              </div>
-              <p class="text-[9px] text-slate-400 font-medium">Autonomia estimada<br>12 h 30 min</p>
-            </div>
-          </div>
-
-          <!-- Última Leitura -->
-          <div class="bg-white border border-slate-200/80 p-3 rounded-lg flex flex-col justify-between shadow-sm">
-            <div class="flex items-center justify-between">
-              <span class="text-[9px] font-bold text-slate-400 uppercase">ÚLTIMA LEITURA</span>
-              <i data-lucide="clock" class="w-4 h-4 text-slate-600"></i>
-            </div>
-            <div class="mt-1">
-              <p class="text-xs font-black text-slate-800">22:14:36</p>
-              <p class="text-[10px] text-slate-400">10/08/2026</p>
-            </div>
-          </div>
-
-          <!-- Arduino Uno -->
-          <div class="bg-white border border-slate-200/80 p-3 rounded-lg flex flex-col justify-between shadow-sm">
-            <div class="flex items-center justify-between">
-              <span class="text-[9px] font-bold text-slate-400 uppercase">ARDUINO UNO</span>
-              <i data-lucide="cpu" class="w-4 h-4 text-teal-600"></i>
-            </div>
-            <div class="mt-1">
-              <span class="text-xs font-extrabold text-emerald-600 flex items-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ONLINE
-              </span>
-              <p class="text-[9px] text-slate-400">Coleta de dados ativa</p>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- STATUS DOS EQUIPAMENTOS -->
-        <div class="bg-white p-3.5 rounded-lg border border-slate-200/80 shadow-sm">
-          <h3 class="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-3 flex items-center gap-1">
-            <span class="text-slate-400">:</span> STATUS DOS EQUIPAMENTOS
-          </h3>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+          <!-- CONTEÚDO DO MEDIDOR + METRICAS -->
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
             
-            <div class="p-2 bg-slate-50 rounded border border-slate-100 flex items-center gap-2">
-              <i data-lucide="box" class="w-5 h-5 text-slate-700 shrink-0"></i>
-              <div class="text-left">
-                <p class="text-[9px] text-slate-400 font-bold uppercase">COMPRESSOR</p>
-                <span class="text-[11px] font-black text-emerald-600 flex items-center gap-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> LIGADO
-                </span>
+            <!-- BLUD DISPLAY DA TEMPERATURA -->
+            <div class="md:col-span-6 flex flex-col items-center justify-center p-6 bg-slate-900/60 rounded-2xl border border-slate-800/80 text-center relative">
+              <div class="absolute top-3 left-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sensor Principal DS18B20</div>
+              
+              <div class="my-3 flex items-baseline justify-center">
+                <span class="text-6xl font-black text-white tracking-tight">-18,6</span>
+                <span class="text-2xl font-bold text-cyan-400 ml-1">°C</span>
+              </div>
+
+              <div class="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full">
+                <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                DENTRO DA FAIXA IDEAL
               </div>
             </div>
 
-            <div class="p-2 bg-slate-50 rounded border border-slate-100 flex items-center gap-2">
-              <i data-lucide="door-closed" class="w-5 h-5 text-slate-700 shrink-0"></i>
-              <div class="text-left">
-                <p class="text-[9px] text-slate-400 font-bold uppercase">PORTA</p>
-                <span class="text-[11px] font-black text-emerald-600 flex items-center gap-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> FECHADA
-                </span>
+            <!-- PARÂMETROS E LIMITES -->
+            <div class="md:col-span-6 space-y-3">
+              <div class="p-3 bg-slate-900/40 rounded-xl border border-slate-800/60 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+                    <i data-lucide="arrow-down-right" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <p class="text-[10px] font-bold uppercase text-slate-400">Mínima Permitida</p>
+                    <p class="text-xs font-extrabold text-white">-22,0 °C</p>
+                  </div>
+                </div>
+                <span class="text-[10px] text-emerald-400 font-semibold">Seguro</span>
               </div>
-            </div>
 
-            <div class="p-2 bg-slate-50 rounded border border-slate-100 flex items-center gap-2">
-              <i data-lucide="fan" class="w-5 h-5 text-slate-700 shrink-0"></i>
-              <div class="text-left">
-                <p class="text-[9px] text-slate-400 font-bold uppercase">VENTILAÇÃO</p>
-                <span class="text-[11px] font-black text-emerald-600 flex items-center gap-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> NORMAL
-                </span>
+              <div class="p-3 bg-slate-900/40 rounded-xl border border-slate-800/60 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="p-2 rounded-lg bg-amber-500/10 text-amber-400">
+                    <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <p class="text-[10px] font-bold uppercase text-slate-400">Máxima Permitida</p>
+                    <p class="text-xs font-extrabold text-white">-15,0 °C</p>
+                  </div>
+                </div>
+                <span class="text-[10px] text-emerald-400 font-semibold">Seguro</span>
               </div>
-            </div>
 
-            <div class="p-2 bg-slate-50 rounded border border-slate-100 flex items-center gap-2">
-              <i data-lucide="bell" class="w-5 h-5 text-slate-700 shrink-0"></i>
-              <div class="text-left">
-                <p class="text-[9px] text-slate-400 font-bold uppercase">ALARME</p>
-                <span class="text-[11px] font-black text-slate-400 flex items-center gap-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span> NENHUM
-                </span>
+              <div class="p-3 bg-slate-900/40 rounded-xl border border-slate-800/60 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="p-2 rounded-lg bg-cyan-500/10 text-cyan-400">
+                    <i data-lucide="sliders" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <p class="text-[10px] font-bold uppercase text-slate-400">Histerese do Compressor</p>
+                    <p class="text-xs font-extrabold text-white">± 1,5 °C</p>
+                  </div>
+                </div>
+                <span class="text-[10px] text-slate-400 font-semibold">Automático</span>
               </div>
             </div>
 
           </div>
         </div>
 
-      </div>
-    </div>
+        <!-- CARD 2: CARDS DE HARDWARE & STATUS SISTÊMICO -->
+        <div class="col-span-12 xl:col-span-5 space-y-4 flex flex-col justify-between">
+          
+          <div class="grid grid-cols-2 gap-4">
+            
+            <!-- Rede Elétrica -->
+            <div class="glass-card glass-card-interactive p-4 rounded-xl border border-slate-800">
+              <div class="flex items-center justify-between text-slate-400 mb-2">
+                <span class="text-[10px] font-extrabold uppercase tracking-wider">Rede Elétrica AC</span>
+                <i data-lucide="zap" class="w-4 h-4 text-emerald-400"></i>
+              </div>
+              <p class="text-lg font-black text-white">220V <span class="text-xs font-normal text-slate-400">/ 60Hz</span></p>
+              <span class="inline-block mt-2 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                REDE ATIVA & ESTÁVEL
+              </span>
+            </div>
 
-    <!-- SEGUNDA LINHA: GRÁFICO TREND + PAINEL DIREITO -->
-    <div class="grid grid-cols-12 gap-4">
-      
-      <!-- TREND DE TEMPERATURA -->
-      <div class="col-span-12 xl:col-span-8 bg-white p-4 rounded-lg border border-slate-200/80 shadow-sm">
-        <div class="flex justify-between items-center mb-3">
-          <h3 class="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-            <i data-lucide="trending-up" class="w-4 h-4 text-slate-600"></i> TREND DE TEMPERATURA
-          </h3>
+            <!-- Bateria Power Bank -->
+            <div class="glass-card glass-card-interactive p-4 rounded-xl border border-slate-800">
+              <div class="flex items-center justify-between text-slate-400 mb-2">
+                <span class="text-[10px] font-extrabold uppercase tracking-wider">Nobreak / PowerBank</span>
+                <i data-lucide="battery-charging" class="w-4 h-4 text-blue-400"></i>
+              </div>
+              <p class="text-lg font-black text-white">87% <span class="text-xs font-normal text-slate-400">Carga</span></p>
+              <span class="inline-block mt-2 text-[10px] font-semibold text-slate-400">
+                Autonomia ~ 12h 30min
+              </span>
+            </div>
+
+          </div>
+
+          <!-- COMPONENTES OPERACIONAIS DA CÂMARA -->
+          <div class="glass-card p-4 rounded-xl border border-slate-800">
+            <h4 class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-3 flex items-center justify-between">
+              <span>Status dos Componentes Ativos</span>
+              <i data-lucide="cpu" class="w-3.5 h-3.5 text-cyan-400"></i>
+            </h4>
+
+            <div class="grid grid-cols-2 gap-3">
+              
+              <div class="p-2.5 bg-slate-900/50 rounded-lg border border-slate-800 flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                  <i data-lucide="box" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <p class="text-[10px] font-bold text-slate-400">COMPRESSOR</p>
+                  <p class="text-xs font-black text-emerald-400">LIGADO (ON)</p>
+                </div>
+              </div>
+
+              <div class="p-2.5 bg-slate-900/50 rounded-lg border border-slate-800 flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                  <i data-lucide="door-closed" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <p class="text-[10px] font-bold text-slate-400">PORTA</p>
+                  <p class="text-xs font-black text-emerald-400">FECHADA</p>
+                </div>
+              </div>
+
+              <div class="p-2.5 bg-slate-900/50 rounded-lg border border-slate-800 flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                  <i data-lucide="fan" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <p class="text-[10px] font-bold text-slate-400">VENTILAÇÃO</p>
+                  <p class="text-xs font-black text-emerald-400">EM OPERAÇÃO</p>
+                </div>
+              </div>
+
+              <div class="p-2.5 bg-slate-900/50 rounded-lg border border-slate-800 flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center">
+                  <i data-lucide="shield-check" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <p class="text-[10px] font-bold text-slate-400">ALARMES</p>
+                  <p class="text-xs font-black text-slate-300">SEM ALERTAS</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
         </div>
-        <div class="h-56 relative w-full">
-          <canvas id="trendChart"></canvas>
-        </div>
-        <div class="flex justify-center items-center gap-6 mt-3 text-[10px] text-slate-500 font-medium">
-          <span class="flex items-center gap-1"><span class="w-3 h-0.5 bg-cyan-600"></span> Temperatura (°C)</span>
-          <span class="flex items-center gap-1"><span class="w-3 h-0.5 bg-teal-500 border-b border-dashed"></span> Setpoint (-18 °C)</span>
-          <span class="flex items-center gap-1"><span class="w-3 h-0.5 bg-red-400 border-b border-dashed"></span> Limites de alarme</span>
-        </div>
+
       </div>
 
-      <!-- COLUNA DIREITA: AMOSTRAGEM, RELATÓRIO E CÂMARA FRIA -->
-      <div class="col-span-12 xl:col-span-4 space-y-4">
-        
-        <!-- CARD AMOSTRAGEM -->
-        <div class="bg-white p-4 rounded-lg border border-slate-200/80 shadow-sm">
-          <h3 class="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <i data-lucide="clock" class="w-4 h-4 text-slate-600"></i> AMOSTRAGEM
-          </h3>
-          <div class="flex justify-between items-center my-2">
+      <!-- ================= LINHA 2: GRÁFICO TELEMETRIA & PAINEL DE AÇÕES ================= -->
+      <div class="grid grid-cols-12 gap-6">
+
+        <!-- GRÁFICO DE HISTÓRICO TREND -->
+        <div class="col-span-12 xl:col-span-8 glass-card p-6 rounded-2xl border border-slate-800 flex flex-col justify-between">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
             <div>
-              <p class="text-[9px] text-slate-400 font-semibold">Intervalo de coleta</p>
-              <p class="text-base font-black text-slate-800">10 s</p>
+              <h3 class="text-xs font-extrabold uppercase tracking-wider text-white flex items-center gap-2">
+                <i data-lucide="line-chart" class="w-4 h-4 text-cyan-400"></i>
+                Histórico de Temperatura (Trend de Telemetria)
+              </h3>
+              <p class="text-[11px] text-slate-400">Registro contínuo coletado a cada 10 segundos via Arduino Uno</p>
             </div>
-            <div class="text-right">
-              <p class="text-[9px] text-slate-400 font-semibold">Leituras por hora</p>
-              <p class="text-base font-black text-slate-800">600</p>
+            
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] bg-slate-800 px-3 py-1 rounded-lg text-slate-300 font-semibold border border-slate-700">Últimas 24 Horas</span>
             </div>
           </div>
-          <div class="bg-slate-50 p-2 rounded border border-slate-100 flex items-center gap-2 text-[10px] text-slate-500">
-            <i data-lucide="cpu" class="w-4 h-4 text-teal-600 shrink-0"></i>
-            <span>Leitura da temperatura registrada pelo Arduino Uno a cada 10 segundos.</span>
+
+          <!-- CONTAINER DO GRÁFICO COM ALTURA FIXA ADEQUADA -->
+          <div class="h-64 relative w-full">
+            <canvas id="trendChart"></canvas>
+          </div>
+
+          <div class="flex flex-wrap justify-center items-center gap-6 mt-4 pt-4 border-t border-slate-800/80 text-[11px] font-semibold text-slate-400">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-1 bg-cyan-400 rounded-full"></span> Temp. Atual (°C)</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-emerald-400"></span> Setpoint (-18 °C)</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-red-400"></span> Limite Crítico</span>
           </div>
         </div>
 
-        <!-- CARD GERAR RELATÓRIO -->
-        <div class="bg-white p-4 rounded-lg border border-slate-200/80 shadow-sm">
-          <h3 class="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-            <i data-lucide="file-text" class="w-4 h-4 text-slate-600"></i> GERAR RELATÓRIO
-          </h3>
-          <div class="space-y-2">
-            <button class="w-full bg-[#18457a] hover:bg-[#123661] text-white font-bold py-2 px-3 rounded text-xs flex items-center justify-center gap-2 transition shadow-sm">
-              <i data-lucide="file-down" class="w-4 h-4"></i> GERAR RELATÓRIO PDF
-            </button>
-            <button class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-3 rounded text-xs flex items-center justify-center gap-2 transition border border-slate-200">
-              <i data-lucide="file-spreadsheet" class="w-4 h-4 text-blue-700"></i> EXPORTAR CSV
-            </button>
-          </div>
-        </div>
+        <!-- PAINEL LATERAL DE AÇÕES E EXPORTAÇÃO -->
+        <div class="col-span-12 xl:col-span-4 space-y-6">
+          
+          <!-- GERADOR DE RELATÓRIOS -->
+          <div class="glass-card p-6 rounded-2xl border border-slate-800 space-y-4">
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-white flex items-center gap-2">
+              <i data-lucide="file-spreadsheets" class="w-4 h-4 text-cyan-400"></i>
+              Relatórios e Dados
+            </h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Exporte os logs completos para auditoria de segurança alimentar e fiscalização sanitária.
+            </p>
 
-        <!-- CARD CÂMARA FRIA INFORMATIVO -->
-        <div class="bg-gradient-to-br from-slate-50 to-blue-50/40 p-4 rounded-lg border border-slate-200/80 shadow-sm relative overflow-hidden">
-          <div class="flex items-start justify-between">
-            <div>
-              <h4 class="text-xs font-black text-slate-800">CÂMARA FRIA</h4>
-              <p class="text-[10px] font-semibold text-slate-500">Monitoramento em tempo real</p>
+            <div class="space-y-2.5 pt-2">
+              <button class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-cyan-600/20">
+                <i data-lucide="download-cloud" class="w-4 h-4"></i>
+                EXPORTAR RELATÓRIO EM PDF
+              </button>
+              <button class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition border border-slate-700">
+                <i data-lucide="file-text" class="w-4 h-4 text-cyan-400"></i>
+                BAIXAR CSV (DADOS BRUTOS)
+              </button>
             </div>
-            <i data-lucide="snowflake" class="w-6 h-6 text-cyan-600"></i>
           </div>
-          <p class="text-[10px] text-slate-500 mt-2 leading-relaxed">
-            Temperatura, energia e segurança na palma da sua mão. Sistema confiável, inteligente e autônomo com Arduino Uno e Power Bank.
-          </p>
-          <div class="mt-4 flex justify-between items-end">
-            <div class="text-[9px] font-black text-slate-700 tracking-wider">
-              MAIS CONTROLE,<br>MAIS TRANQUILIDADE.
+
+          <!-- CARD DE MARCA / INSTITUCIONAL -->
+          <div class="p-6 rounded-2xl bg-gradient-to-br from-slate-900 to-blue-950/60 border border-slate-800 relative overflow-hidden">
+            <div class="relative z-10 space-y-2">
+              <div class="flex items-center gap-2 text-cyan-400 font-bold text-xs uppercase tracking-wider">
+                <i data-lucide="shield-check" class="w-4 h-4"></i> Sistema Protegido
+              </div>
+              <h4 class="text-sm font-extrabold text-white">REI DO GELO MONITORING</h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Garantia de eficiência térmica, integridade das cargas congeladas e economia de energia.
+              </p>
             </div>
-            <i data-lucide="mountain" class="w-10 h-10 text-slate-300"></i>
           </div>
+
         </div>
 
       </div>
-    </div>
 
-    <!-- TERCEIRA LINHA: HISTÓRICO DE EVENTOS -->
-    <div class="bg-white p-4 rounded-lg border border-slate-200/80 shadow-sm">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
-        <h3 class="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-          <i data-lucide="history" class="w-4 h-4 text-slate-600"></i> HISTÓRICO DE EVENTOS
-        </h3>
-        <div class="flex gap-2 text-xs">
-          <select class="bg-slate-50 border border-slate-200 rounded px-2.5 py-1 text-slate-600 outline-none text-[11px]">
-            <option>Todos os eventos</option>
-          </select>
-          <select class="bg-slate-50 border border-slate-200 rounded px-2.5 py-1 text-slate-600 outline-none text-[11px]">
-            <option>Últimas 24 horas</option>
-          </select>
+      <!-- ================= LINHA 3: TABELA DE HISTÓRICO DE EVENTOS ================= -->
+      <div class="glass-card p-6 rounded-2xl border border-slate-800">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+          <div>
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-white flex items-center gap-2">
+              <i data-lucide="history" class="w-4 h-4 text-cyan-400"></i>
+              Histórico Operacional Recente
+            </h3>
+            <p class="text-[11px] text-slate-400">Últimos registros transmitidos pela central de monitoramento</p>
+          </div>
+          <div class="flex gap-2">
+            <select class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-300 outline-none">
+              <option>Todos os tipos de eventos</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="text-slate-400 border-b border-slate-800/80">
+                <th class="pb-3 font-bold">DATA / HORA</th>
+                <th class="pb-3 font-bold">EVENTO</th>
+                <th class="pb-3 font-bold">VALOR REGISTRADO</th>
+                <th class="pb-3 font-bold text-right">STATUS</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/50 text-slate-300">
+              <tr class="hover:bg-slate-800/30 transition">
+                <td class="py-3 font-medium">10/08/2026 — 22:14:36</td>
+                <td class="py-3 flex items-center gap-2">
+                  <i data-lucide="thermometer" class="w-4 h-4 text-cyan-400"></i> Leitura Sistemática de Temperatura
+                </td>
+                <td class="py-3 font-bold text-white">-18,6 °C</td>
+                <td class="py-3 text-right">
+                  <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full text-[10px] font-bold">Normal</span>
+                </td>
+              </tr>
+              <tr class="hover:bg-slate-800/30 transition">
+                <td class="py-3 font-medium">10/08/2026 — 21:47:10</td>
+                <td class="py-3 flex items-center gap-2">
+                  <i data-lucide="zap" class="w-4 h-4 text-emerald-400"></i> Rede Elétrica Principal
+                </td>
+                <td class="py-3 font-bold text-white">220V Estável</td>
+                <td class="py-3 text-right">
+                  <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full text-[10px] font-bold">Ativa</span>
+                </td>
+              </tr>
+              <tr class="hover:bg-slate-800/30 transition">
+                <td class="py-3 font-medium">10/08/2026 — 20:32:00</td>
+                <td class="py-3 flex items-center gap-2">
+                  <i data-lucide="box" class="w-4 h-4 text-blue-400"></i> Ciclo do Compressor
+                </td>
+                <td class="py-3 font-bold text-white">Compressor Ativado</td>
+                <td class="py-3 text-right">
+                  <span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-1 rounded-full text-[10px] font-bold">Ciclo Normal</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <!-- TABELA DE DADOS -->
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-[11px]">
-          <thead>
-            <tr class="text-slate-400 border-b border-slate-100">
-              <th class="pb-2 font-semibold">Data / Hora</th>
-              <th class="pb-2 font-semibold">Evento</th>
-              <th class="pb-2 font-semibold">Valor</th>
-              <th class="pb-2 font-semibold text-right">Status</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 text-slate-600 font-medium">
-            <tr>
-              <td class="py-2">10/08/2026 22:14</td>
-              <td class="py-2 flex items-center gap-1.5"><i data-lucide="thermometer" class="w-3.5 h-3.5 text-cyan-600"></i> Leitura de temperatura</td>
-              <td class="py-2 font-bold">-18,6 °C</td>
-              <td class="py-2 text-right"><span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[9px] font-bold">Normal</span></td>
-            </tr>
-            <tr>
-              <td class="py-2">10/08/2026 21:47</td>
-              <td class="py-2 flex items-center gap-1.5"><i data-lucide="zap" class="w-3.5 h-3.5 text-emerald-600"></i> Rede el&eacute;trica</td>
-              <td class="py-2 font-bold">Rede ativa</td>
-              <td class="py-2 text-right"><span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[9px] font-bold">Normal</span></td>
-            </tr>
-            <tr>
-              <td class="py-2">10/08/2026 20:32</td>
-              <td class="py-2 flex items-center gap-1.5"><i data-lucide="box" class="w-3.5 h-3.5 text-slate-600"></i> Compressor</td>
-              <td class="py-2 font-bold">Ligado</td>
-              <td class="py-2 text-right"><span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[9px] font-bold">Normal</span></td>
-            </tr>
-            <tr>
-              <td class="py-2">10/08/2026 18:16</td>
-              <td class="py-2 flex items-center gap-1.5"><i data-lucide="battery-charging" class="w-3.5 h-3.5 text-blue-600"></i> Bateria / Power Bank</td>
-              <td class="py-2 font-bold">92%</td>
-              <td class="py-2 text-right"><span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[9px] font-bold">Normal</span></td>
-            </tr>
-            <tr>
-              <td class="py-2">10/08/2026 14:02</td>
-              <td class="py-2 flex items-center gap-1.5"><i data-lucide="door-closed" class="w-3.5 h-3.5 text-slate-600"></i> Porta da c&acirc;mara</td>
-              <td class="py-2 font-bold">Fechada</td>
-              <td class="py-2 text-right"><span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[9px] font-bold">Normal</span></td>
-            </tr>
-            <tr>
-              <td class="py-2">10/08/2026 11:27</td>
-              <td class="py-2 flex items-center gap-1.5"><i data-lucide="bell" class="w-3.5 h-3.5 text-slate-600"></i> Alarme</td>
-              <td class="py-2 font-bold">Nenhum</td>
-              <td class="py-2 text-right"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-[9px] font-bold">Info</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    </main>
+  </div>
 
-  </main>
-
-  <!-- JAVASCRIPT -->
+  <!-- SCRIPT CHART.JS -->
   <script>
     lucide.createIcons();
 
     const ctx = document.getElementById('trendChart').getContext('2d');
+    
+    // Gradiente bonito para a linha de temperatura
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(6, 182, 212, 0.35)');
+    gradient.addColorStop(1, 'rgba(6, 182, 212, 0.0)');
+
     const horas = ['22:00', '00:00', '02:00', '04:00', '06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'];
     const temperaturas = [-17.8, -17.5, -17.9, -17.6, -17.7, -17.8, -17.5, -17.6, -17.7, -17.5, -17.8, -18.2, -18.6];
 
@@ -491,33 +499,26 @@
           {
             label: 'Temperatura (°C)',
             data: temperaturas,
-            borderColor: '#0284c7',
-            backgroundColor: 'rgba(2, 132, 199, 0.05)',
-            borderWidth: 2,
+            borderColor: '#22d3ee',
+            borderWidth: 3,
+            backgroundColor: gradient,
             fill: true,
-            tension: 0.3,
-            pointRadius: 0
+            tension: 0.4,
+            pointRadius: 3,
+            pointBackgroundColor: '#22d3ee'
           },
           {
             label: 'Setpoint (-18 °C)',
             data: Array(horas.length).fill(-18),
-            borderColor: '#14b8a6',
-            borderDash: [4, 4],
+            borderColor: '#34d399',
+            borderDash: [5, 5],
             borderWidth: 1.5,
             pointRadius: 0
           },
           {
             label: 'Alarme Máx (-15 °C)',
             data: Array(horas.length).fill(-15),
-            borderColor: '#ef4444',
-            borderDash: [3, 3],
-            borderWidth: 1,
-            pointRadius: 0
-          },
-          {
-            label: 'Alarme Mín (-22 °C)',
-            data: Array(horas.length).fill(-22),
-            borderColor: '#ef4444',
+            borderColor: '#f87171',
             borderDash: [3, 3],
             borderWidth: 1,
             pointRadius: 0
@@ -527,15 +528,26 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: { display: false }
+        },
         scales: {
           y: {
-            min: -25,
-            max: -10,
-            ticks: { stepSize: 2 },
-            grid: { color: '#f1f5f9' }
+            min: -24,
+            max: -12,
+            ticks: {
+              color: '#64748b',
+              font: { family: 'Plus Jakarta Sans', size: 11 }
+            },
+            grid: { color: 'rgba(51, 65, 85, 0.4)' }
           },
-          x: { grid: { display: false } }
+          x: {
+            ticks: {
+              color: '#64748b',
+              font: { family: 'Plus Jakarta Sans', size: 11 }
+            },
+            grid: { display: false }
+          }
         }
       }
     });
