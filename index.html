@@ -52,6 +52,12 @@
       stroke-dashoffset: 75;
       transition: stroke-dashoffset 0.5s ease, stroke 0.5s ease;
     }
+
+    .watermark-logo-sidebar {
+      opacity: 0.25;
+      filter: brightness(120%);
+      pointer-events: none;
+    }
   </style>
 </head>
 <body class="flex h-screen overflow-hidden text-slate-700">
@@ -67,6 +73,11 @@
           <div>
             <h1 class="font-extrabold text-base tracking-wider leading-none text-white">REI DO GELO</h1>
           </div>
+        </div>
+
+        <!-- LOGO DA SIDEBAR COM EXTENSÃO JPG -->
+        <div class="w-full mt-3 flex justify-center items-center py-2 relative">
+          <img src="logo.jpg" alt="Logo Rei do Gelo" class="h-16 w-auto object-contain watermark-logo-sidebar" onerror="this.style.display='none'">
         </div>
       </div>
 
@@ -105,15 +116,19 @@
           <span class="text-slate-300">|</span>
           <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">MONITORAMENTO DA CÂMARA FRIA</span>
         </div>
+        
+        <!-- LOGO NO CABEÇALHO COM EXTENSÃO JPG -->
+        <div class="flex items-center gap-2 mt-0.5">
+          <img src="logo.jpg" alt="Logo Rei do Gelo" class="h-6 w-auto object-contain opacity-40" onerror="this.style.display='none'">
+        </div>
       </div>
 
       <div class="flex items-center gap-4">
-        <!-- STATUS DA CONEXÃO GERAL -->
         <span id="badge-sistema" class="flex items-center gap-1.5 bg-rose-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide">
           <span id="dot-sistema" class="w-2 h-2 rounded-full bg-white"></span>
           <span id="txt-sistema">DESCONECTADO</span>
         </span>
-        <span id="data-hora" class="text-xs font-semibold text-slate-600">--/--/---- --:--:--</span>
+        <span id="data-hora" class="text-xs font-semibold text-slate-600">12/09/2026 10:05:29</span>
         <button class="text-slate-400 hover:text-slate-600"><i data-lucide="settings" class="w-4 h-4"></i></button>
       </div>
     </header>
@@ -141,29 +156,29 @@
             </div>
           </div>
 
-          <!-- PARÂMETROS -->
+          <!-- PARÂMETROS ATUALIZADOS -->
           <div class="space-y-2 w-full flex-1">
             <div class="flex items-center gap-3 bg-slate-50/80 p-2 rounded-md border border-slate-100">
               <i data-lucide="snowflake" class="w-4 h-4 text-blue-500 shrink-0"></i>
               <div>
-                <p class="text-[10px] text-slate-400 font-semibold">Temperatura mínima (alarme)</p>
-                <p class="text-xs font-bold text-slate-800">-22 °C</p>
+                <p class="text-[10px] text-slate-400 font-semibold">Temperatura Mínima Normal</p>
+                <p class="text-xs font-bold text-slate-800">-20 °C</p>
               </div>
             </div>
 
             <div class="flex items-center gap-3 bg-slate-50/80 p-2 rounded-md border border-slate-100">
               <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500 shrink-0"></i>
               <div>
-                <p class="text-[10px] text-slate-400 font-semibold">Temperatura máxima (alarme)</p>
-                <p class="text-xs font-bold text-slate-800">-15 °C</p>
+                <p class="text-[10px] text-slate-400 font-semibold">Temperatura Máxima Normal</p>
+                <p class="text-xs font-bold text-slate-800">-1 °C</p>
               </div>
             </div>
 
             <div class="flex items-center gap-3 bg-slate-50/80 p-2 rounded-md border border-slate-100">
-              <i data-lucide="sliders" class="w-4 h-4 text-cyan-600 shrink-0"></i>
+              <i data-lucide="timer" class="w-4 h-4 text-cyan-600 shrink-0"></i>
               <div>
-                <p class="text-[10px] text-slate-400 font-semibold">Faixa de operação</p>
-                <p class="text-xs font-bold text-slate-800">-22 °C a -15 °C</p>
+                <p class="text-[10px] text-slate-400 font-semibold">Tolerância Degelo / Fora da Faixa</p>
+                <p class="text-xs font-bold text-slate-800">Até 5 minutos (&lt;= 0 °C)</p>
               </div>
             </div>
           </div>
@@ -200,15 +215,15 @@
             </div>
           </div>
 
-          <!-- Última Leitura -->
+          <!-- Cronômetro Fora da Faixa -->
           <div class="bg-white border border-slate-200/80 p-3 rounded-lg flex flex-col justify-between shadow-sm">
             <div class="flex items-center justify-between">
-              <span class="text-[9px] font-bold text-slate-400 uppercase">ÚLTIMA LEITURA</span>
+              <span class="text-[9px] font-bold text-slate-400 uppercase">TEMPO FORA FAIXA</span>
               <i data-lucide="clock" class="w-4 h-4 text-slate-400"></i>
             </div>
             <div class="mt-1">
-              <p id="txt-hora-leitura" class="text-xs font-black text-slate-400">--:--:--</p>
-              <p id="txt-data-leitura" class="text-[10px] text-slate-400">--/--/----</p>
+              <p id="txt-tempo-fora" class="text-xs font-black text-slate-800">00:00 min</p>
+              <p id="txt-status-tempo" class="text-[10px] text-slate-400">Limite: 05:00 min</p>
             </div>
           </div>
 
@@ -228,14 +243,13 @@
 
         </div>
 
-        <!-- STATUS DOS EQUIPAMENTOS (COM FALHA DE LEITURA) -->
+        <!-- STATUS DOS EQUIPAMENTOS -->
         <div class="bg-white p-3.5 rounded-lg border border-slate-200/80 shadow-sm">
           <h3 class="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-3 flex items-center gap-1">
             <span class="text-slate-400">:</span> STATUS DOS EQUIPAMENTOS
           </h3>
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
             
-            <!-- Compressor -->
             <div class="p-2 bg-slate-50 rounded border border-slate-100 flex items-center gap-2">
               <i data-lucide="box" class="w-5 h-5 text-slate-400 shrink-0"></i>
               <div class="text-left">
@@ -246,7 +260,6 @@
               </div>
             </div>
 
-            <!-- Porta -->
             <div class="p-2 bg-slate-50 rounded border border-slate-100 flex items-center gap-2">
               <i data-lucide="door-closed" class="w-5 h-5 text-slate-400 shrink-0"></i>
               <div class="text-left">
@@ -257,7 +270,6 @@
               </div>
             </div>
 
-            <!-- Ventilação -->
             <div class="p-2 bg-slate-50 rounded border border-slate-100 flex items-center gap-2">
               <i data-lucide="fan" class="w-5 h-5 text-slate-400 shrink-0"></i>
               <div class="text-left">
@@ -268,7 +280,6 @@
               </div>
             </div>
 
-            <!-- Alarme -->
             <div class="p-2 bg-slate-50 rounded border border-slate-100 flex items-center gap-2">
               <i data-lucide="bell-off" class="w-5 h-5 text-slate-400 shrink-0"></i>
               <div class="text-left">
@@ -299,16 +310,22 @@
       </div>
 
       <div class="col-span-12 xl:col-span-4 space-y-4">
-        <!-- BOTÕES DE CONTROLE DE TESTE / INTEGRAÇÃO -->
+        <!-- TESTADOR DAS CONDIÇÕES DA FAIXA -->
         <div class="bg-slate-800 text-white p-4 rounded-lg shadow-sm space-y-3">
-          <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Simulador de Status (Testes)</h4>
-          <p class="text-[10px] text-slate-400">Alterne abaixo para testar o comportamento visual quando o Arduino conectar:</p>
-          <div class="flex gap-2">
-            <button onclick="atualizarStatus(true)" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-2 rounded text-[11px] transition">
-              Simular Conectado
+          <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Simulador de Faixas (-20°C a -1°C)</h4>
+          <p class="text-[10px] text-slate-400">Clique para testar os estados da câmara fria:</p>
+          <div class="grid grid-cols-1 gap-2">
+            <button onclick="simularTemperatura(-15, 0)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-2 rounded text-[11px] transition">
+              1. Normal (-15 °C)
             </button>
-            <button onclick="atualizarStatus(false)" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-1.5 px-2 rounded text-[11px] transition">
-              Simular Falha
+            <button onclick="simularTemperatura(0, 2)" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-1.5 px-2 rounded text-[11px] transition">
+              2. Degelo / Fora da Faixa (0 °C - 2 min)
+            </button>
+            <button onclick="simularTemperatura(3, 6)" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-1.5 px-2 rounded text-[11px] transition">
+              3. Alarme Falha (>5 min fora da faixa)
+            </button>
+            <button onclick="simularDesconectado()" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-1.5 px-2 rounded text-[11px] transition">
+              4. Desconectado
             </button>
           </div>
         </div>
@@ -320,7 +337,7 @@
   <script>
     lucide.createIcons();
 
-    // Inicialização do Gráfico Vazio
+    // Gráfico de Trend
     const ctx = document.getElementById('trendChart').getContext('2d');
     const chart = new Chart(ctx, {
       type: 'line',
@@ -328,21 +345,37 @@
         labels: ['22:00', '00:00', '02:00', '04:00', '06:00', '08:00', '10:00'],
         datasets: [{
           label: 'Temperatura (°C)',
-          data: [],
-          borderColor: '#94a3b8',
+          data: [-18, -17.5, -18.2, -17.9, -18.1, -17.6, -18.0],
+          borderColor: '#0284c7',
           borderWidth: 2,
           fill: false
+        },
+        {
+          label: 'Limite Mín (-20°C)',
+          data: Array(7).fill(-20),
+          borderColor: '#ef4444',
+          borderDash: [3, 3],
+          borderWidth: 1,
+          pointRadius: 0
+        },
+        {
+          label: 'Limite Máx (-1°C)',
+          data: Array(7).fill(-1),
+          borderColor: '#ef4444',
+          borderDash: [3, 3],
+          borderWidth: 1,
+          pointRadius: 0
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        scales: { y: { min: -25, max: -10 } }
+        scales: { y: { min: -25, max: 10 } }
       }
     });
 
-    // Função de Manipulação do Estado da Interface
-    function atualizarStatus(conectado) {
+    // LÓGICA DE PROCESSAMENTO DE TEMPERATURA E DEGELO
+    function processarEstadoTemperatura(temp, minutosForaFaixa) {
       const bgSistema = document.getElementById('badge-sistema');
       const txtSistema = document.getElementById('txt-sistema');
       
@@ -350,103 +383,118 @@
       const badgeTemp = document.getElementById('badge-temperatura');
       const gaugeCircle = document.getElementById('gauge-circle');
 
-      const cardRede = document.getElementById('card-rede');
-      const txtRede = document.getElementById('txt-rede');
-
-      const txtBateria = document.getElementById('txt-bateria');
-      const txtAutonomia = document.getElementById('txt-autonomia');
-
-      const cardArduino = document.getElementById('card-arduino');
-      const txtArduino = document.getElementById('txt-arduino');
-      const txtSubArduino = document.getElementById('txt-sub-arduino');
+      const txtTempoFora = document.getElementById('txt-tempo-fora');
+      const txtStatusTempo = document.getElementById('txt-status-tempo');
 
       const stCompressor = document.getElementById('st-compressor');
       const stPorta = document.getElementById('st-porta');
       const stVentilacao = document.getElementById('st-ventilacao');
       const stAlarme = document.getElementById('st-alarme');
 
-      if (conectado) {
-        // SISTEMA ONLINE
+      // Atualiza cronômetro na tela
+      txtTempoFora.innerText = `0${minutosForaFaixa}:00 min`;
+
+      // 1. DENTRO DA FAIXA NORMAL (-20°C à -1°C)
+      if (temp >= -20 && temp <= -1) {
         bgSistema.className = "flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide";
         txtSistema.innerText = "ONLINE";
 
-        valTemp.innerHTML = '-18,6 <span class="text-xs font-bold">°C</span>';
+        valTemp.innerHTML = `${temp.toFixed(1).replace('.', ',')} <span class="text-xs font-bold">°C</span>`;
         valTemp.className = "text-xl font-black text-slate-800 leading-none";
+        
         badgeTemp.className = "mt-1 bg-emerald-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide";
-        badgeTemp.innerText = "DENTRO DA FAIXA";
+        badgeTemp.innerText = "PROCESSO NORMAL";
+        
         gaugeCircle.style.stroke = "#0284c7";
         gaugeCircle.style.strokeDashoffset = "75";
 
-        cardRede.className = "bg-emerald-50/50 border border-emerald-200/60 p-3 rounded-lg flex flex-col justify-between";
-        txtRede.className = "mt-2 flex items-center gap-1 text-emerald-700 font-black text-xs";
-        txtRede.innerHTML = '<i data-lucide="zap" class="w-3.5 h-3.5"></i> ATIVA';
+        txtStatusTempo.innerText = "Faixa Normal OK";
+        txtStatusTempo.className = "text-[10px] text-emerald-600 font-semibold";
 
-        txtBateria.className = "text-sm font-black text-slate-800 flex items-center gap-1";
-        txtBateria.innerHTML = '<span class="w-5 h-2.5 bg-emerald-500 rounded-sm inline-block"></span> 87%';
-        txtAutonomia.innerText = "Autonomia estimada 12 h 30 min";
-
-        cardArduino.className = "bg-white border border-slate-200/80 p-3 rounded-lg flex flex-col justify-between shadow-sm";
-        txtArduino.className = "text-xs font-extrabold text-emerald-600 flex items-center gap-1";
-        txtArduino.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ONLINE';
-        txtSubArduino.className = "text-[9px] text-slate-400";
-        txtSubArduino.innerText = "Coleta de dados ativa";
-
-        stCompressor.className = "text-[11px] font-black text-emerald-600 flex items-center gap-1";
         stCompressor.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> LIGADO';
+        stCompressor.className = "text-[11px] font-black text-emerald-600 flex items-center gap-1";
 
-        stPorta.className = "text-[11px] font-black text-emerald-600 flex items-center gap-1";
-        stPorta.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> FECHADA';
-
-        stVentilacao.className = "text-[11px] font-black text-emerald-600 flex items-center gap-1";
         stVentilacao.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> NORMAL';
+        stVentilacao.className = "text-[11px] font-black text-emerald-600 flex items-center gap-1";
 
-        stAlarme.className = "text-[11px] font-black text-slate-400 flex items-center gap-1";
         stAlarme.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span> NENHUM';
+        stAlarme.className = "text-[11px] font-black text-slate-400 flex items-center gap-1";
+      } 
+      // 2. FORA DA FAIXA (<= 0 °C) DENTRO DO TEMPO DE TOLERÂNCIA (<= 5 MINUTOS) -> DEGELO OU AQUECIMENTO
+      else if (minutosForaFaixa <= 5) {
+        bgSistema.className = "flex items-center gap-1.5 bg-amber-500 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide";
+        txtSistema.innerText = "EM DEGELO / ATENÇÃO";
 
-      } else {
-        // SISTEMA OFFLINE / FALHA
+        valTemp.innerHTML = `${temp.toFixed(1).replace('.', ',')} <span class="text-xs font-bold">°C</span>`;
+        valTemp.className = "text-xl font-black text-amber-600 leading-none";
+
+        badgeTemp.className = "mt-1 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide";
+        badgeTemp.innerText = "PROCESSO DE DEGELO";
+
+        gaugeCircle.style.stroke = "#f59e0b";
+        gaugeCircle.style.strokeDashoffset = "40";
+
+        txtStatusTempo.innerText = `Tolerância: ${5 - minutosForaFaixa} min restates`;
+        txtStatusTempo.className = "text-[10px] text-amber-600 font-bold";
+
+        stCompressor.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> DEGELO ATIVO';
+        stCompressor.className = "text-[11px] font-black text-amber-600 flex items-center gap-1";
+
+        stVentilacao.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> PAUSADO';
+        stVentilacao.className = "text-[11px] font-black text-amber-600 flex items-center gap-1";
+
+        stAlarme.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> ATENÇÃO TEMPO';
+        stAlarme.className = "text-[11px] font-black text-amber-600 flex items-center gap-1";
+      }
+      // 3. FORA DA FAIXA POR MAIS DE 5 MINUTOS -> ALARME DE FALHA
+      else {
         bgSistema.className = "flex items-center gap-1.5 bg-rose-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide";
-        txtSistema.innerText = "DESCONECTADO";
+        txtSistema.innerText = "FALHA / ALARME";
 
-        valTemp.innerHTML = '--,- <span class="text-xs font-bold">°C</span>';
-        valTemp.className = "text-xl font-black text-slate-400 leading-none";
-        badgeTemp.className = "mt-1 bg-slate-400 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide";
-        badgeTemp.innerText = "SEM LEITURA";
-        gaugeCircle.style.stroke = "#94a3b8";
-        gaugeCircle.style.strokeDashoffset = "251.2";
+        valTemp.innerHTML = `${temp.toFixed(1).replace('.', ',')} <span class="text-xs font-bold">°C</span>`;
+        valTemp.className = "text-xl font-black text-rose-600 leading-none";
 
-        cardRede.className = "bg-slate-50 border border-slate-200 p-3 rounded-lg flex flex-col justify-between";
-        txtRede.className = "mt-2 flex items-center gap-1 text-slate-400 font-black text-xs";
-        txtRede.innerHTML = '<i data-lucide="zap-off" class="w-3.5 h-3.5"></i> INATIVA';
+        badgeTemp.className = "mt-1 bg-rose-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide animate-bounce";
+        badgeTemp.innerText = "FALHA DE TEMPERATURA";
 
-        txtBateria.className = "text-sm font-black text-slate-400 flex items-center gap-1";
-        txtBateria.innerHTML = '-- %';
-        txtAutonomia.innerText = "Sem dados";
+        gaugeCircle.style.stroke = "#e11d48";
+        gaugeCircle.style.strokeDashoffset = "10";
 
-        cardArduino.className = "bg-rose-50 border border-rose-200 p-3 rounded-lg flex flex-col justify-between";
-        txtArduino.className = "text-xs font-extrabold text-rose-600 flex items-center gap-1";
-        txtArduino.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> OFFLINE';
-        txtSubArduino.className = "text-[9px] text-rose-400";
-        txtSubArduino.innerText = "Dispositivo desconectado";
+        txtStatusTempo.innerText = "EXCEDEU 5 MINUTOS!";
+        txtStatusTempo.className = "text-[10px] text-rose-600 font-black";
 
-        stCompressor.className = "text-[11px] font-black text-rose-500 flex items-center gap-1";
-        stCompressor.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> DESCONECTADO';
+        stCompressor.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> ERRO DE REFRIG.';
+        stCompressor.className = "text-[11px] font-black text-rose-600 flex items-center gap-1";
 
-        stPorta.className = "text-[11px] font-black text-rose-500 flex items-center gap-1";
-        stPorta.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> DESCONECTADO';
+        stVentilacao.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> VERIFICAR';
+        stVentilacao.className = "text-[11px] font-black text-rose-600 flex items-center gap-1";
 
-        stVentilacao.className = "text-[11px] font-black text-rose-500 flex items-center gap-1";
-        stVentilacao.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> DESCONECTADO';
-
+        stAlarme.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-600 animate-ping"></span> ALARME FALHA CRÍTICA';
         stAlarme.className = "text-[11px] font-black text-rose-600 flex items-center gap-1";
-        stAlarme.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse"></span> FALHA DE REDE';
       }
 
       lucide.createIcons();
     }
 
-    // Inicializa por padrão como DESCONECTADO
-    atualizarStatus(false);
+    function simularTemperatura(temp, minutos) {
+      processarEstadoTemperatura(temp, minutos);
+    }
+
+    function simularDesconectado() {
+      document.getElementById('badge-sistema').className = "flex items-center gap-1.5 bg-rose-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide";
+      document.getElementById('txt-sistema').innerText = "DESCONECTADO";
+      document.getElementById('val-temperatura').innerHTML = '--,- <span class="text-xs font-bold">°C</span>';
+      document.getElementById('badge-temperatura').innerText = "SEM LEITURA";
+      document.getElementById('badge-temperatura').className = "mt-1 bg-slate-400 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide";
+      document.getElementById('gauge-circle').style.stroke = "#94a3b8";
+      document.getElementById('gauge-circle').style.strokeDashoffset = "251.2";
+      document.getElementById('txt-tempo-fora').innerText = "00:00 min";
+      document.getElementById('txt-status-tempo').innerText = "Sem sinal do sensor";
+      lucide.createIcons();
+    }
+
+    // Inicializa testando com a faixa normal (-15 °C)
+    simularTemperatura(-15, 0);
   </script>
 </body>
 </html>
