@@ -445,25 +445,34 @@
       { hora: '10:00', temp: -18.0, status: 'Normal' }
     ];
 
-    // FUNÇÕES DE EXPORTAÇÃO
+    // FUNÇÕES DE EXPORTAÇÃO (COMPATÍVEL COM PC E MOBILE)
     function exportarCSV() {
       const periodo = document.getElementById('filtro-periodo').value;
-      let csvContent = "data:text/csv;charset=utf-8,";
-      csvContent += "REI DO GELO - Relatório de Temperatura\n";
-      csvContent += `Periodo: ${periodo}\n\n`;
-      csvContent += "Horario;Temperatura (C);Status\n";
+      
+      let csvRows = [];
+      csvRows.push("REI DO GELO - Relatório de Temperatura");
+      csvRows.push(`Periodo: ${periodo}`);
+      csvRows.push("");
+      csvRows.push("Horario;Temperatura (C);Status");
 
       dadosHistorico.forEach(row => {
-        csvContent += `${row.hora};${row.temp.toString().replace('.', ',')};${row.status}\n`;
+        csvRows.push(`${row.hora};${row.temp.toString().replace('.', ',')};${row.status}`);
       });
 
-      const encodedUri = encodeURI(csvContent);
+      // \uFEFF adiciona suporte nativo a caracteres UTF-8 no Excel
+      const csvString = "\uFEFF" + csvRows.join("\n");
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
+      
+      link.setAttribute("href", url);
       link.setAttribute("download", `relatorio_temperatura_${periodo}.csv`);
+      
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      setTimeout(() => URL.revokeObjectURL(url), 100);
     }
 
     function exportarPDF() {
