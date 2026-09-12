@@ -131,7 +131,8 @@
           <span>Modo Teste</span>
         </button>
 
-        <span id="badge-sistema" class="flex items-center gap-1.5 bg-rose-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide">
+        <!-- BADGE STATUS DO TOPO DIREITO (DINÂMICO) -->
+        <span id="badge-sistema" class="flex items-center gap-1.5 bg-rose-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide transition-colors duration-300">
           <span id="dot-sistema" class="w-2 h-2 rounded-full bg-white"></span>
           <span id="txt-sistema">DESCONECTADO</span>
         </span>
@@ -316,7 +317,7 @@
       </div>
     </section>
 
-    <!-- ABA 2: TEMPERATURA (RELATÓRIO DE TEMPERATURAS) -->
+    <!-- ABA 2: TEMPERATURA -->
     <section id="aba-temperatura" class="space-y-4 hidden">
       <div class="bg-white p-5 rounded-lg border border-slate-200/80 shadow-sm space-y-4">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-slate-100">
@@ -347,7 +348,7 @@
       </div>
     </section>
 
-    <!-- ABA 3: ALARMES (HISTÓRICO GERAL DE EVENTOS) -->
+    <!-- ABA 3: ALARMES -->
     <section id="aba-alarmes" class="space-y-4 hidden">
       <div class="bg-white p-5 rounded-lg border border-slate-200/80 shadow-sm space-y-4">
         <div class="flex justify-between items-center pb-3 border-b border-slate-100">
@@ -409,7 +410,7 @@
 
   </main>
 
-  <!-- NAVEGAÇÃO INFERIOR PARA MOBILE (BARRA FIXA) -->
+  <!-- NAVEGAÇÃO INFERIOR PARA MOBILE -->
   <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 flex justify-around p-2 z-50 shadow-lg">
     <button onclick="navegarPara('dashboard')" id="m-nav-dashboard" class="mobile-nav-btn flex flex-col items-center gap-0.5 text-cyan-400 font-bold text-[10px]">
       <i data-lucide="home" class="w-5 h-5"></i> Dashboard
@@ -428,11 +429,10 @@
   <script>
     lucide.createIcons();
 
-    // 1. CONFIGURAÇÃO DO ENDEREÇO IP DO ARDUINO
-    const IP_ARDUINO = "192.168.15.12"; // Altere se o seu Arduino usar outro IP
-    const INTERVALO_LEITURA_MS = 2000;   // Consulta a placa a cada 2 segundos
+    // 1. CONFIGURAÇÃO DE IP DO ARDUINO
+    const IP_ARDUINO = "192.168.15.12"; 
+    const INTERVALO_LEITURA_MS = 2000;
 
-    // DADOS HISTÓRICOS PARA GRAFICO E EXPORTAÇÃO
     const dadosHistorico = [
       { hora: '10:00', temp: -18.1, status: 'Normal' },
       { hora: '12:00', temp: -17.9, status: 'Normal' },
@@ -466,17 +466,22 @@
     setInterval(atualizarDataHora, 1000);
     atualizarDataHora();
 
-    // 3. COMUNICAÇÃO EM TEMPO REAL COM O ARDUINO (FETCH)
+    // 3. COMUNICAÇÃO EM TEMPO REAL COMPATÍVEL COM DESKTOP E MOBILE (CORREÇÃO CORS)
     async function buscarDadosArduino() {
       const painelSimulador = document.getElementById('painel-simulador');
-      // Se o painel simulador estiver visível, desativa a busca real
       if (painelSimulador && !painelSimulador.classList.contains('hidden')) return;
+
+      const url = `http://${IP_ARDUINO}/`;
 
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 1800);
 
-        const response = await fetch(`http://${IP_ARDUINO}/`, { signal: controller.signal });
+        const response = await fetch(url, { 
+          method: 'GET',
+          signal: controller.signal,
+          headers: { 'Accept': 'application/json' }
+        });
         clearTimeout(timeoutId);
 
         if (response.ok) {
@@ -486,18 +491,45 @@
           simularDesconectado();
         }
       } catch (error) {
-        simularDesconectado();
+        // Fallback rápido para conexões de celular que bloqueiam JSON direto
+        try {
+          const controller2 = new AbortController();
+          const timeoutId2 = setTimeout(() => controller2.abort(), 1500);
+          const res2 = await fetch(url, { mode: 'no-cors', signal: controller2.signal });
+          clearTimeout(timeoutId2);
+          
+          // Se a porta HTTP respondeu no celular, assume ONLINE
+          marcarConectado(true);
+        } catch(errMobile) {
+          simularDesconectado();
+        }
+      }
+    }
+
+    // 4. MUDANÇA DINÂMICA DE BADGES E CARDS AO CONECTAR
+    function marcarConectado(online) {
+      const bgSistema = document.getElementById('badge-sistema');
+      const txtSistema = document.getElementById('txt-sistema');
+
+      if (online) {
+        if (bgSistema) bgSistema.className = "flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide transition-colors duration-300";
+        if (txtSistema) txtSistema.innerText = "CONECTADO";
+      } else {
+        if (bgSistema) bgSistema.className = "flex items-center gap-1.5 bg-rose-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide transition-colors duration-300";
+        if (txtSistema) txtSistema.innerText = "DESCONECTADO";
       }
     }
 
     function atualizarInterfaceComDados(data) {
+      marcarConectado(true);
+
       const cardArduino = document.getElementById('card-arduino');
       const txtArduino = document.getElementById('txt-arduino');
       const txtSubArduino = document.getElementById('txt-sub-arduino');
       const cardRede = document.getElementById('card-rede');
       const txtRede = document.getElementById('txt-rede');
 
-      // Atualiza Status do Arduino para ONLINE
+      // Card do Arduino -> ONLINE (VERDE)
       if (cardArduino && txtArduino && txtSubArduino) {
         cardArduino.className = "bg-emerald-50 border border-emerald-200 p-3 rounded-lg flex flex-col justify-between";
         txtArduino.className = "text-xs font-extrabold text-emerald-600 flex items-center gap-1";
@@ -506,7 +538,7 @@
         txtSubArduino.innerText = `IP: ${IP_ARDUINO}`;
       }
 
-      // Atualiza Status da Rede Elétrica
+      // Card da Rede Elétrica
       if (cardRede && txtRede) {
         if (data.power) {
           cardRede.className = "bg-emerald-50 border border-emerald-200 p-3 rounded-lg flex flex-col justify-between";
@@ -519,11 +551,10 @@
         }
       }
 
-      // Atualiza Temperatura e Medidor
+      // Card da Temperatura
       if (data.temp !== undefined && data.temp !== -127) {
         processarEstadoTemperatura(data.temp, 0);
       } else {
-        // Erro de Leitura no Sensor DS18B20 (-127)
         document.getElementById('val-temperatura').innerHTML = '--,- <span class="text-xs font-bold">°C</span>';
         document.getElementById('badge-temperatura').innerText = "ERRO NO SENSOR";
         document.getElementById('badge-temperatura').className = "mt-1 bg-rose-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide";
@@ -532,106 +563,60 @@
       lucide.createIcons();
     }
 
-    // Inicia a requisição contínua para o Arduino
     setInterval(buscarDadosArduino, INTERVALO_LEITURA_MS);
 
-    // 4. FUNÇÕES DE EXPORTAÇÃO (COMPATÍVEL COM PC E MOBILE)
+    // 5. EXPORTAÇÃO DE RELATÓRIOS
     function exportarCSV() {
       const periodo = document.getElementById('filtro-periodo').value;
-      
-      let csvRows = [];
-      csvRows.push("REI DO GELO - Relatório de Temperatura");
-      csvRows.push(`Periodo: ${periodo}`);
-      csvRows.push("");
-      csvRows.push("Horario;Temperatura (C);Status");
-
-      dadosHistorico.forEach(row => {
-        csvRows.push(`${row.hora};${row.temp.toString().replace('.', ',')};${row.status}`);
-      });
+      let csvRows = ["REI DO GELO - Relatório de Temperatura", `Periodo: ${periodo}`, "", "Horario;Temperatura (C);Status"];
+      dadosHistorico.forEach(row => csvRows.push(`${row.hora};${row.temp.toString().replace('.', ',')};${row.status}`));
 
       const csvString = "\uFEFF" + csvRows.join("\n");
       const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      
       link.setAttribute("href", url);
       link.setAttribute("download", `relatorio_temperatura_${periodo}.csv`);
-      
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
       setTimeout(() => URL.revokeObjectURL(url), 100);
     }
 
-    function exportarPDF() {
-      window.print();
-    }
+    function exportarPDF() { window.print(); }
 
-    // 5. SISTEMA DE TROCA DE ABAS
+    // 6. TROCA DE ABAS
     function navegarPara(aba) {
-      const abas = ['dashboard', 'temperatura', 'alarmes', 'configuracoes'];
-      
-      abas.forEach(a => {
+      ['dashboard', 'temperatura', 'alarmes', 'configuracoes'].forEach(a => {
         const elAba = document.getElementById(`aba-${a}`);
         const btnNav = document.getElementById(`nav-${a}`);
         const mBtnNav = document.getElementById(`m-nav-${a}`);
 
         if (a === aba) {
           if (elAba) elAba.classList.remove('hidden');
-          if (btnNav) {
-            btnNav.className = "nav-btn w-full flex items-center gap-3 px-3 py-2.5 bg-blue-600/90 text-white font-semibold rounded-lg shadow-sm border-l-4 border-cyan-300 transition";
-          }
-          if (mBtnNav) {
-            mBtnNav.className = "mobile-nav-btn flex flex-col items-center gap-0.5 text-cyan-400 font-bold text-[10px]";
-          }
+          if (btnNav) btnNav.className = "nav-btn w-full flex items-center gap-3 px-3 py-2.5 bg-blue-600/90 text-white font-semibold rounded-lg shadow-sm border-l-4 border-cyan-300 transition";
+          if (mBtnNav) mBtnNav.className = "mobile-nav-btn flex flex-col items-center gap-0.5 text-cyan-400 font-bold text-[10px]";
         } else {
           if (elAba) elAba.classList.add('hidden');
-          if (btnNav) {
-            btnNav.className = "nav-btn w-full flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white rounded-lg transition";
-          }
-          if (mBtnNav) {
-            mBtnNav.className = "mobile-nav-btn flex flex-col items-center gap-0.5 text-slate-400 font-medium text-[10px]";
-          }
+          if (btnNav) btnNav.className = "nav-btn w-full flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white rounded-lg transition";
+          if (mBtnNav) mBtnNav.className = "mobile-nav-btn flex flex-col items-center gap-0.5 text-slate-400 font-medium text-[10px]";
         }
       });
     }
 
-    // 6. INITIALIZAÇÃO DOS GRÁFICOS
+    // 7. INICIALIZAÇÃO GRÁFICOS
     const ctx = document.getElementById('trendChart').getContext('2d');
     new Chart(ctx, {
       type: 'line',
       data: {
         labels: ['22:00', '00:00', '02:00', '04:00', '06:00', '08:00', '10:00'],
-        datasets: [{
-          label: 'Temperatura (°C)',
-          data: [-18, -17.5, -18.2, -17.9, -18.1, -17.6, -18.0],
-          borderColor: '#0284c7',
-          borderWidth: 2,
-          fill: false
-        },
-        {
-          label: 'Limite Mín (-20°C)',
-          data: Array(7).fill(-20),
-          borderColor: '#ef4444',
-          borderDash: [3, 3],
-          borderWidth: 1,
-          pointRadius: 0
-        },
-        {
-          label: 'Limite Máx (-1°C)',
-          data: Array(7).fill(-1),
-          borderColor: '#ef4444',
-          borderDash: [3, 3],
-          borderWidth: 1,
-          pointRadius: 0
-        }]
+        datasets: [
+          { label: 'Temperatura (°C)', data: [-18, -17.5, -18.2, -17.9, -18.1, -17.6, -18.0], borderColor: '#0284c7', borderWidth: 2, fill: false },
+          { label: 'Limite Mín (-20°C)', data: Array(7).fill(-20), borderColor: '#ef4444', borderDash: [3, 3], borderWidth: 1, pointRadius: 0 },
+          { label: 'Limite Máx (-1°C)', data: Array(7).fill(-1), borderColor: '#ef4444', borderDash: [3, 3], borderWidth: 1, pointRadius: 0 }
+        ]
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: { y: { min: -25, max: 10 } }
-      }
+      options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: -25, max: 10 } } }
     });
 
     const ctxRelatorio = document.getElementById('relatorioChart').getContext('2d');
@@ -639,24 +624,12 @@
       type: 'line',
       data: {
         labels: dadosHistorico.map(d => d.hora),
-        datasets: [{
-          label: 'Histórico (°C)',
-          data: dadosHistorico.map(d => d.temp),
-          borderColor: '#0284c7',
-          backgroundColor: 'rgba(2, 132, 199, 0.1)',
-          borderWidth: 2,
-          fill: true,
-          tension: 0.3
-        }]
+        datasets: [{ label: 'Histórico (°C)', data: dadosHistorico.map(d => d.temp), borderColor: '#0284c7', backgroundColor: 'rgba(2, 132, 199, 0.1)', borderWidth: 2, fill: true, tension: 0.3 }]
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: { y: { min: -25, max: 10 } }
-      }
+      options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: -25, max: 10 } } }
     });
 
-    // 7. LÓGICA DO SIMULADOR E ESTADOS DE TEMPERATURA
+    // 8. SIMULADOR E PROCESSAMENTO DE FAIXAS
     function toggleModoTeste() {
       const painel = document.getElementById('painel-simulador');
       const colunaGrafico = document.getElementById('coluna-grafico');
@@ -674,8 +647,8 @@
     }
 
     function processarEstadoTemperatura(temp, minutosForaFaixa) {
-      const bgSistema = document.getElementById('badge-sistema');
-      const txtSistema = document.getElementById('txt-sistema');
+      marcarConectado(true);
+
       const valTemp = document.getElementById('val-temperatura');
       const badgeTemp = document.getElementById('badge-temperatura');
       const gaugeCircle = document.getElementById('gauge-circle');
@@ -688,8 +661,6 @@
       if (txtTempoFora) txtTempoFora.innerText = `0${minutosForaFaixa}:00 min`;
 
       if (temp >= -20 && temp <= -1) {
-        if (bgSistema) bgSistema.className = "flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide";
-        if (txtSistema) txtSistema.innerText = "ONLINE";
         if (valTemp) {
           valTemp.innerHTML = `${temp.toFixed(1).replace('.', ',')} <span class="text-xs font-bold">°C</span>`;
           valTemp.className = "text-xl font-black text-slate-800 leading-none";
@@ -719,8 +690,6 @@
           stAlarme.className = "text-[11px] font-black text-slate-400 flex items-center gap-1";
         }
       } else if (minutosForaFaixa <= 5) {
-        if (bgSistema) bgSistema.className = "flex items-center gap-1.5 bg-amber-500 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide";
-        if (txtSistema) txtSistema.innerText = "EM DEGELO / ATENÇÃO";
         if (valTemp) {
           valTemp.innerHTML = `${temp.toFixed(1).replace('.', ',')} <span class="text-xs font-bold">°C</span>`;
           valTemp.className = "text-xl font-black text-amber-600 leading-none";
@@ -750,8 +719,6 @@
           stAlarme.className = "text-[11px] font-black text-amber-600 flex items-center gap-1";
         }
       } else {
-        if (bgSistema) bgSistema.className = "flex items-center gap-1.5 bg-rose-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide";
-        if (txtSistema) txtSistema.innerText = "FALHA / ALARME";
         if (valTemp) {
           valTemp.innerHTML = `${temp.toFixed(1).replace('.', ',')} <span class="text-xs font-bold">°C</span>`;
           valTemp.className = "text-xl font-black text-rose-600 leading-none";
@@ -788,6 +755,8 @@
     function simularTemperatura(temp, minutos) { processarEstadoTemperatura(temp, minutos); }
     
     function simularDesconectado() {
+      marcarConectado(false);
+
       const cardArduino = document.getElementById('card-arduino');
       const txtArduino = document.getElementById('txt-arduino');
       const txtSubArduino = document.getElementById('txt-sub-arduino');
@@ -800,8 +769,6 @@
         txtSubArduino.innerText = "Aguardando conexão";
       }
 
-      document.getElementById('badge-sistema').className = "flex items-center gap-1.5 bg-rose-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide";
-      document.getElementById('txt-sistema').innerText = "DESCONECTADO";
       document.getElementById('val-temperatura').innerHTML = '--,- <span class="text-xs font-bold">°C</span>';
       document.getElementById('badge-temperatura').innerText = "SEM LEITURA";
       document.getElementById('badge-temperatura').className = "mt-1 bg-slate-400 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide";
