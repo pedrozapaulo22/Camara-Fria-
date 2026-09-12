@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
+<!DOCTYPE html><html lang="pt-BR"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>REI DO GELO - Monitoramento da Câmara Fria</title>
@@ -58,9 +56,7 @@
       filter: brightness(120%);
       pointer-events: none;
     }
-  </style>
-</head>
-<body class="flex flex-col lg:flex-row h-screen overflow-hidden text-slate-700">
+  </style></head><body class="flex flex-col lg:flex-row h-screen overflow-hidden text-slate-700">
 
   <!-- SIDEBAR DA ESQUERDA (DESKTOP) -->
   <aside class="w-60 sidebar-bg text-white flex-col justify-between p-4 shrink-0 hidden lg:flex shadow-xl relative overflow-hidden">
@@ -429,9 +425,14 @@
   <script>
     lucide.createIcons();
 
-    // 1. CONFIGURAÇÃO DE IP DO ARDUINO
-    const IP_ARDUINO = "192.168.15.12"; 
-    const INTERVALO_LEITURA_MS = 2000;
+    // =======================================================
+    // 1. INSIRA SEU IP PÚBLICO ABAIXO (OBTIDO EM MEUIP.COM.BR)
+    // =======================================================
+    const IP_PUBLICO = "177.144.101.30"; 
+    const PORTA_EXTERNA = "8080";
+    const INTERVALO_LEITURA_MS = 2500;
+
+    const ENDPOINT_ARDUINO = `http://${IP_PUBLICO}:${PORTA_EXTERNA}/dados`;
 
     const dadosHistorico = [
       { hora: '10:00', temp: -18.1, status: 'Normal' },
@@ -466,21 +467,29 @@
     setInterval(atualizarDataHora, 1000);
     atualizarDataHora();
 
-    // 3. COMUNICAÇÃO EM TEMPO REAL COMPATÍVEL COM DESKTOP E MOBILE (CORREÇÃO CORS)
+    let emRequisicao = false;
+
+    // 3. COMUNICAÇÃO VIA IP PÚBLICO E PORTA 8080
     async function buscarDadosArduino() {
       const painelSimulador = document.getElementById('painel-simulador');
       if (painelSimulador && !painelSimulador.classList.contains('hidden')) return;
 
-      const url = `http://${IP_ARDUINO}/`;
+      if (emRequisicao) return;
+      emRequisicao = true;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
 
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 1800);
-
-        const response = await fetch(url, { 
+        const response = await fetch(`${ENDPOINT_ARDUINO}?nocache=${Date.now()}`, { 
           method: 'GET',
-          signal: controller.signal,
-          headers: { 'Accept': 'application/json' }
+          mode: 'cors',
+          cache: 'no-store',
+          headers: { 
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate'
+          },
+          signal: controller.signal
         });
         clearTimeout(timeoutId);
 
@@ -491,18 +500,9 @@
           simularDesconectado();
         }
       } catch (error) {
-        // Fallback rápido para conexões de celular que bloqueiam JSON direto
-        try {
-          const controller2 = new AbortController();
-          const timeoutId2 = setTimeout(() => controller2.abort(), 1500);
-          const res2 = await fetch(url, { mode: 'no-cors', signal: controller2.signal });
-          clearTimeout(timeoutId2);
-          
-          // Se a porta HTTP respondeu no celular, assume ONLINE
-          marcarConectado(true);
-        } catch(errMobile) {
-          simularDesconectado();
-        }
+        simularDesconectado();
+      } finally {
+        emRequisicao = false;
       }
     }
 
@@ -517,6 +517,37 @@
       } else {
         if (bgSistema) bgSistema.className = "flex items-center gap-1.5 bg-rose-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide transition-colors duration-300";
         if (txtSistema) txtSistema.innerText = "DESCONECTADO";
+      }
+    }
+
+    function processarEstadoTemperatura(temp, tempoForaMinutos = 0) {
+      const valTemp = document.getElementById('val-temperatura');
+      const badgeTemp = document.getElementById('badge-temperatura');
+      const gaugeCircle = document.getElementById('gauge-circle');
+
+      if (!valTemp || !badgeTemp || !gaugeCircle) return;
+
+      const t = parseFloat(temp);
+      valTemp.innerHTML = `${t.toFixed(1)} <span class="text-xs font-bold">°C</span>`;
+
+      // CÁLCULO GAUGE DASHBOARD (Mapeando de -25°C até +10°C)
+      let percent = ((t - (-25)) / (10 - (-25)));
+      percent = Math.max(0, Math.min(1, percent));
+      const dashoffset = 251.2 * (1 - percent);
+      gaugeCircle.style.strokeDashoffset = dashoffset;
+
+      if (t <= -1.0) {
+        badgeTemp.innerText = "NORMAL";
+        badgeTemp.className = "mt-1 bg-emerald-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide";
+        gaugeCircle.style.stroke = "#0284c7";
+      } else if (t > -1.0 && tempoForaMinutos <= 5) {
+        badgeTemp.innerText = "DEGELO / ATENÇÃO";
+        badgeTemp.className = "mt-1 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide";
+        gaugeCircle.style.stroke = "#f59e0b";
+      } else {
+        badgeTemp.innerText = "CRÍTICO / ALARME";
+        badgeTemp.className = "mt-1 bg-rose-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide";
+        gaugeCircle.style.stroke = "#e11d48";
       }
     }
 
@@ -535,12 +566,13 @@
         txtArduino.className = "text-xs font-extrabold text-emerald-600 flex items-center gap-1";
         txtArduino.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ONLINE';
         txtSubArduino.className = "text-[9px] text-emerald-600 font-semibold";
-        txtSubArduino.innerText = `IP: ${IP_ARDUINO}`;
+        txtSubArduino.innerText = `IP: ${IP_PUBLICO}`;
       }
 
       // Card da Rede Elétrica
       if (cardRede && txtRede) {
-        if (data.power) {
+        const pwr = data.redeEletrica === true || data.redeEletrica === "ATIVA" || data.redeEletrica === 1 || data.power === true;
+        if (pwr) {
           cardRede.className = "bg-emerald-50 border border-emerald-200 p-3 rounded-lg flex flex-col justify-between";
           txtRede.className = "mt-2 flex items-center gap-1 text-emerald-600 font-black text-xs";
           txtRede.innerHTML = '<i data-lucide="zap" class="w-3.5 h-3.5 text-emerald-500"></i> ATIVA (REDE)';
@@ -552,15 +584,76 @@
       }
 
       // Card da Temperatura
-      if (data.temp !== undefined && data.temp !== -127) {
-        processarEstadoTemperatura(data.temp, 0);
+      const tempVal = (data.temperatura !== undefined) ? data.temperatura : data.temp;
+      if (tempVal !== undefined && tempVal !== -127) {
+        processarEstadoTemperatura(tempVal, 0);
       } else {
         document.getElementById('val-temperatura').innerHTML = '--,- <span class="text-xs font-bold">°C</span>';
         document.getElementById('badge-temperatura').innerText = "ERRO NO SENSOR";
         document.getElementById('badge-temperatura').className = "mt-1 bg-rose-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide";
       }
 
+      // Status adicionais
+      if (document.getElementById('st-compressor')) document.getElementById('st-compressor').innerHTML = '<span class="text-emerald-600">LIGADO</span>';
+      if (document.getElementById('st-porta')) document.getElementById('st-porta').innerHTML = '<span class="text-emerald-600">FECHADA</span>';
+      if (document.getElementById('st-ventilacao')) document.getElementById('st-ventilacao').innerHTML = '<span class="text-emerald-600">ATIVA</span>';
+      if (document.getElementById('st-alarme')) document.getElementById('st-alarme').innerHTML = '<span class="text-slate-400">INATIVO</span>';
+
       lucide.createIcons();
+    }
+
+    function simularDesconectado() {
+      marcarConectado(false);
+
+      const cardArduino = document.getElementById('card-arduino');
+      const txtArduino = document.getElementById('txt-arduino');
+      const txtSubArduino = document.getElementById('txt-sub-arduino');
+      const cardRede = document.getElementById('card-rede');
+      const txtRede = document.getElementById('txt-rede');
+
+      if (cardArduino && txtArduino && txtSubArduino) {
+        cardArduino.className = "bg-rose-50 border border-rose-200 p-3 rounded-lg flex flex-col justify-between";
+        txtArduino.className = "text-xs font-extrabold text-rose-600 flex items-center gap-1";
+        txtArduino.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> OFFLINE';
+        txtSubArduino.className = "text-[9px] text-rose-400";
+        txtSubArduino.innerText = "Aguardando conexão";
+      }
+
+      if (cardRede && txtRede) {
+        cardRede.className = "bg-slate-50 border border-slate-200 p-3 rounded-lg flex flex-col justify-between";
+        txtRede.className = "mt-2 flex items-center gap-1 text-slate-400 font-black text-xs";
+        txtRede.innerHTML = '<i data-lucide="zap-off" class="w-3.5 h-3.5"></i> INATIVA';
+      }
+
+      document.getElementById('val-temperatura').innerHTML = '--,- <span class="text-xs font-bold">°C</span>';
+      document.getElementById('badge-temperatura').innerText = "AGUARDANDO...";
+      document.getElementById('badge-temperatura').className = "mt-1 bg-slate-400 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide";
+      document.getElementById('gauge-circle').style.strokeDashoffset = 251.2;
+
+      lucide.createIcons();
+    }
+
+    // MODOS E SIMULADOR
+    function toggleModoTeste() {
+      const colGrafico = document.getElementById('coluna-grafico');
+      const painelSimulador = document.getElementById('painel-simulador');
+
+      if (painelSimulador.classList.contains('hidden')) {
+        painelSimulador.classList.remove('hidden');
+        colGrafico.className = "col-span-12 xl:col-span-8 transition-all duration-300";
+      } else {
+        painelSimulador.classList.add('hidden');
+        colGrafico.className = "col-span-12 transition-all duration-300";
+      }
+    }
+
+    function simularTemperatura(temp, tempoForaMinutos = 0) {
+      marcarConectado(true);
+      atualizarInterfaceComDados({ temperatura: temp, redeEletrica: true });
+      processarEstadoTemperatura(temp, tempoForaMinutos);
+      if (document.getElementById('txt-tempo-fora')) {
+        document.getElementById('txt-tempo-fora').innerText = `0${tempoForaMinutos}:00 min`;
+      }
     }
 
     setInterval(buscarDadosArduino, INTERVALO_LEITURA_MS);
@@ -605,179 +698,31 @@
     }
 
     // 7. INICIALIZAÇÃO GRÁFICOS
-    const ctx = document.getElementById('trendChart').getContext('2d');
-    new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: ['22:00', '00:00', '02:00', '04:00', '06:00', '08:00', '10:00'],
-        datasets: [
-          { label: 'Temperatura (°C)', data: [-18, -17.5, -18.2, -17.9, -18.1, -17.6, -18.0], borderColor: '#0284c7', borderWidth: 2, fill: false },
-          { label: 'Limite Mín (-20°C)', data: Array(7).fill(-20), borderColor: '#ef4444', borderDash: [3, 3], borderWidth: 1, pointRadius: 0 },
-          { label: 'Limite Máx (-1°C)', data: Array(7).fill(-1), borderColor: '#ef4444', borderDash: [3, 3], borderWidth: 1, pointRadius: 0 }
-        ]
-      },
-      options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: -25, max: 10 } } }
+    window.addEventListener('DOMContentLoaded', () => {
+      const ctx = document.getElementById('trendChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['22:00', '00:00', '02:00', '04:00', '06:00', '08:00', '10:00'],
+          datasets: [
+            { label: 'Temperatura (°C)', data: [-18, -17.5, -18.2, -17.9, -18.1, -17.6, -18.0], borderColor: '#0284c7', borderWidth: 2, fill: false },
+            { label: 'Limite Mín (-20°C)', data: Array(7).fill(-20), borderColor: '#ef4444', borderDash: [3, 3], borderWidth: 1, pointRadius: 0 },
+            { label: 'Limite Máx (-1°C)', data: Array(7).fill(-1), borderColor: '#ef4444', borderDash: [3, 3], borderWidth: 1, pointRadius: 0 }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: -25, max: 10 } } }
+      });
+
+      const ctxRel = document.getElementById('relatorioChart').getContext('2d');
+      new Chart(ctxRel, {
+        type: 'line',
+        data: {
+          labels: dadosHistorico.map(d => d.hora),
+          datasets: [{ label: 'Temperatura (°C)', data: dadosHistorico.map(d => d.temp), borderColor: '#0284c7', backgroundColor: 'rgba(2, 132, 199, 0.1)', fill: true, tension: 0.3 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: -25, max: 10 } } }
+      });
     });
-
-    const ctxRelatorio = document.getElementById('relatorioChart').getContext('2d');
-    new Chart(ctxRelatorio, {
-      type: 'line',
-      data: {
-        labels: dadosHistorico.map(d => d.hora),
-        datasets: [{ label: 'Histórico (°C)', data: dadosHistorico.map(d => d.temp), borderColor: '#0284c7', backgroundColor: 'rgba(2, 132, 199, 0.1)', borderWidth: 2, fill: true, tension: 0.3 }]
-      },
-      options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: -25, max: 10 } } }
-    });
-
-    // 8. SIMULADOR E PROCESSAMENTO DE FAIXAS
-    function toggleModoTeste() {
-      const painel = document.getElementById('painel-simulador');
-      const colunaGrafico = document.getElementById('coluna-grafico');
-      const btn = document.getElementById('btn-modo-teste');
-
-      if (painel.classList.contains('hidden')) {
-        painel.classList.remove('hidden');
-        colunaGrafico.className = "col-span-12 xl:col-span-8 transition-all duration-300";
-        btn.className = "flex items-center gap-1.5 bg-amber-500 text-white px-3 py-1.5 rounded-md text-xs font-bold transition shadow-sm";
-      } else {
-        painel.classList.add('hidden');
-        colunaGrafico.className = "col-span-12 transition-all duration-300";
-        btn.className = "flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-md text-xs font-bold transition border border-slate-300";
-      }
-    }
-
-    function processarEstadoTemperatura(temp, minutosForaFaixa) {
-      marcarConectado(true);
-
-      const valTemp = document.getElementById('val-temperatura');
-      const badgeTemp = document.getElementById('badge-temperatura');
-      const gaugeCircle = document.getElementById('gauge-circle');
-      const txtTempoFora = document.getElementById('txt-tempo-fora');
-      const txtStatusTempo = document.getElementById('txt-status-tempo');
-      const stCompressor = document.getElementById('st-compressor');
-      const stVentilacao = document.getElementById('st-ventilacao');
-      const stAlarme = document.getElementById('st-alarme');
-
-      if (txtTempoFora) txtTempoFora.innerText = `0${minutosForaFaixa}:00 min`;
-
-      if (temp >= -20 && temp <= -1) {
-        if (valTemp) {
-          valTemp.innerHTML = `${temp.toFixed(1).replace('.', ',')} <span class="text-xs font-bold">°C</span>`;
-          valTemp.className = "text-xl font-black text-slate-800 leading-none";
-        }
-        if (badgeTemp) {
-          badgeTemp.className = "mt-1 bg-emerald-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide";
-          badgeTemp.innerText = "PROCESSO NORMAL";
-        }
-        if (gaugeCircle) {
-          gaugeCircle.style.stroke = "#0284c7";
-          gaugeCircle.style.strokeDashoffset = "75";
-        }
-        if (txtStatusTempo) {
-          txtStatusTempo.innerText = "Faixa Normal OK";
-          txtStatusTempo.className = "text-[10px] text-emerald-600 font-semibold";
-        }
-        if (stCompressor) {
-          stCompressor.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> LIGADO';
-          stCompressor.className = "text-[11px] font-black text-emerald-600 flex items-center gap-1";
-        }
-        if (stVentilacao) {
-          stVentilacao.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> NORMAL';
-          stVentilacao.className = "text-[11px] font-black text-emerald-600 flex items-center gap-1";
-        }
-        if (stAlarme) {
-          stAlarme.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span> NENHUM';
-          stAlarme.className = "text-[11px] font-black text-slate-400 flex items-center gap-1";
-        }
-      } else if (minutosForaFaixa <= 5) {
-        if (valTemp) {
-          valTemp.innerHTML = `${temp.toFixed(1).replace('.', ',')} <span class="text-xs font-bold">°C</span>`;
-          valTemp.className = "text-xl font-black text-amber-600 leading-none";
-        }
-        if (badgeTemp) {
-          badgeTemp.className = "mt-1 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide";
-          badgeTemp.innerText = "PROCESSO DE DEGELO";
-        }
-        if (gaugeCircle) {
-          gaugeCircle.style.stroke = "#f59e0b";
-          gaugeCircle.style.strokeDashoffset = "40";
-        }
-        if (txtStatusTempo) {
-          txtStatusTempo.innerText = `Tolerância: ${5 - minutosForaFaixa} min restantes`;
-          txtStatusTempo.className = "text-[10px] text-amber-600 font-bold";
-        }
-        if (stCompressor) {
-          stCompressor.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> DEGELO ATIVO';
-          stCompressor.className = "text-[11px] font-black text-amber-600 flex items-center gap-1";
-        }
-        if (stVentilacao) {
-          stVentilacao.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> PAUSADO';
-          stVentilacao.className = "text-[11px] font-black text-amber-600 flex items-center gap-1";
-        }
-        if (stAlarme) {
-          stAlarme.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> ATENÇÃO TEMPO';
-          stAlarme.className = "text-[11px] font-black text-amber-600 flex items-center gap-1";
-        }
-      } else {
-        if (valTemp) {
-          valTemp.innerHTML = `${temp.toFixed(1).replace('.', ',')} <span class="text-xs font-bold">°C</span>`;
-          valTemp.className = "text-xl font-black text-rose-600 leading-none";
-        }
-        if (badgeTemp) {
-          badgeTemp.className = "mt-1 bg-rose-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide animate-bounce";
-          badgeTemp.innerText = "FALHA DE TEMPERATURA";
-        }
-        if (gaugeCircle) {
-          gaugeCircle.style.stroke = "#e11d48";
-          gaugeCircle.style.strokeDashoffset = "10";
-        }
-        if (txtStatusTempo) {
-          txtStatusTempo.innerText = "EXCEDEU 5 MINUTOS!";
-          txtStatusTempo.className = "text-[10px] text-rose-600 font-black";
-        }
-        if (stCompressor) {
-          stCompressor.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> ERRO DE REFRIG.';
-          stCompressor.className = "text-[11px] font-black text-rose-600 flex items-center gap-1";
-        }
-        if (stVentilacao) {
-          stVentilacao.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> VERIFICAR';
-          stVentilacao.className = "text-[11px] font-black text-rose-600 flex items-center gap-1";
-        }
-        if (stAlarme) {
-          stAlarme.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-600 animate-ping"></span> ALARME FALHA CRÍTICA';
-          stAlarme.className = "text-[11px] font-black text-rose-600 flex items-center gap-1";
-        }
-      }
-
-      lucide.createIcons();
-    }
-
-    function simularTemperatura(temp, minutos) { processarEstadoTemperatura(temp, minutos); }
-    
-    function simularDesconectado() {
-      marcarConectado(false);
-
-      const cardArduino = document.getElementById('card-arduino');
-      const txtArduino = document.getElementById('txt-arduino');
-      const txtSubArduino = document.getElementById('txt-sub-arduino');
-
-      if (cardArduino && txtArduino && txtSubArduino) {
-        cardArduino.className = "bg-rose-50 border border-rose-200 p-3 rounded-lg flex flex-col justify-between";
-        txtArduino.className = "text-xs font-extrabold text-rose-600 flex items-center gap-1";
-        txtArduino.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> OFFLINE';
-        txtSubArduino.className = "text-[9px] text-rose-400";
-        txtSubArduino.innerText = "Aguardando conexão";
-      }
-
-      document.getElementById('val-temperatura').innerHTML = '--,- <span class="text-xs font-bold">°C</span>';
-      document.getElementById('badge-temperatura').innerText = "SEM LEITURA";
-      document.getElementById('badge-temperatura').className = "mt-1 bg-slate-400 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide";
-      document.getElementById('gauge-circle').style.stroke = "#94a3b8";
-      document.getElementById('gauge-circle').style.strokeDashoffset = "251.2";
-      document.getElementById('txt-tempo-fora').innerText = "00:00 min";
-      document.getElementById('txt-status-tempo').innerText = "Sem sinal do sensor";
-      lucide.createIcons();
-    }
   </script>
 </body>
 </html>
