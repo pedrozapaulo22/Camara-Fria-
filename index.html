@@ -3,224 +3,426 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Supervisório - Câmara Fria</title>
+  <title>REI DO GELO - Monitoramento da Câmara Fria</title>
   
-  <!-- Bibliotecas de Gráficos e Odômetro -->
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js para o gráfico de linhas -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/justgage/1.4.0/justgage.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
-    body { 
-      font-family: Arial, sans-serif; 
-      background-color: #121212; 
-      color: #ffffff; 
-      margin: 0; 
-      padding: 20px; 
-    }
-    h1 { 
-      text-align: center; 
-      color: #00bcd4; 
-      margin-bottom: 25px; 
-    }
-    .grid { 
-      display: grid; 
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-      gap: 20px; 
-      margin-bottom: 25px; 
-    }
-    .card { 
-      background-color: #1e1e1e; 
-      padding: 20px; 
-      border-radius: 12px; 
-      text-align: center; 
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
-      display: flex; 
-      flex-direction: column; 
-      justify-content: center; 
-      align-items: center; 
-    }
-    .card h3 { 
-      margin: 0 0 10px 0; 
-      font-size: 14px; 
-      color: #aaa; 
-      letter-spacing: 1px; 
-    }
-    .value { 
-      font-size: 26px; 
-      font-weight: bold; 
-      margin-top: 10px; 
-    }
-    .status-ok { color: #4caf50; }
-    .status-alert { 
-      color: #f44336; 
-      animation: blink 1s infinite; 
-    }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
     
-    .btn-download {
-      background-color: #00bcd4;
-      color: #121212;
-      border: none;
-      padding: 12px 20px;
-      font-size: 15px;
-      font-weight: bold;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: 0.3s;
-      text-decoration: none;
-      display: inline-block;
-      margin-top: 10px;
+    .gauge-bg { fill: none; stroke: #e2e8f0; stroke-width: 10; }
+    .gauge-progress {
+      fill: none;
+      stroke: #0284c7;
+      stroke-width: 10;
+      stroke-linecap: round;
+      stroke-dasharray: 251.2;
+      stroke-dashoffset: 60;
+      transition: stroke-dashoffset 0.5s ease, stroke 0.3s ease;
     }
-    .btn-download:hover { 
-      background-color: #008ba3; 
-      color: #fff; 
-    }
-
-    .chart-container { 
-      background-color: #1e1e1e; 
-      padding: 20px; 
-      border-radius: 12px; 
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    }
-    #gaugeTemp { width: 250px; height: 170px; }
-
-    @keyframes blink { 50% { opacity: 0.3; } }
   </style>
 </head>
-<body>
+<body class="flex h-screen overflow-hidden text-slate-700">
 
-  <h1>Monitoramento de Câmara Fria</h1>
+  <!-- SIDEBAR -->
+  <aside class="w-64 bg-[#0b192c] text-white flex flex-col justify-between p-4 shrink-0 hidden md:flex">
+    <div>
+      <div class="flex items-center gap-3 px-2 py-4 border-b border-slate-800 mb-6">
+        <div class="bg-gradient-to-br from-cyan-400 to-blue-600 p-2 rounded-lg text-white">
+          <i data-lucide="snowflake" class="w-7 h-7"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg tracking-wider leading-none">REI DO GELO</h1>
+          <span class="text-[10px] text-cyan-400 uppercase tracking-widest">Sistemas de Refrigeração</span>
+        </div>
+      </div>
 
-  <div class="grid">
-    <!-- Card 1: Odômetro de Temperatura -->
-    <div class="card">
-      <h3>TEMPERATURA ATUAL</h3>
-      <div id="gaugeTemp"></div>
+      <nav class="space-y-1">
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 bg-blue-600/30 text-cyan-400 font-medium rounded-lg border-l-4 border-cyan-400 text-sm">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-lg text-sm transition">
+          <i data-lucide="thermometer" class="w-4 h-4"></i> Temperatura
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-lg text-sm transition">
+          <i data-lucide="trending-up" class="w-4 h-4"></i> Trend
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-lg text-sm transition">
+          <i data-lucide="bell" class="w-4 h-4"></i> Alarmes
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-lg text-sm transition">
+          <i data-lucide="file-text" class="w-4 h-4"></i> Relatórios
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-lg text-sm transition">
+          <i data-lucide="zap" class="w-4 h-4"></i> Energia
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-lg text-sm transition">
+          <i data-lucide="settings" class="w-4 h-4"></i> Configurações
+        </a>
+      </nav>
     </div>
 
-    <!-- Card 2: Status da Rede Elétrica -->
-    <div class="card">
-      <h3>REDE ELÉTRICA</h3>
-      <div id="power" class="value">Conectando...</div>
+    <div class="bg-slate-900/80 rounded-xl p-4 border border-slate-800">
+      <div class="flex items-center gap-2 text-cyan-400 text-xs font-semibold mb-1">
+        <i data-lucide="shield-check" class="w-4 h-4"></i> CONTROLE E SEGURANÇA
+      </div>
+      <p class="text-[11px] text-slate-400">Monitoramento contínuo para o seu produto congelado.</p>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+
+    <!-- HEADER SUPERIOR -->
+    <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm gap-4">
+      <div class="flex items-center gap-3">
+        <span class="text-xl font-bold text-slate-800">REI DO GELO</span>
+        <span class="text-slate-300">|</span>
+        <span class="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider">Monitoramento da Câmara Fria</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="flex items-center gap-2 bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-xs font-semibold border border-emerald-200">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> ONLINE
+        </span>
+        <span id="dataHoraHeader" class="text-xs font-medium text-slate-500">--/--/---- --:--:--</span>
+      </div>
+    </header>
+
+    <!-- PRIMEIRA LINHA DA DASHBOARD -->
+    <div class="grid grid-cols-12 gap-6">
+
+      <!-- CARD 1: TEMPERATURA ATUAL -->
+      <div class="col-span-12 lg:col-span-5 bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Temperatura Atual</h3>
+        
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <!-- GAUGE DE TEMPERATURA -->
+          <div class="relative w-44 h-44 flex items-center justify-center shrink-0">
+            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+              <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
+              <circle id="gaugeProgress" class="gauge-progress" cx="50" cy="50" r="40"></circle>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+              <i data-lucide="thermometer" class="w-5 h-5 text-cyan-600 mb-1"></i>
+              <span id="tempAtual" class="text-2xl font-extrabold text-slate-800">-18,6 °C</span>
+              <div class="mt-1">
+                <span id="statusFaixa" class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">DENTRO DA FAIXA</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Limites e Faixa de Operação -->
+          <div class="space-y-3 w-full sm:w-auto">
+            <div class="flex items-center gap-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+              <div class="p-2 bg-cyan-100 text-cyan-700 rounded-lg"><i data-lucide="snowflake" class="w-4 h-4"></i></div>
+              <div>
+                <p class="text-[10px] text-slate-400 uppercase font-semibold">Temperatura Mínima</p>
+                <p class="text-sm font-bold text-slate-700">-2 °C</p>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100 opacity-60">
+              <div class="p-2 bg-slate-200 text-slate-500 rounded-lg"><i data-lucide="alert-triangle" class="w-4 h-4"></i></div>
+              <div>
+                <p class="text-[10px] text-slate-400 uppercase font-semibold">Temperatura Máxima</p>
+                <p class="text-sm font-bold text-slate-500">Inibido (-)</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+              <div class="p-2 bg-slate-200 text-slate-700 rounded-lg"><i data-lucide="sliders" class="w-4 h-4"></i></div>
+              <div>
+                <p class="text-[10px] text-slate-400 uppercase font-semibold">Alarme Ativo Em</p>
+                <p class="text-sm font-bold text-slate-700">&le; -2 °C</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARDS DE STATUS DA REDE E HARDWARE -->
+      <div class="col-span-12 lg:col-span-7 grid grid-cols-2 sm:grid-cols-4 gap-4">
+        
+        <!-- Rede Elétrica -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div class="flex justify-between items-center text-emerald-600">
+            <i data-lucide="zap" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase text-slate-400">Rede</span>
+          </div>
+          <div class="mt-3">
+            <span class="text-base font-bold text-emerald-600 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> ATIVA
+            </span>
+            <p class="text-[10px] text-slate-400 mt-0.5">Alimentação OK</p>
+          </div>
+        </div>
+
+        <!-- Power Bank -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div class="flex justify-between items-center text-blue-600">
+            <i data-lucide="battery-charging" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase text-slate-400">Bateria</span>
+          </div>
+          <div class="mt-3">
+            <span class="text-base font-bold text-slate-800">87%</span>
+            <p class="text-[10px] text-slate-400 mt-0.5">Autonomia: ~12h</p>
+          </div>
+        </div>
+
+        <!-- ÚLTIMA LEITURA -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div class="flex justify-between items-center text-slate-600">
+            <i data-lucide="clock" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase text-slate-400">Leitura</span>
+          </div>
+          <div class="mt-3">
+            <span id="horaUltimaLeitura" class="text-base font-bold text-slate-800">--:--:--</span>
+            <p id="dataUltimaLeitura" class="text-[10px] text-slate-400 mt-0.5">--/--/----</p>
+          </div>
+        </div>
+
+        <!-- ARDUINO UNO -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div class="flex justify-between items-center text-cyan-600">
+            <i data-lucide="cpu" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase text-slate-400">Arduino</span>
+          </div>
+          <div class="mt-3">
+            <span class="text-base font-bold text-emerald-600 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> ONLINE
+            </span>
+            <p class="text-[10px] text-slate-400 mt-0.5">DS18B20 Ativo</p>
+          </div>
+        </div>
+
+        <!-- STATUS DOS EQUIPAMENTOS -->
+        <div class="col-span-2 sm:col-span-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Status dos Equipamentos</h4>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+            
+            <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+              <i data-lucide="box" class="w-4 h-4 mx-auto text-slate-400 mb-1"></i>
+              <p class="text-[10px] text-slate-400 font-semibold">Compressor</p>
+              <span class="text-xs font-bold text-slate-400">-</span>
+            </div>
+
+            <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+              <i data-lucide="door-closed" class="w-4 h-4 mx-auto text-slate-400 mb-1"></i>
+              <p class="text-[10px] text-slate-400 font-semibold">Porta</p>
+              <span class="text-xs font-bold text-slate-400">-</span>
+            </div>
+
+            <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+              <i data-lucide="fan" class="w-4 h-4 mx-auto text-slate-400 mb-1"></i>
+              <p class="text-[10px] text-slate-400 font-semibold">Ventilação</p>
+              <span class="text-xs font-bold text-slate-400">-</span>
+            </div>
+
+            <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+              <i data-lucide="bell" class="w-4 h-4 mx-auto text-slate-600 mb-1"></i>
+              <p class="text-[10px] text-slate-400 font-semibold">Alarme</p>
+              <span id="statusAlarmeTxt" class="text-xs font-bold text-slate-400">NENHUM</span>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
     </div>
 
-    <!-- Card 3: Download de Relatórios -->
-    <div class="card">
-      <h3>RELATÓRIOS SD</h3>
-      <p style="color: #aaa; font-size: 13px;">Baixe as medições armazenadas no Cartão SD.</p>
-      <button class="btn-download" onclick="baixarRelatorio()">Baixar Relatório (CSV)</button>
+    <!-- SEGUNDA LINHA: GRÁFICO + AMOSTRAGEM E RELATÓRIO -->
+    <div class="grid grid-cols-12 gap-6">
+      
+      <!-- GRÁFICO TREND DE TEMPERATURA -->
+      <div class="col-span-12 lg:col-span-8 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+            <i data-lucide="trending-up" class="w-4 h-4 text-cyan-600"></i> Trend de Temperatura (Histórico)
+          </h3>
+          <span class="text-xs text-slate-400 font-medium">Últimas 24 horas</span>
+        </div>
+        <div class="h-64 relative">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+
+      <!-- PAINEL DIREITO: AMOSTRAGEM & RELATÓRIOS -->
+      <div class="col-span-12 lg:col-span-4 space-y-6">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+            <i data-lucide="clock" class="w-4 h-4 text-slate-600"></i> Configuração de Coleta
+          </h3>
+          <div class="flex justify-between items-center pt-2">
+            <div>
+              <p class="text-[10px] text-slate-400">Intervalo de leitura</p>
+              <p class="text-lg font-bold text-slate-700">10 s</p>
+            </div>
+            <div class="text-right">
+              <p class="text-[10px] text-slate-400">Leituras por hora</p>
+              <p class="text-lg font-bold text-slate-700">360</p>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-500 bg-slate-50 p-2.5 rounded border border-slate-100 flex items-center gap-2">
+            <i data-lucide="cpu" class="w-4 h-4 text-cyan-600 shrink-0"></i> Coleta ativa via pino digital D2 (Arduino).
+          </p>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+            <i data-lucide="file-text" class="w-4 h-4 text-slate-600"></i> Exportar Dados
+          </h3>
+          <button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition shadow-sm">
+            <i data-lucide="download" class="w-4 h-4"></i> GERAR RELATÓRIO PDF
+          </button>
+          <button class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> EXPORTAR PARA CSV
+          </button>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <!-- Gráfico de Tendência -->
-  <div class="chart-container">
-    <canvas id="tempChart" height="90"></canvas>
-  </div>
+    <!-- TERCEIRA LINHA: HISTÓRICO DE EVENTOS -->
+    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+          <i data-lucide="history" class="w-4 h-4 text-slate-600"></i> Histórico de Registros
+        </h3>
+        <div class="flex gap-2">
+          <select class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-slate-600 outline-none">
+            <option>Todos os eventos</option>
+          </select>
+          <select class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-slate-600 outline-none">
+            <option>Últimas 24 horas</option>
+          </select>
+        </div>
+      </div>
 
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr class="text-slate-400 border-b border-slate-100">
+              <th class="pb-3 font-semibold">Data / Hora</th>
+              <th class="pb-3 font-semibold">Evento</th>
+              <th class="pb-3 font-semibold">Valor Registrado</th>
+              <th class="pb-3 font-semibold text-right">Status do Sistema</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-slate-600">
+            <tr>
+              <td class="py-2.5 font-medium">10/09/2026 09:15</td>
+              <td class="py-2.5 flex items-center gap-2"><i data-lucide="thermometer" class="w-3.5 h-3.5 text-cyan-600"></i> Leitura DS18B20</td>
+              <td class="py-2.5 font-semibold">-18.6 °C</td>
+              <td class="py-2.5 text-right"><span class="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full text-[10px] font-bold">Normal</span></td>
+            </tr>
+            <tr>
+              <td class="py-2.5 font-medium">10/09/2026 08:42</td>
+              <td class="py-2.5 flex items-center gap-2"><i data-lucide="zap" class="w-3.5 h-3.5 text-emerald-600"></i> Alimentação AC</td>
+              <td class="py-2.5 font-semibold">Rede Ativa (220V)</td>
+              <td class="py-2.5 text-right"><span class="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full text-[10px] font-bold">Normal</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- JAVASCRIPT -->
   <script>
-    // =========================================================================
-    // CONFIGURAÇÃO DO ENDEREÇO EXTERNO (DDNS OU IP PÚBLICO + PORTA DO ROTEADOR)
-    // Altere o link abaixo para o seu endereço do No-IP / DuckDNS:
-    // =========================================================================
-    const ENDERECO_ARDUINO = "http://minhacamarafria.ddns.net:8080"; 
+    // Inicialização dos ícones Lucide
+    lucide.createIcons();
 
-    // Ajuste automático para contornar restrições de HTTPS no GitHub Pages
-    const ARDUINO_URL = window.location.protocol === "https:" 
-      ? "https://corsproxy.io/?" + encodeURIComponent(ENDERECO_ARDUINO)
-      : ENDERECO_ARDUINO;
+    // 1. Relógio em tempo real
+    function atualizarRelogio() {
+      const agora = new Date();
+      const dataStr = agora.toLocaleDateString('pt-BR');
+      const horaStr = agora.toLocaleTimeString('pt-BR');
+      
+      document.getElementById('dataHoraHeader').innerText = `${dataStr} ${horaStr}`;
+      document.getElementById('horaUltimaLeitura').innerText = horaStr;
+      document.getElementById('dataUltimaLeitura').innerText = dataStr;
+    }
+    setInterval(atualizarRelogio, 1000);
+    atualizarRelogio();
 
-    // 1. ODÔMETRO (GAUGE)
-    const gauge = new JustGage({
-      id: "gaugeTemp",
-      value: -20, min: -25, max: 10, label: "°C",
-      pointer: true,
-      pointerOptions: { toplength: -15, bottomlength: 10, bottomwidth: 12, color: '#ffffff' },
-      gaugeWidthScale: 0.6, counter: true, decimals: 1,
-      valueFontColor: "#ffffff", labelFontColor: "#aaaaaa",
-      customSectors: {
-        percents: false,
-        ranges: [
-          { from: -25, to: -3.9, color: "#4caf50" }, // Verde (-20 a -4°C)
-          { from: -3.9, to: 0.9, color: "#ffeb3b" },  // Amarelo (-3 a 0°C)
-          { from: 0.9, to: 10, color: "#f44336" }     // Vermelho (> 1°C)
-        ]
-      }
-    });
-
-    // 2. GRÁFICO HISTÓRICO
-    const ctx = document.getElementById('tempChart').getContext('2d');
-    const chart = new Chart(ctx, {
+    // 2. Gráfico Trend com Escala focada em Operação de Refrigeração (-15°C a -20°C)
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    const trendChart = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: [],
-        datasets: [{
-          label: 'Temperatura (°C)',
-          borderColor: '#00bcd4',
-          backgroundColor: 'rgba(0, 188, 212, 0.15)',
-          data: [], fill: true, tension: 0.3, borderWidth: 2
-        }]
+        labels: ['00:00', '02:00', '04:00', '06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'],
+        datasets: [
+          {
+            label: 'Temperatura (°C)',
+            data: [-18.2, -18.5, -18.8, -18.4, -18.1, -18.6, -18.3, -18.7, -18.5, -18.2, -18.6, -18.4],
+            borderColor: '#0284c7',
+            backgroundColor: 'rgba(2, 132, 199, 0.08)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.35,
+            pointRadius: 3
+          },
+          {
+            label: 'Alarme Mínima (-2 °C)',
+            data: Array(12).fill(-2),
+            borderColor: '#ef4444',
+            borderDash: [5, 5],
+            borderWidth: 1.5,
+            pointRadius: 0
+          }
+        ]
       },
       options: {
         responsive: true,
-        scales: {
-          x: { ticks: { color: '#888' }, grid: { color: '#333' } },
-          y: { ticks: { color: '#888' }, grid: { color: '#333' } }
+        maintainAspectRatio: false,
+        plugins: { 
+          legend: { display: false } 
         },
-        plugins: {
-          legend: { labels: { color: '#ccc' } }
+        scales: {
+          y: {
+            min: -25,
+            max: 0,
+            grid: { color: '#f1f5f9' },
+            ticks: {
+              callback: function(value) { return value + ' °C'; }
+            }
+          },
+          x: { grid: { display: false } }
         }
       }
     });
 
-    // 3. LEITURA DE DADOS EM TEMPO REAL
-    async function fetchData() {
-      try {
-        const response = await fetch(ARDUINO_URL, { signal: AbortSignal.timeout(4000) });
-        const data = await response.json();
+    // 3. Simulação com verificação do Alarme de Mínima (atingir <= -2 °C)
+    let tempBase = -18.6;
+    setInterval(() => {
+      const oscilacao = (Math.random() * 0.4 - 0.2).toFixed(1);
+      tempBase = parseFloat((tempBase + parseFloat(oscilacao)).toFixed(1));
+      
+      const elTemp = document.getElementById('tempAtual');
+      const elStatus = document.getElementById('statusFaixa');
+      const elAlarme = document.getElementById('statusAlarmeTxt');
 
-        // Atualiza Odômetro
-        gauge.refresh(data.temp);
+      elTemp.innerText = `${tempBase.toString().replace('.', ',')} °C`;
 
-        // Atualiza Status da Rede Elétrica
-        const powerElem = document.getElementById('power');
-        if (data.power) {
-          powerElem.innerText = "ENERGIA NORMAL";
-          powerElem.className = "value status-ok";
-        } else {
-          powerElem.innerText = "QUEDA (NA BATERIA)";
-          powerElem.className = "value status-alert";
-        }
-
-        // Atualiza Gráfico
-        const now = new Date().toLocaleTimeString();
-        if (chart.data.labels.length > 30) {
-          chart.data.labels.shift();
-          chart.data.datasets[0].data.shift();
-        }
-        chart.data.labels.push(now);
-        chart.data.datasets[0].data.push(data.temp);
-        chart.update();
-
-      } catch (err) {
-        console.error("Erro ao comunicar com o Arduino:", err);
-        const powerElem = document.getElementById('power');
-        powerElem.innerText = "Sem Conexão";
-        powerElem.className = "value";
+      if (tempBase >= -2.0) { 
+        // Se a temperatura SUBIR até -2°C ou mais (Atenção/Alarme de Mínimo Frio)
+        elStatus.innerText = "ALERTA: TEMPERATURA ALTA";
+        elStatus.className = "bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-full";
+        elAlarme.innerText = "CRÍTICO (>= -2 °C)";
+        elAlarme.className = "text-xs font-bold text-red-600 animate-pulse";
+      } else {
+        elStatus.innerText = "DENTRO DA FAIXA";
+        elStatus.className = "bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full";
+        elAlarme.innerText = "NENHUM";
+        elAlarme.className = "text-xs font-bold text-slate-400";
       }
-    }
-
-    // 4. DOWNLOAD DO ARQUIVO CSV
-    function baixarRelatorio() {
-      const downloadUrl = window.location.protocol === "https:"
-        ? "https://corsproxy.io/?" + encodeURIComponent(`${ENDERECO_ARDUINO}/download`)
-        : `${ENDERECO_ARDUINO}/download`;
-        
-      window.open(downloadUrl, '_blank');
-    }
-
-    // Atualiza os dados a cada 3 segundos
-    setInterval(fetchData, 3000);
-    fetchData();
+    }, 5000);
   </script>
 </body>
 </html>
