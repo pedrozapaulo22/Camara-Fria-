@@ -6,7 +6,6 @@
   <title>REI DO GELO - Monitoramento da Câmara Fria</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Bibliotecas para geração do PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
   <style>
@@ -105,10 +104,11 @@
               <span class="text-[8px] opacity-0">.</span>
             </div>
 
+            <!-- CARD DE BATERIA (ATUALIZADO CONFORME SOLICITADO) -->
             <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
               <span class="text-[9px] font-bold text-slate-400 uppercase">BATERIA</span>
-              <div class="my-1 font-black text-sm text-slate-700">-- %</div>
-              <span class="text-[8px] text-slate-400">Sem dados</span>
+              <div id="val-bateria" class="my-1 font-black text-sm text-slate-700">-- %</div>
+              <span id="sub-bateria" class="text-[8px] text-slate-400">Sem dados</span>
             </div>
 
             <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
@@ -160,7 +160,7 @@
       </div>
     </div>
 
-    <!-- ABA 2: TEMPERATURA (PERÍODO, CSV E PDF) -->
+    <!-- ABA 2: TEMPERATURA -->
     <div id="aba-temperatura" class="hidden space-y-5">
       <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
         <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">FILTRO DE PERÍODO E EXPORTAÇÃO DE RELATÓRIOS</h3>
@@ -191,7 +191,7 @@
       </div>
     </div>
 
-    <!-- ABA 3: ALARMES (HISTÓRICO COM PERÍODO) -->
+    <!-- ABA 3: ALARMES -->
     <div id="aba-alarmes" class="hidden space-y-5">
       <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
         <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">HISTÓRICO DE ALARMES - FILTRO POR PERÍODO</h3>
@@ -219,13 +219,12 @@
             </tr>
           </thead>
           <tbody id="tabela-alarmes" class="divide-y">
-            <!-- Gerado via JavaScript -->
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- ABA 4: CONFIGURAÇÕES (SEM ATRIBUIÇÃO) -->
+    <!-- ABA 4: CONFIGURAÇÕES -->
     <div id="aba-configuracoes" class="hidden bg-white p-6 rounded-xl border border-slate-200/80 shadow-sm">
       <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">CONFIGURAÇÕES DO SISTEMA</h3>
       <p class="text-xs text-slate-400">Nenhuma atribuição configurada no momento.</p>
@@ -257,7 +256,6 @@
     let chartTemp = null;
     let chartPeriodo = null;
 
-    // Memória local para armazenamento dos registros e alarmes
     let historicoLeituras = [];
     let listaAlarmes = [
       { data: "13/09/2026 10:15", evento: "Falha no Sensor DS18B20 (-127 °C)", nivel: "CRÍTICO", status: "Resolvido" },
@@ -357,17 +355,32 @@
           const temp = parseFloat(data.temp);
           tratarTemperaturaESensor(temp);
 
-          // Status de Energia
+          // Status da Rede Elétrica e Bateria
           const statusRede = document.getElementById('status-rede');
+          const valBateria = document.getElementById('val-bateria');
+          const subBateria = document.getElementById('sub-bateria');
+
           if (data.power) {
             statusRede.innerText = "ATIVA";
             statusRede.className = "my-2 font-black text-xs text-emerald-600";
+            
+            // Com sinal de rede: 100%
+            valBateria.innerText = "100 %";
+            valBateria.className = "my-1 font-black text-sm text-emerald-600";
+            subBateria.innerText = "Carregada";
+            subBateria.className = "text-[8px] text-emerald-600 font-bold";
           } else {
             statusRede.innerText = "INATIVA";
             statusRede.className = "my-2 font-black text-xs text-rose-600";
+            
+            // Sem sinal de rede: Bateria Operando
+            valBateria.innerText = "OPERANDO";
+            valBateria.className = "my-1 font-black text-xs text-amber-500 animate-pulse";
+            subBateria.innerText = "Em uso";
+            subBateria.className = "text-[8px] text-amber-600 font-bold";
           }
 
-          // Atualização de histórico
+          // Atualização do histórico e gráfico
           const agora = new Date().toLocaleTimeString('pt-BR');
           const dataHoraFull = new Date().toLocaleString('pt-BR');
           
@@ -395,7 +408,6 @@
       const elBadge = document.getElementById('badge-sensor-status');
       const gauge = document.getElementById('gauge-circle');
 
-      // Exibe fundo de escala se houver falha de leitura
       elVal.innerText = `${temp.toFixed(1)} °C`;
 
       if (temp <= -127.0 || temp >= 85.0) {
