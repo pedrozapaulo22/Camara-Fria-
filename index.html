@@ -255,18 +255,18 @@
       alert('Endereço do Arduino atualizado!');
     }
 
-    async function alternarModoTeste() {
-      try {
-        await fetch(`${urlArduino}/api/teste`, { mode: 'no-cors' });
-        modoTesteAtivo = !modoTesteAtivo;
-        atualizarBtnTeste(modoTesteAtivo);
-      } catch(e) {
-        modoTesteAtivo = !modoTesteAtivo;
-        atualizarBtnTeste(modoTesteAtivo);
-      }
+    function alternarModoTeste() {
+      const scriptAntigo = document.getElementById('jsonp-teste-script');
+      if (scriptAntigo) scriptAntigo.remove();
+
+      const script = document.createElement('script');
+      script.id = 'jsonp-teste-script';
+      script.src = `${urlArduino}/api/teste?timestamp=${new Date().getTime()}`;
+      document.body.appendChild(script);
     }
 
     function atualizarBtnTeste(ativo) {
+      modoTesteAtivo = ativo;
       const btn = document.getElementById('btn-teste');
       btn.innerText = ativo ? "Modo Teste: ON" : "Modo Teste: OFF";
       btn.className = ativo ? "px-4 py-1.5 bg-amber-500 text-white font-bold rounded-lg shadow-sm" : "px-4 py-1.5 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors";
@@ -302,77 +302,78 @@
       }
     }
 
-    async function buscarDados() {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2500);
+    // CONEXÃO COM O ARDUINO VIA JSONP
+    function buscarDados() {
+      const scriptAntigo = document.getElementById('jsonp-script');
+      if (scriptAntigo) scriptAntigo.remove();
 
-        const res = await fetch(`${urlArduino}/api/dados`, { signal: controller.signal });
-        clearTimeout(timeoutId);
+      const script = document.createElement('script');
+      script.id = 'jsonp-script';
+      script.src = `${urlArduino}/api/dados?timestamp=${new Date().getTime()}`;
 
-        if (res.ok) {
-          const data = await res.json();
-          
-          document.getElementById('badge-sistema').className = "bg-emerald-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5";
-          document.getElementById('badge-sistema').innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> CONECTADO`;
-
-          document.getElementById('txt-arduino').className = "my-1 font-black text-xs text-emerald-600 flex items-center justify-center gap-1";
-          document.getElementById('txt-arduino').innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> ONLINE`;
-
-          const temp = parseFloat(data.temp);
-          document.getElementById('val-temperatura').innerText = `${temp.toFixed(1)} °C`;
-
-          if (data.modoTeste !== undefined) {
-            atualizarBtnTeste(data.modoTeste);
-          }
-
-          // Alarme Visual na Tela
-          const tagStatus = document.getElementById('tag-status');
-          if (temp > limiteMax || temp < limiteMin) {
-            tagStatus.className = "bg-rose-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-bounce";
-            tagStatus.innerText = "FORA DA FAIXA";
-          } else {
-            tagStatus.className = "bg-blue-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase mt-1";
-            tagStatus.innerText = "OK";
-          }
-
-          // Histórico para Métricas
-          historicoTemp.push(temp);
-          if (historicoTemp.length > 50) historicoTemp.shift();
-          
-          document.getElementById('temp-min').innerText = `${Math.min(...historicoTemp).toFixed(1)} °C`;
-          document.getElementById('temp-max').innerText = `${Math.max(...historicoTemp).toFixed(1)} °C`;
-          document.getElementById('temp-med').innerText = `${(historicoTemp.reduce((a, b) => a + b, 0) / historicoTemp.length).toFixed(1)} °C`;
-
-          const gauge = document.getElementById('gauge-circle');
-          let pct = Math.max(0, Math.min(1, (temp - (-30)) / 40));
-          gauge.style.strokeDashoffset = 251.2 * (1 - pct);
-
-          const statusRede = document.getElementById('status-rede');
-          if (data.power) {
-            statusRede.innerText = "ATIVA";
-            statusRede.className = "my-2 font-black text-xs text-emerald-600";
-          } else {
-            statusRede.innerText = "INATIVA";
-            statusRede.className = "my-2 font-black text-xs text-rose-600";
-          }
-
-          const agora = new Date().toLocaleTimeString();
-          if (chartTemp) {
-            if (chartTemp.data.labels.length > 20) {
-              chartTemp.data.labels.shift();
-              chartTemp.data.datasets[0].data.shift();
-            }
-            chartTemp.data.labels.push(agora);
-            chartTemp.data.datasets[0].data.push(temp);
-            chartTemp.update();
-          }
-        }
-      } catch (e) {
+      script.onerror = () => {
         document.getElementById('badge-sistema').className = "bg-rose-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5";
         document.getElementById('badge-sistema').innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> DESCONECTADO`;
         document.getElementById('txt-arduino').className = "my-1 font-black text-xs text-rose-600 flex items-center justify-center gap-1";
         document.getElementById('txt-arduino').innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> OFFLINE`;
+      };
+
+      document.body.appendChild(script);
+    }
+
+    // CALLBACK DISPARADO PELO ARDUINO
+    function processarDadosArduino(data) {
+      document.getElementById('badge-sistema').className = "bg-emerald-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5";
+      document.getElementById('badge-sistema').innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> CONECTADO`;
+
+      document.getElementById('txt-arduino').className = "my-1 font-black text-xs text-emerald-600 flex items-center justify-center gap-1";
+      document.getElementById('txt-arduino').innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> ONLINE`;
+
+      const temp = parseFloat(data.temp);
+      document.getElementById('val-temperatura').innerText = `${temp.toFixed(1)} °C`;
+
+      if (data.modoTeste !== undefined) {
+        atualizarBtnTeste(data.modoTeste);
+      }
+
+      const tagStatus = document.getElementById('tag-status');
+      if (temp > limiteMax || temp < limiteMin) {
+        tagStatus.className = "bg-rose-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-bounce";
+        tagStatus.innerText = "FORA DA FAIXA";
+      } else {
+        tagStatus.className = "bg-blue-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase mt-1";
+        tagStatus.innerText = "OK";
+      }
+
+      historicoTemp.push(temp);
+      if (historicoTemp.length > 50) historicoTemp.shift();
+      
+      document.getElementById('temp-min').innerText = `${Math.min(...historicoTemp).toFixed(1)} °C`;
+      document.getElementById('temp-max').innerText = `${Math.max(...historicoTemp).toFixed(1)} °C`;
+      document.getElementById('temp-med').innerText = `${(historicoTemp.reduce((a, b) => a + b, 0) / historicoTemp.length).toFixed(1)} °C`;
+
+      const gauge = document.getElementById('gauge-circle');
+      let pct = Math.max(0, Math.min(1, (temp - (-30)) / 40));
+      gauge.style.strokeDashoffset = 251.2 * (1 - pct);
+
+      const statusRede = document.getElementById('status-rede');
+      if (data.power) {
+        statusRede.innerText = "ATIVA";
+        statusRede.className = "my-2 font-black text-xs text-emerald-600";
+      } else {
+        statusRede.innerText = "INATIVA";
+        statusRede.className = "my-2 font-black text-xs text-rose-600";
+      }
+
+      const agora = new Date().toLocaleTimeString();
+      if (chartTemp) {
+        if (chartTemp.data.labels.length > 20) {
+          chartTemp.data.labels.shift();
+          chartTemp.data.datasets[0].data.shift();
+        }
+        chartTemp.data.labels.push(agora);
+        chartTemp.data.datasets[0].data.push(temp);
+        chartTemp.update();
       }
     }
 
