@@ -48,7 +48,6 @@
         <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">MONITORAMENTO DA CÂMARA FRIA</span>
       </div>
       <div class="flex items-center gap-3 text-xs font-bold">
-        <button onclick="alternarModoTeste()" id="btn-teste" class="px-3 py-1.5 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">Modo Teste: OFF</button>
         <span id="badge-sistema" class="bg-rose-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5">
           <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> DESCONECTADO
         </span>
@@ -192,22 +191,8 @@
 
     <!-- ABA 3: ALARMES -->
     <div id="aba-alarmes" class="hidden space-y-5">
-      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">HISTÓRICO DE ALARMES - FILTRO POR PERÍODO</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-          <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">Data/Hora Início</label>
-            <input type="datetime-local" id="alarm-inicio" class="w-full border border-slate-300 rounded-lg p-2 text-xs">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">Data/Hora Fim</label>
-            <input type="datetime-local" id="alarm-fim" class="w-full border border-slate-300 rounded-lg p-2 text-xs">
-          </div>
-          <button onclick="filtrarAlarmes()" class="bg-blue-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors">Buscar Histórico</button>
-        </div>
-      </div>
-
       <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm overflow-x-auto">
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">HISTÓRICO DE ALARMES</h3>
         <table class="w-full text-left text-xs">
           <thead class="bg-slate-50 text-slate-500 uppercase border-b">
             <tr>
@@ -223,15 +208,17 @@
       </div>
     </div>
 
-    <!-- ABA 4: CONFIGURAÇÕES -->
+    <!-- ABA 4: CONFIGURAÇÕES DE CONEXÃO -->
     <div id="aba-configuracoes" class="hidden bg-white p-6 rounded-xl border border-slate-200/80 shadow-sm space-y-4">
       <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">CONFIGURAÇÕES DE CONEXÃO</h3>
+      <p class="text-xs text-slate-500">Informe o seu endereço DDNS com o protocolo <code class="bg-slate-100 p-1 rounded">http://</code> e a porta do roteador (exemplo: <code class="bg-slate-100 p-1 rounded">http://seu-ddns.ddns.net:8080</code>).</p>
+      
       <div class="max-w-md space-y-3">
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">Endereço de Conexão do Arduino (IP Local ou DDNS)</label>
-          <input type="text" id="input-url-arduino" class="w-full border border-slate-300 rounded-lg p-2 text-xs font-mono">
+          <label class="block text-xs font-bold text-slate-500 mb-1">Endereço DDNS do Arduino</label>
+          <input type="text" id="input-url-arduino" placeholder="http://meudddns.ddns.net:8080" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none">
         </div>
-        <button onclick="salvarConfiguracao()" class="bg-blue-600 text-white font-bold text-xs px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">Salvar Endereço</button>
+        <button onclick="salvarConfiguracao()" class="bg-blue-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar Endereço DDNS</button>
       </div>
     </div>
 
@@ -258,17 +245,14 @@
   </nav>
 
   <script>
-    let urlArduino = localStorage.getItem('urlArduino') || 'http://reidogelo.servepics.com:8080';
+    // Recupera URL do DDNS ou define o IP local como padrão inicial
+    let urlArduino = localStorage.getItem('urlArduino') || 'http://192.168.15.2:8080';
     document.getElementById('input-url-arduino').value = urlArduino;
 
     let chartTemp = null;
     let chartPeriodo = null;
-
     let historicoLeituras = [];
-    let listaAlarmes = [
-      { data: "13/09/2026 10:15", evento: "Falha no Sensor DS18B20 (-127 °C)", nivel: "CRÍTICO", status: "Resolvido" },
-      { data: "13/09/2026 08:30", evento: "Temperatura Fora da Faixa", nivel: "ALERTA", status: "Resolvido" }
-    ];
+    let listaAlarmes = [];
 
     function atualizarDataHora() {
       document.getElementById('data-hora').innerText = new Date().toLocaleString('pt-BR');
@@ -276,9 +260,14 @@
     setInterval(atualizarDataHora, 1000);
 
     function salvarConfiguracao() {
-      urlArduino = document.getElementById('input-url-arduino').value.trim();
+      let urlInput = document.getElementById('input-url-arduino').value.trim();
+      if (!urlInput.startsWith('http://') && !urlInput.startsWith('https://')) {
+        urlInput = 'http://' + urlInput;
+      }
+      urlArduino = urlInput.replace(/\/$/, ""); // Remove barra final se houver
       localStorage.setItem('urlArduino', urlArduino);
-      alert('Endereço do Arduino atualizado!');
+      document.getElementById('input-url-arduino').value = urlArduino;
+      alert('Endereço DDNS configurado com sucesso!');
     }
 
     function mudarAba(aba) {
@@ -351,16 +340,17 @@
       }
     }
 
-    // CONEXÃO COM O ARDUINO VIA JSONP
+    // BUSCA OS DADOS NO ARDUINO USANDO INJEÇÃO DE TAG SCRIPT (JSONP)
     function buscarDados() {
       const scriptAntigo = document.getElementById('jsonp-script');
       if (scriptAntigo) scriptAntigo.remove();
 
       const script = document.createElement('script');
       script.id = 'jsonp-script';
-      script.src = `${urlArduino}/api/dados?timestamp=${new Date().getTime()}`;
+      script.src = `${urlArduino}/api/dados?t=${new Date().getTime()}`;
 
       script.onerror = () => {
+        // Marca como desconectado se a requisição falhar (porta fechada, offline, etc)
         const badgeSys = document.getElementById('badge-sistema');
         badgeSys.className = "bg-rose-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5";
         badgeSys.innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> DESCONECTADO`;
@@ -373,7 +363,7 @@
       document.body.appendChild(script);
     }
 
-    // CALLBACK AUTOMÁTICO EXECUTADO PELO ARDUINO
+    // CALLBACK EXECUTADO AUTOMATICAMENTE QUANDO O ARDUINO RESPONDE
     function processarDadosArduino(data) {
       const badgeSys = document.getElementById('badge-sistema');
       badgeSys.className = "bg-emerald-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5";
@@ -434,6 +424,8 @@
         elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
         gauge.classList.add('gauge-fill-error');
         gauge.style.strokeDashoffset = 0;
+        
+        adicionarAlarme("Falha no Sensor DS18B20", "CRÍTICO");
       } else {
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1";
@@ -444,10 +436,18 @@
       }
     }
 
-    function renderizarTabelaAlarmes(lista) {
+    function adicionarAlarme(evento, nivel) {
+      const dataHora = new Date().toLocaleString('pt-BR');
+      if(!listaAlarmes.some(a => a.evento === evento && a.status === 'Ativo')){
+        listaAlarmes.unshift({ data: dataHora, evento: evento, nivel: nivel, status: 'Ativo' });
+        renderizarTabelaAlarmes();
+      }
+    }
+
+    function renderizarTabelaAlarmes() {
       const tbody = document.getElementById('tabela-alarmes');
       tbody.innerHTML = '';
-      lista.forEach(item => {
+      listaAlarmes.forEach(item => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td class="p-3 font-medium">${item.data}</td>
@@ -457,10 +457,6 @@
         `;
         tbody.appendChild(tr);
       });
-    }
-
-    function filtrarAlarmes() {
-      renderizarTabelaAlarmes(listaAlarmes);
     }
 
     function filtrarGraficoTemperatura() {
@@ -501,7 +497,6 @@
 
     window.onload = () => {
       iniciarGraficos();
-      renderizarTabelaAlarmes(listaAlarmes);
       setInterval(buscarDados, 2000);
     };
   </script>
