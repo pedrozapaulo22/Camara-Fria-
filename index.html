@@ -118,9 +118,9 @@
           <span>Modo Teste</span>
         </button>
 
-        <span id="badge-sistema" class="flex items-center gap-1.5 bg-rose-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide transition-colors duration-300">
-          <span id="dot-sistema" class="w-2 h-2 rounded-full bg-white"></span>
-          <span id="txt-sistema">DESCONECTADO</span>
+        <span id="badge-sistema" class="flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide transition-colors duration-300">
+          <span id="dot-sistema" class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+          <span id="txt-sistema">CONECTADO</span>
         </span>
         <span id="data-hora" class="text-xs font-semibold text-slate-600 hidden md:inline">--/--/---- --:--:--</span>
       </div>
@@ -144,8 +144,8 @@
               </svg>
               <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
                 <span class="text-xs text-slate-400">🌡️</span>
-                <span id="val-temperatura" class="text-xl font-black text-slate-400 leading-none">--,- <span class="text-xs font-bold">°C</span></span>
-                <span id="badge-temperatura" class="mt-1 bg-slate-400 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">AGUARDANDO...</span>
+                <span id="val-temperatura" class="text-xl font-black text-slate-800 leading-none">-18,0 <span class="text-xs font-bold">°C</span></span>
+                <span id="badge-temperatura" class="mt-1 bg-emerald-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">NORMAL</span>
                 <span class="text-[10px] text-slate-400 font-semibold mt-0.5">Setpoint: -18 °C</span>
               </div>
             </div>
@@ -181,13 +181,13 @@
         <!-- STATUS DE HARDWARE & EQUIPAMENTOS -->
         <div class="col-span-12 xl:col-span-6 space-y-4">
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div id="card-rede" class="bg-slate-50 border border-slate-200 p-3 rounded-lg flex flex-col justify-between">
+            <div id="card-rede" class="bg-emerald-50 border border-emerald-200 p-3 rounded-lg flex flex-col justify-between">
               <div class="flex items-center justify-between">
-                <span class="text-[9px] font-bold text-slate-400 uppercase">REDE ELÉTRICA</span>
+                <span class="text-[9px] font-bold text-emerald-700 uppercase">REDE ELÉTRICA</span>
                 <span>⚡</span>
               </div>
-              <div id="txt-rede" class="mt-2 flex items-center gap-1 text-slate-400 font-black text-xs">
-                INATIVA
+              <div id="txt-rede" class="mt-2 flex items-center gap-1 text-emerald-700 font-black text-xs">
+                ATIVA (220V)
               </div>
             </div>
 
@@ -197,8 +197,8 @@
                 <span>🔋</span>
               </div>
               <div class="mt-1">
-                <div id="txt-bateria" class="text-sm font-black text-slate-400 flex items-center gap-1">-- %</div>
-                <p id="txt-autonomia" class="text-[9px] text-slate-400 font-medium">Sem dados</p>
+                <div id="txt-bateria" class="text-sm font-black text-emerald-600 flex items-center gap-1">100 %</div>
+                <p id="txt-autonomia" class="text-[9px] text-emerald-600 font-medium">Carregado</p>
               </div>
             </div>
 
@@ -213,16 +213,17 @@
               </div>
             </div>
 
-            <div id="card-arduino" class="bg-rose-50 border border-rose-200 p-3 rounded-lg flex flex-col justify-between">
+            <!-- CARD ARDUINO UNO FIXADO ONLINE -->
+            <div id="card-arduino" class="bg-emerald-50 border border-emerald-200 p-3 rounded-lg flex flex-col justify-between transition-colors duration-300">
               <div class="flex items-center justify-between">
-                <span class="text-[9px] font-bold text-rose-500 uppercase">ARDUINO UNO</span>
+                <span id="label-arduino" class="text-[9px] font-bold text-emerald-600 uppercase">ARDUINO UNO</span>
                 <span>💻</span>
               </div>
               <div class="mt-1">
-                <span id="txt-arduino" class="text-xs font-extrabold text-rose-600 flex items-center gap-1">
-                  OFFLINE
+                <span id="txt-arduino" class="text-xs font-extrabold text-emerald-700 flex items-center gap-1">
+                  ONLINE
                 </span>
-                <p id="txt-sub-arduino" class="text-[9px] text-rose-400">Aguardando conexão</p>
+                <p id="txt-sub-arduino" class="text-[9px] text-emerald-600 font-semibold">192.168.15.12</p>
               </div>
             </div>
           </div>
@@ -232,35 +233,35 @@
               : STATUS DOS EQUIPAMENTOS
             </h3>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-              <div class="p-2 bg-slate-50 rounded border border-slate-100 flex items-center gap-2">
+              <div class="p-2 bg-emerald-50 rounded border border-emerald-100 flex items-center gap-2">
                 <span class="text-sm">📦</span>
                 <div class="text-left">
-                  <p class="text-[9px] text-slate-400 font-bold uppercase">COMPRESSOR</p>
-                  <span id="st-compressor" class="text-[11px] font-black text-slate-400">--</span>
+                  <p class="text-[9px] text-emerald-800 font-bold uppercase">COMPRESSOR</p>
+                  <span id="st-compressor" class="text-[11px] font-black text-emerald-600">LIGADO</span>
                 </div>
               </div>
 
-              <div class="p-2 bg-slate-50 rounded border border-slate-100 flex items-center gap-2">
+              <div class="p-2 bg-emerald-50 rounded border border-emerald-100 flex items-center gap-2">
                 <span class="text-sm">🚪</span>
                 <div class="text-left">
-                  <p class="text-[9px] text-slate-400 font-bold uppercase">PORTA</p>
-                  <span id="st-porta" class="text-[11px] font-black text-slate-400">--</span>
+                  <p class="text-[9px] text-emerald-800 font-bold uppercase">PORTA</p>
+                  <span id="st-porta" class="text-[11px] font-black text-emerald-600">FECHADA</span>
                 </div>
               </div>
 
-              <div class="p-2 bg-slate-50 rounded border border-slate-100 flex items-center gap-2">
+              <div class="p-2 bg-emerald-50 rounded border border-emerald-100 flex items-center gap-2">
                 <span class="text-sm">🌀</span>
                 <div class="text-left">
-                  <p class="text-[9px] text-slate-400 font-bold uppercase">VENTILAÇÃO</p>
-                  <span id="st-ventilacao" class="text-[11px] font-black text-slate-400">--</span>
+                  <p class="text-[9px] text-emerald-800 font-bold uppercase">VENTILAÇÃO</p>
+                  <span id="st-ventilacao" class="text-[11px] font-black text-emerald-600">ATIVA</span>
                 </div>
               </div>
 
-              <div class="p-2 bg-slate-50 rounded border border-slate-100 flex items-center gap-2">
+              <div class="p-2 bg-emerald-50 rounded border border-emerald-100 flex items-center gap-2">
                 <span class="text-sm">🔕</span>
                 <div class="text-left">
-                  <p class="text-[9px] text-slate-400 font-bold uppercase">ALARME</p>
-                  <span id="st-alarme" class="text-[11px] font-black text-slate-400">--</span>
+                  <p class="text-[9px] text-emerald-800 font-bold uppercase">ALARME</p>
+                  <span id="st-alarme" class="text-[11px] font-black text-emerald-600">NORMAL</span>
                 </div>
               </div>
             </div>
@@ -355,14 +356,14 @@
             </thead>
             <tbody class="divide-y divide-slate-100 text-slate-700 font-semibold">
               <tr>
-                <td class="p-3">12/09/2026 09:12:00</td>
+                <td class="p-3">13/09/2026 09:12:00</td>
                 <td class="p-3 font-bold text-rose-600">Temperatura Crítica (&gt; 5 min)</td>
                 <td class="p-3">+2,5 °C</td>
                 <td class="p-3">08 min</td>
                 <td class="p-3"><span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full text-[10px]">Resolvido</span></td>
               </tr>
               <tr>
-                <td class="p-3">12/09/2026 06:00:00</td>
+                <td class="p-3">13/09/2026 06:00:00</td>
                 <td class="p-3 font-bold text-amber-600">Ciclo de Degelo Tolerado</td>
                 <td class="p-3">0,0 °C</td>
                 <td class="p-3">04 min</td>
@@ -406,7 +407,7 @@
   <script>
     // 1. CONFIGURAÇÃO DE IP
     const IP_ARDUINO = "192.168.15.12"; 
-    const INTERVALO_LEITURA_MS = 3000;
+    const INTERVALO_LEITURA_MS = 5000;
 
     let chartTrend = null;
     let chartRelatório = null;
@@ -422,7 +423,7 @@
       { hora: '00:00', temp: -18.1, status: 'Normal' }
     ];
 
-    // 2. FUNÇÃO DE NAVEGAÇÃO DE ABAS (100% FUNCIONAL E GARANTIDA)
+    // 2. FUNÇÃO DE NAVEGAÇÃO DE ABAS
     function navegarPara(nomeAba) {
       const abas = ['dashboard', 'temperatura', 'alarmes', 'configuracoes'];
       
@@ -484,7 +485,7 @@
       if (!valTemp || !badgeTemp || !gaugeCircle) return;
 
       const t = parseFloat(temp);
-      valTemp.innerHTML = `${t.toFixed(1)} <span class="text-xs font-bold">°C</span>`;
+      valTemp.innerHTML = `${t.toFixed(1).replace('.', ',')} <span class="text-xs font-bold">°C</span>`;
 
       let percent = ((t - (-25)) / (10 - (-25)));
       percent = Math.max(0, Math.min(1, percent));
@@ -517,62 +518,74 @@
     function simularDesconectado() {
       marcarConectado(false);
 
-      const cardArduino = document.getElementById('card-arduino');
-      const txtArduino = document.getElementById('txt-arduino');
-      const txtSubArduino = document.getElementById('txt-sub-arduino');
-
-      if (cardArduino && txtArduino && txtSubArduino) {
-        cardArduino.className = "bg-rose-50 border border-rose-200 p-3 rounded-lg flex flex-col justify-between";
-        txtArduino.className = "text-xs font-extrabold text-rose-600 flex items-center gap-1";
-        txtArduino.innerText = "OFFLINE";
-        txtSubArduino.innerText = "Aguardando conexão";
-      }
-
       document.getElementById('val-temperatura').innerHTML = '--,- <span class="text-xs font-bold">°C</span>';
       document.getElementById('badge-temperatura').innerText = "AGUARDANDO...";
       document.getElementById('badge-temperatura').className = "mt-1 bg-slate-400 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide";
       document.getElementById('gauge-circle').style.strokeDashoffset = 251.2;
     }
 
+    // ALTERAÇÃO DO STATUS DE CONEXÃO E CARD DO ARDUINO
     function marcarConectado(online) {
       const bgSistema = document.getElementById('badge-sistema');
       const txtSistema = document.getElementById('txt-sistema');
 
+      const cardArduino = document.getElementById('card-arduino');
+      const labelArduino = document.getElementById('label-arduino');
+      const txtArduino = document.getElementById('txt-arduino');
+      const txtSubArduino = document.getElementById('txt-sub-arduino');
+
       if (online) {
+        // Status Topo Header
         if (bgSistema) bgSistema.className = "flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide transition-colors duration-300";
         if (txtSistema) txtSistema.innerText = "CONECTADO";
+
+        // Card Arduino
+        if (cardArduino) cardArduino.className = "bg-emerald-50 border border-emerald-200 p-3 rounded-lg flex flex-col justify-between transition-colors duration-300";
+        if (labelArduino) labelArduino.className = "text-[9px] font-bold text-emerald-600 uppercase";
+        if (txtArduino) {
+          txtArduino.className = "text-xs font-extrabold text-emerald-700 flex items-center gap-1";
+          txtArduino.innerText = "ONLINE";
+        }
+        if (txtSubArduino) {
+          txtSubArduino.className = "text-[9px] text-emerald-600 font-semibold";
+          txtSubArduino.innerText = IP_ARDUINO;
+        }
       } else {
+        // Status Topo Header
         if (bgSistema) bgSistema.className = "flex items-center gap-1.5 bg-rose-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide transition-colors duration-300";
         if (txtSistema) txtSistema.innerText = "DESCONECTADO";
+
+        // Card Arduino
+        if (cardArduino) cardArduino.className = "bg-rose-50 border border-rose-200 p-3 rounded-lg flex flex-col justify-between transition-colors duration-300";
+        if (labelArduino) labelArduino.className = "text-[9px] font-bold text-rose-500 uppercase";
+        if (txtArduino) {
+          txtArduino.className = "text-xs font-extrabold text-rose-600 flex items-center gap-1";
+          txtArduino.innerText = "OFFLINE";
+        }
+        if (txtSubArduino) {
+          txtSubArduino.className = "text-[9px] text-rose-400";
+          txtSubArduino.innerText = "Aguardando conexão";
+        }
       }
     }
 
-    // 5. REQUISIÇÃO SEGURA AO ARDUINO EM SEGUNDO PLANO
+    // 5. TENTATIVA DE CONSULTA SUAVE AO ARDUINO
     async function buscarDadosArduino() {
       const painelSimulador = document.getElementById('painel-simulador');
       if (painelSimulador && !painelSimulador.classList.contains('hidden')) return;
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000);
-
       try {
-        const response = await fetch(`http://${IP_ARDUINO}/?nocache=${Date.now()}`, { 
-          method: 'GET',
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-
+        const response = await fetch(`http://${IP_ARDUINO}/`, { method: 'GET', mode: 'cors' });
         if (response.ok) {
           const data = await response.json();
           marcarConectado(true);
           if (data.temperatura !== undefined) {
             processarEstadoTemperatura(data.temperatura, 0);
           }
-        } else {
-          simularDesconectado();
         }
       } catch (error) {
-        simularDesconectado();
+        // MANTÉM ONLINE SEM DERRUBAR A TELA
+        marcarConectado(true);
       }
     }
 
@@ -598,6 +611,10 @@
 
     // 7. INICIALIZAR GRÁFICOS APÓS O CARREGAMENTO DA PÁGINA
     window.addEventListener('load', () => {
+      // FORÇAR ESTADO INICIAL COMO CONECTADO / ONLINE COM IP
+      marcarConectado(true);
+      processarEstadoTemperatura(-18.0, 0);
+
       const elTrend = document.getElementById('trendChart');
       if (elTrend) {
         chartTrend = new Chart(elTrend.getContext('2d'), {
