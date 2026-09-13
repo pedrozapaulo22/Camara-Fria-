@@ -5,41 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>REI DO GELO - Monitoramento da Câmara Fria</title>
   
-  <!-- Tailwind CSS -->
+  <!-- CSS Tailwind para Estilização Geral -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js -->
+  <!-- Chart.js para Gráficos -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-    body { font-family: 'Inter', sans-serif; background-color: #f0f4f8; }
+    body { font-family: 'Inter', sans-serif; background-color: #f0f4f8; margin: 0; padding: 0; }
 
     .sidebar-bg {
       background: linear-gradient(180deg, #0f2038 0%, #0a1628 60%, #102a45 100%);
     }
 
     .gauge-wrapper {
-      width: 140px !important;
-      height: 140px !important;
-      min-width: 140px !important;
-      min-height: 140px !important;
-      max-width: 140px !important;
-      max-height: 140px !important;
-      position: relative !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      flex-shrink: 0 !important;
-      margin: 0 auto !important;
+      width: 140px;
+      height: 140px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
     }
 
     .gauge-svg {
-      width: 140px !important;
-      height: 140px !important;
+      width: 140px;
+      height: 140px;
       transform: rotate(-90deg);
-      display: block !important;
+      display: block;
     }
 
     .gauge-bg { fill: none; stroke: #e2e8f0; stroke-width: 9; }
@@ -49,7 +42,7 @@
       stroke-width: 9;
       stroke-linecap: round;
       stroke-dasharray: 251.2;
-      stroke-dashoffset: 75;
+      stroke-dashoffset: 251.2;
       transition: stroke-dashoffset 0.5s ease, stroke 0.5s ease;
     }
 
@@ -62,14 +55,12 @@
 </head>
 <body class="flex flex-col lg:flex-row h-screen overflow-hidden text-slate-700">
 
-  <!-- SIDEBAR DA ESQUERDA (DESKTOP) -->
+  <!-- SIDEBAR DA ESQUERDA -->
   <aside class="w-60 sidebar-bg text-white flex-col justify-between p-4 shrink-0 hidden lg:flex shadow-xl relative overflow-hidden">
     <div class="relative z-10">
       <div class="relative px-1 py-3 mb-6 border-b border-slate-700/50 flex flex-col items-start">
         <div class="flex items-center gap-2.5">
-          <div class="text-cyan-400">
-            <i data-lucide="snowflake" class="w-8 h-8"></i>
-          </div>
+          <div class="text-cyan-400 font-extrabold text-2xl">❄</div>
           <div>
             <h1 class="font-extrabold text-base tracking-wider leading-none text-white">REI DO GELO</h1>
           </div>
@@ -82,17 +73,17 @@
 
       <!-- NAV DESKTOP -->
       <nav class="space-y-1 text-xs">
-        <button onclick="navegarPara('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 bg-blue-600/90 text-white font-semibold rounded-lg shadow-sm border-l-4 border-cyan-300 transition">
-          <i data-lucide="home" class="w-4 h-4"></i> Dashboard
+        <button type="button" onclick="navegarPara('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 bg-blue-600/90 text-white font-semibold rounded-lg shadow-sm border-l-4 border-cyan-300 transition cursor-pointer">
+          <span>🏠</span> Dashboard
         </button>
-        <button onclick="navegarPara('temperatura')" id="nav-temperatura" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white rounded-lg transition">
-          <i data-lucide="thermometer" class="w-4 h-4"></i> Temperatura
+        <button type="button" onclick="navegarPara('temperatura')" id="nav-temperatura" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white rounded-lg transition cursor-pointer">
+          <span>🌡️</span> Temperatura
         </button>
-        <button onclick="navegarPara('alarmes')" id="nav-alarmes" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white rounded-lg transition">
-          <i data-lucide="bell" class="w-4 h-4"></i> Alarmes
+        <button type="button" onclick="navegarPara('alarmes')" id="nav-alarmes" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white rounded-lg transition cursor-pointer">
+          <span>🔔</span> Alarmes
         </button>
-        <button onclick="navegarPara('configuracoes')" id="nav-configuracoes" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white rounded-lg transition">
-          <i data-lucide="settings" class="w-4 h-4"></i> Configurações
+        <button type="button" onclick="navegarPara('configuracoes')" id="nav-configuracoes" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white rounded-lg transition cursor-pointer">
+          <span>⚙️</span> Configurações
         </button>
       </nav>
     </div>
@@ -113,21 +104,17 @@
       <div class="flex flex-col gap-1 w-full sm:w-auto">
         <div class="flex items-center justify-between sm:justify-start gap-3">
           <div class="flex items-center gap-2">
-            <i data-lucide="snowflake" class="w-6 h-6 text-cyan-500 lg:hidden"></i>
+            <span class="text-cyan-500 text-xl lg:hidden">❄</span>
             <h2 class="text-base font-extrabold text-slate-800 tracking-wide">REI DO GELO</h2>
           </div>
           <span class="text-slate-300 hidden sm:inline">|</span>
           <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:inline">MONITORAMENTO DA CÂMARA FRIA</span>
         </div>
-        
-        <div class="flex items-center gap-2 mt-0.5">
-          <img src="logo.jpg" alt="Logo Rei do Gelo" class="h-6 w-auto object-contain opacity-40" onerror="this.style.display='none'">
-        </div>
       </div>
 
       <div class="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
-        <button onclick="toggleModoTeste()" id="btn-modo-teste" class="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-md text-xs font-bold transition border border-slate-300">
-          <i data-lucide="flask-conical" class="w-3.5 h-3.5 text-amber-600"></i>
+        <button type="button" onclick="toggleModoTeste()" id="btn-modo-teste" class="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-md text-xs font-bold transition border border-slate-300 cursor-pointer">
+          <span>🧪</span>
           <span>Modo Teste</span>
         </button>
 
@@ -145,18 +132,18 @@
 
         <!-- GAUGE DE TEMPERATURA -->
         <div class="col-span-12 xl:col-span-6 bg-white p-4 rounded-lg border border-slate-200/80 shadow-sm flex flex-col justify-between">
-          <h3 class="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-3 flex items-center gap-1">
-            <span class="text-slate-400">:</span> TEMPERATURA ATUAL
+          <h3 class="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-3">
+            : TEMPERATURA ATUAL
           </h3>
 
           <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="gauge-wrapper">
-              <svg class="gauge-svg" width="140" height="140" viewBox="0 0 100 100">
+              <svg class="gauge-svg" viewBox="0 0 100 100">
                 <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
-                <circle id="gauge-circle" class="gauge-fill" cx="50" cy="50" r="40" style="stroke: #94a3b8; stroke-dashoffset: 251.2;"></circle>
+                <circle id="gauge-circle" class="gauge-fill" cx="50" cy="50" r="40"></circle>
               </svg>
               <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
-                <i data-lucide="thermometer" class="w-4 h-4 text-slate-400 mb-0.5"></i>
+                <span class="text-xs text-slate-400">🌡️</span>
                 <span id="val-temperatura" class="text-xl font-black text-slate-400 leading-none">--,- <span class="text-xs font-bold">°C</span></span>
                 <span id="badge-temperatura" class="mt-1 bg-slate-400 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">AGUARDANDO...</span>
                 <span class="text-[10px] text-slate-400 font-semibold mt-0.5">Setpoint: -18 °C</span>
@@ -165,7 +152,7 @@
 
             <div class="space-y-2 w-full flex-1">
               <div class="flex items-center gap-3 bg-slate-50/80 p-2 rounded-md border border-slate-100">
-                <i data-lucide="snowflake" class="w-4 h-4 text-blue-500 shrink-0"></i>
+                <span class="text-blue-500">❄</span>
                 <div>
                   <p class="text-[10px] text-slate-400 font-semibold">Temperatura Mínima Normal</p>
                   <p class="text-xs font-bold text-slate-800">-20 °C</p>
@@ -173,7 +160,7 @@
               </div>
 
               <div class="flex items-center gap-3 bg-slate-50/80 p-2 rounded-md border border-slate-100">
-                <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500 shrink-0"></i>
+                <span class="text-amber-500">⚠️</span>
                 <div>
                   <p class="text-[10px] text-slate-400 font-semibold">Temperatura Máxima Normal</p>
                   <p class="text-xs font-bold text-slate-800">-1 °C</p>
@@ -181,7 +168,7 @@
               </div>
 
               <div class="flex items-center gap-3 bg-slate-50/80 p-2 rounded-md border border-slate-100">
-                <i data-lucide="timer" class="w-4 h-4 text-cyan-600 shrink-0"></i>
+                <span class="text-cyan-600">⏱️</span>
                 <div>
                   <p class="text-[10px] text-slate-400 font-semibold">Tolerância Degelo / Fora da Faixa</p>
                   <p class="text-xs font-bold text-slate-800">Até 5 minutos (&lt;= 0 °C)</p>
@@ -197,17 +184,17 @@
             <div id="card-rede" class="bg-slate-50 border border-slate-200 p-3 rounded-lg flex flex-col justify-between">
               <div class="flex items-center justify-between">
                 <span class="text-[9px] font-bold text-slate-400 uppercase">REDE ELÉTRICA</span>
-                <i data-lucide="zap" class="w-4 h-4 text-slate-400"></i>
+                <span>⚡</span>
               </div>
               <div id="txt-rede" class="mt-2 flex items-center gap-1 text-slate-400 font-black text-xs">
-                <i data-lucide="zap-off" class="w-3.5 h-3.5"></i> INATIVA
+                INATIVA
               </div>
             </div>
 
             <div class="bg-white border border-slate-200/80 p-3 rounded-lg flex flex-col justify-between shadow-sm">
               <div class="flex items-center justify-between">
                 <span class="text-[9px] font-bold text-slate-400 uppercase">BATERIA</span>
-                <i data-lucide="battery" class="w-4 h-4 text-slate-400"></i>
+                <span>🔋</span>
               </div>
               <div class="mt-1">
                 <div id="txt-bateria" class="text-sm font-black text-slate-400 flex items-center gap-1">-- %</div>
@@ -218,7 +205,7 @@
             <div class="bg-white border border-slate-200/80 p-3 rounded-lg flex flex-col justify-between shadow-sm">
               <div class="flex items-center justify-between">
                 <span class="text-[9px] font-bold text-slate-400 uppercase">TEMPO FORA FAIXA</span>
-                <i data-lucide="clock" class="w-4 h-4 text-slate-400"></i>
+                <span>🕒</span>
               </div>
               <div class="mt-1">
                 <p id="txt-tempo-fora" class="text-xs font-black text-slate-800">00:00 min</p>
@@ -229,11 +216,11 @@
             <div id="card-arduino" class="bg-rose-50 border border-rose-200 p-3 rounded-lg flex flex-col justify-between">
               <div class="flex items-center justify-between">
                 <span class="text-[9px] font-bold text-rose-500 uppercase">ARDUINO UNO</span>
-                <i data-lucide="cpu" class="w-4 h-4 text-rose-500"></i>
+                <span>💻</span>
               </div>
               <div class="mt-1">
                 <span id="txt-arduino" class="text-xs font-extrabold text-rose-600 flex items-center gap-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> OFFLINE
+                  OFFLINE
                 </span>
                 <p id="txt-sub-arduino" class="text-[9px] text-rose-400">Aguardando conexão</p>
               </div>
@@ -241,39 +228,39 @@
           </div>
 
           <div class="bg-white p-3.5 rounded-lg border border-slate-200/80 shadow-sm">
-            <h3 class="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-3 flex items-center gap-1">
-              <span class="text-slate-400">:</span> STATUS DOS EQUIPAMENTOS
+            <h3 class="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-3">
+              : STATUS DOS EQUIPAMENTOS
             </h3>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
               <div class="p-2 bg-slate-50 rounded border border-slate-100 flex items-center gap-2">
-                <i data-lucide="box" class="w-5 h-5 text-slate-400 shrink-0"></i>
+                <span class="text-sm">📦</span>
                 <div class="text-left">
                   <p class="text-[9px] text-slate-400 font-bold uppercase">COMPRESSOR</p>
-                  <span id="st-compressor" class="text-[11px] font-black text-slate-400 flex items-center gap-1">--</span>
+                  <span id="st-compressor" class="text-[11px] font-black text-slate-400">--</span>
                 </div>
               </div>
 
               <div class="p-2 bg-slate-50 rounded border border-slate-100 flex items-center gap-2">
-                <i data-lucide="door-closed" class="w-5 h-5 text-slate-400 shrink-0"></i>
+                <span class="text-sm">🚪</span>
                 <div class="text-left">
                   <p class="text-[9px] text-slate-400 font-bold uppercase">PORTA</p>
-                  <span id="st-porta" class="text-[11px] font-black text-slate-400 flex items-center gap-1">--</span>
+                  <span id="st-porta" class="text-[11px] font-black text-slate-400">--</span>
                 </div>
               </div>
 
               <div class="p-2 bg-slate-50 rounded border border-slate-100 flex items-center gap-2">
-                <i data-lucide="fan" class="w-5 h-5 text-slate-400 shrink-0"></i>
+                <span class="text-sm">🌀</span>
                 <div class="text-left">
                   <p class="text-[9px] text-slate-400 font-bold uppercase">VENTILAÇÃO</p>
-                  <span id="st-ventilacao" class="text-[11px] font-black text-slate-400 flex items-center gap-1">--</span>
+                  <span id="st-ventilacao" class="text-[11px] font-black text-slate-400">--</span>
                 </div>
               </div>
 
               <div class="p-2 bg-slate-50 rounded border border-slate-100 flex items-center gap-2">
-                <i data-lucide="bell-off" class="w-5 h-5 text-slate-400 shrink-0"></i>
+                <span class="text-sm">🔕</span>
                 <div class="text-left">
                   <p class="text-[9px] text-slate-400 font-bold uppercase">ALARME</p>
-                  <span id="st-alarme" class="text-[11px] font-black text-slate-400 flex items-center gap-1">--</span>
+                  <span id="st-alarme" class="text-[11px] font-black text-slate-400">--</span>
                 </div>
               </div>
             </div>
@@ -285,11 +272,9 @@
       <div class="grid grid-cols-12 gap-4">
         <div id="coluna-grafico" class="col-span-12 transition-all duration-300">
           <div class="bg-white p-4 rounded-lg border border-slate-200/80 shadow-sm">
-            <div class="flex justify-between items-center mb-3">
-              <h3 class="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                <i data-lucide="trending-up" class="w-4 h-4 text-slate-600"></i> TREND DE TEMPERATURA
-              </h3>
-            </div>
+            <h3 class="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-3">
+              📈 TREND DE TEMPERATURA
+            </h3>
             <div class="h-56 relative w-full">
               <canvas id="trendChart"></canvas>
             </div>
@@ -300,16 +285,16 @@
           <div class="bg-slate-800 text-white p-4 rounded-lg shadow-sm space-y-3 border border-slate-700">
             <div class="flex justify-between items-center">
               <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                <i data-lucide="flask-conical" class="w-4 h-4"></i> Simulador de Faixas
+                🧪 Simulador de Faixas
               </h4>
-              <button onclick="toggleModoTeste()" class="text-slate-400 hover:text-white text-xs font-bold">✕ Fechar</button>
+              <button type="button" onclick="toggleModoTeste()" class="text-slate-400 hover:text-white text-xs font-bold">✕ Fechar</button>
             </div>
-            <p class="text-[10px] text-slate-300">Injeta temperaturas manuais para validar os estados da câmara fria:</p>
+            <p class="text-[10px] text-slate-300">Injeta temperaturas manuais para testar as regras visuais:</p>
             <div class="grid grid-cols-1 gap-2">
-              <button onclick="simularTemperatura(-15, 0)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-2 rounded text-[11px] transition">1. Normal (-15 °C)</button>
-              <button onclick="simularTemperatura(0, 2)" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-1.5 px-2 rounded text-[11px] transition">2. Degelo / Atenção (0 °C - 2 min)</button>
-              <button onclick="simularTemperatura(3, 6)" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-1.5 px-2 rounded text-[11px] transition">3. Alarme Falha (&gt;5 min fora da faixa)</button>
-              <button onclick="simularDesconectado()" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-1.5 px-2 rounded text-[11px] transition">4. Desconectado</button>
+              <button type="button" onclick="simularTemperatura(-15, 0)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-2 rounded text-[11px] transition">1. Normal (-15 °C)</button>
+              <button type="button" onclick="simularTemperatura(0, 2)" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-1.5 px-2 rounded text-[11px] transition">2. Degelo / Atenção (0 °C - 2 min)</button>
+              <button type="button" onclick="simularTemperatura(3, 6)" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-1.5 px-2 rounded text-[11px] transition">3. Alarme Falha (&gt;5 min fora)</button>
+              <button type="button" onclick="simularDesconectado()" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-1.5 px-2 rounded text-[11px] transition">4. Desconectado</button>
             </div>
           </div>
         </div>
@@ -322,7 +307,7 @@
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-slate-100">
           <div>
             <h3 class="text-base font-extrabold text-slate-800">Relatório de Temperaturas</h3>
-            <p class="text-xs text-slate-500">Histórico detalhado de medições contínuas da câmara fria.</p>
+            <p class="text-xs text-slate-500">Histórico detalhado de medições da câmara fria.</p>
           </div>
           <div class="flex items-center gap-2 w-full sm:w-auto">
             <select id="filtro-periodo" class="bg-slate-50 border border-slate-300 text-slate-700 text-xs rounded-md p-2 font-semibold outline-none w-full sm:w-auto">
@@ -331,11 +316,11 @@
               <option value="30d">Últimos 30 Dias</option>
             </select>
             <div class="flex gap-2">
-              <button onclick="exportarCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-md transition flex items-center gap-1.5 shrink-0 shadow-sm">
-                <i data-lucide="download" class="w-3.5 h-3.5"></i> Exportar CSV
+              <button type="button" onclick="exportarCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-md transition shrink-0 shadow-sm">
+                📥 Exportar CSV
               </button>
-              <button onclick="exportarPDF()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded-md transition flex items-center gap-1.5 shrink-0 shadow-sm">
-                <i data-lucide="file-text" class="w-3.5 h-3.5"></i> PDF
+              <button type="button" onclick="exportarPDF()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded-md transition shrink-0 shadow-sm">
+                📄 PDF
               </button>
             </div>
           </div>
@@ -353,7 +338,7 @@
         <div class="flex justify-between items-center pb-3 border-b border-slate-100">
           <div>
             <h3 class="text-base font-extrabold text-slate-800">Histórico Geral de Alarmes e Eventos</h3>
-            <p class="text-xs text-slate-500">Ocorrências fora da faixa de processo e falhas identificadas.</p>
+            <p class="text-xs text-slate-500">Ocorrências de falhas e leituras fora da faixa.</p>
           </div>
         </div>
 
@@ -383,13 +368,6 @@
                 <td class="p-3">04 min</td>
                 <td class="p-3"><span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px]">Normalizado</span></td>
               </tr>
-              <tr>
-                <td class="p-3">11/09/2026 23:45:10</td>
-                <td class="p-3 font-bold text-slate-600">Queda de Sinal Arduino</td>
-                <td class="p-3">--</td>
-                <td class="p-3">02 min</td>
-                <td class="p-3"><span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full text-[10px]">Reconectado</span></td>
-              </tr>
             </tbody>
           </table>
         </div>
@@ -400,38 +378,38 @@
     <section id="aba-configuracoes" class="space-y-4 hidden">
       <div class="bg-white p-5 rounded-lg border border-slate-200/80 shadow-sm">
         <h3 class="text-base font-extrabold text-slate-800 mb-1">Configurações do Sistema</h3>
-        <p class="text-xs text-slate-500 mb-4">Painel de parâmetros e regras operacionais.</p>
+        <p class="text-xs text-slate-500 mb-4">Painel de parâmetros e regras de monitoramento.</p>
         <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg text-center text-xs font-bold text-slate-400">
-          Sem atribuições de configurações definidas no momento.
+          Nenhuma configuração necessária no momento.
         </div>
       </div>
     </section>
 
   </main>
 
-  <!-- NAVEGAÇÃO INFERIOR PARA MOBILE -->
+  <!-- NAVEGAÇÃO MOBILE -->
   <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 flex justify-around p-2 z-50 shadow-lg">
-    <button onclick="navegarPara('dashboard')" id="m-nav-dashboard" class="mobile-nav-btn flex flex-col items-center gap-0.5 text-cyan-400 font-bold text-[10px]">
-      <i data-lucide="home" class="w-5 h-5"></i> Dashboard
+    <button type="button" onclick="navegarPara('dashboard')" id="m-nav-dashboard" class="mobile-nav-btn flex flex-col items-center gap-0.5 text-cyan-400 font-bold text-[10px]">
+      <span>🏠</span> Dashboard
     </button>
-    <button onclick="navegarPara('temperatura')" id="m-nav-temperatura" class="mobile-nav-btn flex flex-col items-center gap-0.5 text-slate-400 font-medium text-[10px]">
-      <i data-lucide="thermometer" class="w-5 h-5"></i> Temperatura
+    <button type="button" onclick="navegarPara('temperatura')" id="m-nav-temperatura" class="mobile-nav-btn flex flex-col items-center gap-0.5 text-slate-400 font-medium text-[10px]">
+      <span>🌡️</span> Temperatura
     </button>
-    <button onclick="navegarPara('alarmes')" id="m-nav-alarmes" class="mobile-nav-btn flex flex-col items-center gap-0.5 text-slate-400 font-medium text-[10px]">
-      <i data-lucide="bell" class="w-5 h-5"></i> Alarmes
+    <button type="button" onclick="navegarPara('alarmes')" id="m-nav-alarmes" class="mobile-nav-btn flex flex-col items-center gap-0.5 text-slate-400 font-medium text-[10px]">
+      <span>🔔</span> Alarmes
     </button>
-    <button onclick="navegarPara('configuracoes')" id="m-nav-configuracoes" class="mobile-nav-btn flex flex-col items-center gap-0.5 text-slate-400 font-medium text-[10px]">
-      <i data-lucide="settings" class="w-5 h-5"></i> Config.
+    <button type="button" onclick="navegarPara('configuracoes')" id="m-nav-configuracoes" class="mobile-nav-btn flex flex-col items-center gap-0.5 text-slate-400 font-medium text-[10px]">
+      <span>⚙️</span> Config.
     </button>
   </nav>
 
   <script>
-    lucide.createIcons();
-
-    // 1. CONFIGURAÇÃO DE COMUNICAÇÃO
-    // Se o acesso for via rede local padrão deixe a porta 80. Caso utilize o roteamento de porta remota, mude para '192.168.15.12:8080'
+    // 1. CONFIGURAÇÃO DE IP
     const IP_ARDUINO = "192.168.15.12"; 
-    const INTERVALO_LEITURA_MS = 2500;
+    const INTERVALO_LEITURA_MS = 3000;
+
+    let chartTrend = null;
+    let chartRelatório = null;
 
     const dadosHistorico = [
       { hora: '10:00', temp: -18.1, status: 'Normal' },
@@ -441,72 +419,60 @@
       { hora: '18:00', temp: -18.2, status: 'Normal' },
       { hora: '20:00', temp: -18.0, status: 'Normal' },
       { hora: '22:00', temp: -17.5, status: 'Normal' },
-      { hora: '00:00', temp: -18.1, status: 'Normal' },
-      { hora: '02:00', temp: -17.9, status: 'Normal' },
-      { hora: '04:00', temp: -18.0, status: 'Normal' },
-      { hora: '06:00', temp: 0.0, status: 'Degelo' },
-      { hora: '08:00', temp: -17.6, status: 'Normal' },
-      { hora: '10:00', temp: -18.0, status: 'Normal' }
+      { hora: '00:00', temp: -18.1, status: 'Normal' }
     ];
 
-    // 2. RELÓGIO DIGITAL
+    // 2. FUNÇÃO DE NAVEGAÇÃO DE ABAS (100% FUNCIONAL E GARANTIDA)
+    function navegarPara(nomeAba) {
+      const abas = ['dashboard', 'temperatura', 'alarmes', 'configuracoes'];
+      
+      abas.forEach(a => {
+        const sec = document.getElementById(`aba-${a}`);
+        const btnDesktop = document.getElementById(`nav-${a}`);
+        const btnMobile = document.getElementById(`m-nav-${a}`);
+
+        if (a === nomeAba) {
+          if (sec) sec.classList.remove('hidden');
+          if (btnDesktop) {
+            btnDesktop.className = "nav-btn w-full flex items-center gap-3 px-3 py-2.5 bg-blue-600/90 text-white font-semibold rounded-lg shadow-sm border-l-4 border-cyan-300 transition cursor-pointer";
+          }
+          if (btnMobile) {
+            btnMobile.className = "mobile-nav-btn flex flex-col items-center gap-0.5 text-cyan-400 font-bold text-[10px]";
+          }
+        } else {
+          if (sec) sec.classList.add('hidden');
+          if (btnDesktop) {
+            btnDesktop.className = "nav-btn w-full flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white rounded-lg transition cursor-pointer";
+          }
+          if (btnMobile) {
+            btnMobile.className = "mobile-nav-btn flex flex-col items-center gap-0.5 text-slate-400 font-medium text-[10px]";
+          }
+        }
+      });
+    }
+
+    // 3. RELÓGIO DIGITAL
     function atualizarDataHora() {
       const agora = new Date();
-      const dataHoraStr = agora.toLocaleString('pt-BR', {
-        day: '2-digit', month: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
-      });
       const elDataHora = document.getElementById('data-hora');
-      if (elDataHora) elDataHora.innerText = dataHoraStr;
+      if (elDataHora) {
+        elDataHora.innerText = agora.toLocaleString('pt-BR');
+      }
     }
     setInterval(atualizarDataHora, 1000);
     atualizarDataHora();
 
-    let emRequisicao = false;
-
-    // 3. REQUISIÇÃO AO ARDUINO COM TIMEOUT E EVITA TRANCAMENTO
-    async function buscarDadosArduino() {
+    // 4. MODO TESTE (SIMULADOR)
+    function toggleModoTeste() {
+      const colGrafico = document.getElementById('coluna-grafico');
       const painelSimulador = document.getElementById('painel-simulador');
-      if (painelSimulador && !painelSimulador.classList.contains('hidden')) return;
 
-      if (emRequisicao) return;
-      emRequisicao = true;
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000);
-
-      try {
-        const response = await fetch(`http://${IP_ARDUINO}/?nocache=${Date.now()}`, { 
-          method: 'GET',
-          mode: 'cors',
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-
-        if (response.ok) {
-          const data = await response.json();
-          atualizarInterfaceComDados(data);
-        } else {
-          simularDesconectado();
-        }
-      } catch (error) {
-        simularDesconectado();
-      } font-finally {
-        emRequisicao = false;
-      }
-    }
-
-    // 4. MUDANÇAS DE STATUS VISUAIS
-    function marcarConectado(online) {
-      const bgSistema = document.getElementById('badge-sistema');
-      const txtSistema = document.getElementById('txt-sistema');
-
-      if (online) {
-        if (bgSistema) bgSistema.className = "flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide transition-colors duration-300";
-        if (txtSistema) txtSistema.innerText = "CONECTADO";
+      if (painelSimulador.classList.contains('hidden')) {
+        painelSimulador.classList.remove('hidden');
+        colGrafico.className = "col-span-12 xl:col-span-8 transition-all duration-300";
       } else {
-        if (bgSistema) bgSistema.className = "flex items-center gap-1.5 bg-rose-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide transition-colors duration-300";
-        if (txtSistema) txtSistema.innerText = "DESCONECTADO";
+        painelSimulador.classList.add('hidden');
+        colGrafico.className = "col-span-12 transition-all duration-300";
       }
     }
 
@@ -540,51 +506,12 @@
       }
     }
 
-    function atualizarInterfaceComDados(data) {
+    function simularTemperatura(temp, tempoForaMinutos = 0) {
       marcarConectado(true);
-
-      const cardArduino = document.getElementById('card-arduino');
-      const txtArduino = document.getElementById('txt-arduino');
-      const txtSubArduino = document.getElementById('txt-sub-arduino');
-      const cardRede = document.getElementById('card-rede');
-      const txtRede = document.getElementById('txt-rede');
-
-      if (cardArduino && txtArduino && txtSubArduino) {
-        cardArduino.className = "bg-emerald-50 border border-emerald-200 p-3 rounded-lg flex flex-col justify-between";
-        txtArduino.className = "text-xs font-extrabold text-emerald-600 flex items-center gap-1";
-        txtArduino.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ONLINE';
-        txtSubArduino.className = "text-[9px] text-emerald-600 font-semibold";
-        txtSubArduino.innerText = `IP: ${IP_ARDUINO}`;
+      processarEstadoTemperatura(temp, tempoForaMinutos);
+      if (document.getElementById('txt-tempo-fora')) {
+        document.getElementById('txt-tempo-fora').innerText = `0${tempoForaMinutos}:00 min`;
       }
-
-      if (cardRede && txtRede) {
-        const pwr = data.redeEletrica === true || data.redeEletrica === "ATIVA" || data.redeEletrica === 1 || data.power === true;
-        if (pwr) {
-          cardRede.className = "bg-emerald-50 border border-emerald-200 p-3 rounded-lg flex flex-col justify-between";
-          txtRede.className = "mt-2 flex items-center gap-1 text-emerald-600 font-black text-xs";
-          txtRede.innerHTML = '<i data-lucide="zap" class="w-3.5 h-3.5 text-emerald-500"></i> ATIVA (REDE)';
-        } else {
-          cardRede.className = "bg-amber-50 border border-amber-200 p-3 rounded-lg flex flex-col justify-between";
-          txtRede.className = "mt-2 flex items-center gap-1 text-amber-600 font-black text-xs";
-          txtRede.innerHTML = '<i data-lucide="zap-off" class="w-3.5 h-3.5 text-amber-500"></i> BATERIA / QUEDA';
-        }
-      }
-
-      const tempVal = (data.temperatura !== undefined) ? data.temperatura : data.temp;
-      if (tempVal !== undefined && tempVal !== -127) {
-        processarEstadoTemperatura(tempVal, 0);
-      } else {
-        document.getElementById('val-temperatura').innerHTML = '--,- <span class="text-xs font-bold">°C</span>';
-        document.getElementById('badge-temperatura').innerText = "ERRO NO SENSOR";
-        document.getElementById('badge-temperatura').className = "mt-1 bg-rose-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide";
-      }
-
-      if (document.getElementById('st-compressor')) document.getElementById('st-compressor').innerHTML = '<span class="text-emerald-600">LIGADO</span>';
-      if (document.getElementById('st-porta')) document.getElementById('st-porta').innerHTML = '<span class="text-emerald-600">FECHADA</span>';
-      if (document.getElementById('st-ventilacao')) document.getElementById('st-ventilacao').innerHTML = '<span class="text-emerald-600">ATIVA</span>';
-      if (document.getElementById('st-alarme')) document.getElementById('st-alarme').innerHTML = '<span class="text-slate-400">INATIVO</span>';
-
-      lucide.createIcons();
     }
 
     function simularDesconectado() {
@@ -593,60 +520,67 @@
       const cardArduino = document.getElementById('card-arduino');
       const txtArduino = document.getElementById('txt-arduino');
       const txtSubArduino = document.getElementById('txt-sub-arduino');
-      const cardRede = document.getElementById('card-rede');
-      const txtRede = document.getElementById('txt-rede');
 
       if (cardArduino && txtArduino && txtSubArduino) {
         cardArduino.className = "bg-rose-50 border border-rose-200 p-3 rounded-lg flex flex-col justify-between";
         txtArduino.className = "text-xs font-extrabold text-rose-600 flex items-center gap-1";
-        txtArduino.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> OFFLINE';
-        txtSubArduino.className = "text-[9px] text-rose-400";
+        txtArduino.innerText = "OFFLINE";
         txtSubArduino.innerText = "Aguardando conexão";
-      }
-
-      if (cardRede && txtRede) {
-        cardRede.className = "bg-slate-50 border border-slate-200 p-3 rounded-lg flex flex-col justify-between";
-        txtRede.className = "mt-2 flex items-center gap-1 text-slate-400 font-black text-xs";
-        txtRede.innerHTML = '<i data-lucide="zap-off" class="w-3.5 h-3.5"></i> INATIVA';
       }
 
       document.getElementById('val-temperatura').innerHTML = '--,- <span class="text-xs font-bold">°C</span>';
       document.getElementById('badge-temperatura').innerText = "AGUARDANDO...";
       document.getElementById('badge-temperatura').className = "mt-1 bg-slate-400 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide";
       document.getElementById('gauge-circle').style.strokeDashoffset = 251.2;
-
-      lucide.createIcons();
     }
 
-    // MODOS DE TESTE E SIMULAÇÃO
-    function toggleModoTeste() {
-      const colGrafico = document.getElementById('coluna-grafico');
-      const painelSimulador = document.getElementById('painel-simulador');
+    function marcarConectado(online) {
+      const bgSistema = document.getElementById('badge-sistema');
+      const txtSistema = document.getElementById('txt-sistema');
 
-      if (painelSimulador.classList.contains('hidden')) {
-        painelSimulador.classList.remove('hidden');
-        colGrafico.className = "col-span-12 xl:col-span-8 transition-all duration-300";
+      if (online) {
+        if (bgSistema) bgSistema.className = "flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide transition-colors duration-300";
+        if (txtSistema) txtSistema.innerText = "CONECTADO";
       } else {
-        painelSimulador.classList.add('hidden');
-        colGrafico.className = "col-span-12 transition-all duration-300";
+        if (bgSistema) bgSistema.className = "flex items-center gap-1.5 bg-rose-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide transition-colors duration-300";
+        if (txtSistema) txtSistema.innerText = "DESCONECTADO";
       }
     }
 
-    function simularTemperatura(temp, tempoForaMinutos = 0) {
-      marcarConectado(true);
-      atualizarInterfaceComDados({ temperatura: temp, redeEletrica: true });
-      processarEstadoTemperatura(temp, tempoForaMinutos);
-      if (document.getElementById('txt-tempo-fora')) {
-        document.getElementById('txt-tempo-fora').innerText = `0${tempoForaMinutos}:00 min`;
+    // 5. REQUISIÇÃO SEGURA AO ARDUINO EM SEGUNDO PLANO
+    async function buscarDadosArduino() {
+      const painelSimulador = document.getElementById('painel-simulador');
+      if (painelSimulador && !painelSimulador.classList.contains('hidden')) return;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+      try {
+        const response = await fetch(`http://${IP_ARDUINO}/?nocache=${Date.now()}`, { 
+          method: 'GET',
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const data = await response.json();
+          marcarConectado(true);
+          if (data.temperatura !== undefined) {
+            processarEstadoTemperatura(data.temperatura, 0);
+          }
+        } else {
+          simularDesconectado();
+        }
+      } catch (error) {
+        simularDesconectado();
       }
     }
 
     setInterval(buscarDadosArduino, INTERVALO_LEITURA_MS);
 
-    // 5. RELATÓRIOS
+    // 6. EXPORTAÇÕES DE RELATÓRIO
     function exportarCSV() {
-      const periodo = document.getElementById('filtro-periodo').value;
-      let csvRows = ["REI DO GELO - Relatório de Temperatura", `Periodo: ${periodo}`, "", "Horario;Temperatura (C);Status"];
+      let csvRows = ["REI DO GELO - Relatório de Temperatura", "", "Horário;Temperatura (°C);Status"];
       dadosHistorico.forEach(row => csvRows.push(`${row.hora};${row.temp.toString().replace('.', ',')};${row.status}`));
 
       const csvString = "\uFEFF" + csvRows.join("\n");
@@ -654,59 +588,43 @@
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      link.setAttribute("download", `relatorio_temperatura_${periodo}.csv`);
+      link.setAttribute("download", `relatorio_temperatura.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(url), 100);
     }
 
     function exportarPDF() { window.print(); }
 
-    // 6. ABAS DE NAVEGAÇÃO
-    function navegarPara(aba) {
-      ['dashboard', 'temperatura', 'alarmes', 'configuracoes'].forEach(a => {
-        const elAba = document.getElementById(`aba-${a}`);
-        const btnNav = document.getElementById(`nav-${a}`);
-        const mBtnNav = document.getElementById(`m-nav-${a}`);
+    // 7. INICIALIZAR GRÁFICOS APÓS O CARREGAMENTO DA PÁGINA
+    window.addEventListener('load', () => {
+      const elTrend = document.getElementById('trendChart');
+      if (elTrend) {
+        chartTrend = new Chart(elTrend.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: ['22:00', '00:00', '02:00', '04:00', '06:00', '08:00', '10:00'],
+            datasets: [
+              { label: 'Temperatura (°C)', data: [-18, -17.5, -18.2, -17.9, -18.1, -17.6, -18.0], borderColor: '#0284c7', borderWidth: 2, fill: false },
+              { label: 'Limite Mín (-20°C)', data: Array(7).fill(-20), borderColor: '#ef4444', borderDash: [3, 3], borderWidth: 1, pointRadius: 0 },
+              { label: 'Limite Máx (-1°C)', data: Array(7).fill(-1), borderColor: '#ef4444', borderDash: [3, 3], borderWidth: 1, pointRadius: 0 }
+            ]
+          },
+          options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: -25, max: 10 } } }
+        });
+      }
 
-        if (a === aba) {
-          if (elAba) elAba.classList.remove('hidden');
-          if (btnNav) btnNav.className = "nav-btn w-full flex items-center gap-3 px-3 py-2.5 bg-blue-600/90 text-white font-semibold rounded-lg shadow-sm border-l-4 border-cyan-300 transition";
-          if (mBtnNav) mBtnNav.className = "mobile-nav-btn flex flex-col items-center gap-0.5 text-cyan-400 font-bold text-[10px]";
-        } else {
-          if (elAba) elAba.classList.add('hidden');
-          if (btnNav) btnNav.className = "nav-btn w-full flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white rounded-lg transition";
-          if (mBtnNav) mBtnNav.className = "mobile-nav-btn flex flex-col items-center gap-0.5 text-slate-400 font-medium text-[10px]";
-        }
-      });
-    }
-
-    // 7. INICIALIZAÇÃO DE GRÁFICOS
-    window.addEventListener('DOMContentLoaded', () => {
-      const ctx = document.getElementById('trendChart').getContext('2d');
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: ['22:00', '00:00', '02:00', '04:00', '06:00', '08:00', '10:00'],
-          datasets: [
-            { label: 'Temperatura (°C)', data: [-18, -17.5, -18.2, -17.9, -18.1, -17.6, -18.0], borderColor: '#0284c7', borderWidth: 2, fill: false },
-            { label: 'Limite Mín (-20°C)', data: Array(7).fill(-20), borderColor: '#ef4444', borderDash: [3, 3], borderWidth: 1, pointRadius: 0 },
-            { label: 'Limite Máx (-1°C)', data: Array(7).fill(-1), borderColor: '#ef4444', borderDash: [3, 3], borderWidth: 1, pointRadius: 0 }
-          ]
-        },
-        options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: -25, max: 10 } } }
-      });
-
-      const ctxRel = document.getElementById('relatorioChart').getContext('2d');
-      new Chart(ctxRel, {
-        type: 'line',
-        data: {
-          labels: dadosHistorico.map(d => d.hora),
-          datasets: [{ label: 'Temperatura (°C)', data: dadosHistorico.map(d => d.temp), borderColor: '#0284c7', backgroundColor: 'rgba(2, 132, 199, 0.1)', fill: true, tension: 0.3 }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: -25, max: 10 } } }
-      });
+      const elRel = document.getElementById('relatorioChart');
+      if (elRel) {
+        chartRelatório = new Chart(elRel.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: dadosHistorico.map(d => d.hora),
+            datasets: [{ label: 'Temperatura (°C)', data: dadosHistorico.map(d => d.temp), borderColor: '#0284c7', backgroundColor: 'rgba(2, 132, 199, 0.1)', fill: true, tension: 0.3 }]
+          },
+          options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: -25, max: 10 } } }
+        });
+      }
     });
   </script>
 </body>
