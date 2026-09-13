@@ -20,6 +20,7 @@
 </head>
 <body class="flex h-screen overflow-hidden text-slate-700">
 
+  <!-- BARRA LATERAL (SIDEBAR) -->
   <aside class="w-60 sidebar text-white flex flex-col justify-between p-5 shrink-0">
     <div>
       <div class="mb-8 font-black text-lg tracking-wider text-white">REI DO GELO</div>
@@ -35,7 +36,10 @@
     </div>
   </aside>
 
+  <!-- CONTEÚDO PRINCIPAL -->
   <main class="flex-1 overflow-y-auto p-6 space-y-5">
+    
+    <!-- CABEÇALHO -->
     <header class="flex justify-between items-center bg-white px-6 py-3.5 rounded-xl border border-slate-200/80 shadow-sm">
       <div class="flex items-center gap-3">
         <h1 class="font-extrabold text-slate-800 text-base">REI DO GELO</h1>
@@ -54,6 +58,8 @@
     <!-- ABA 1: DASHBOARD -->
     <div id="tab-dashboard" class="tab-content active space-y-5">
       <div class="grid grid-cols-12 gap-5">
+        
+        <!-- GAUGES E LEITURA -->
         <div class="col-span-12 lg:col-span-6 bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
           <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-1">
             <span class="text-blue-600 font-black">:</span> TEMPERATURA ATUAL
@@ -66,18 +72,19 @@
               </svg>
               <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
                 <span id="val-temperatura" class="text-xl font-black text-slate-800">--,- °C</span>
-                <span id="tag-status" class="bg-blue-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase mt-1">OK</span>
+                <span id="tag-status" class="bg-blue-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase mt-1">AGUARDANDO</span>
                 <span class="text-[9px] text-slate-400 font-medium mt-0.5">Setpoint: -18 °C</span>
               </div>
             </div>
+
             <div class="space-y-2.5 flex-1">
               <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
                 <p class="text-[10px] font-semibold text-slate-400">Temperatura Mínima Normal</p>
-                <p class="text-xs font-extrabold text-slate-800">-20 °C</p>
+                <p class="text-xs font-extrabold text-slate-800" id="limite-min-text">-20 °C</p>
               </div>
               <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
                 <p class="text-[10px] font-semibold text-slate-400">Temperatura Máxima Normal</p>
-                <p class="text-xs font-extrabold text-slate-800">-1 °C</p>
+                <p class="text-xs font-extrabold text-slate-800" id="limite-max-text">-1 °C</p>
               </div>
               <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
                 <p class="text-[10px] font-semibold text-slate-400">Tolerância Degelo / Fora da Faixa</p>
@@ -87,6 +94,7 @@
           </div>
         </div>
 
+        <!-- CARDS DE STATUS -->
         <div class="col-span-12 lg:col-span-6 space-y-4">
           <div class="grid grid-cols-4 gap-3">
             <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
@@ -120,25 +128,26 @@
             <div class="grid grid-cols-4 gap-3 text-center">
               <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
                 <span class="text-[9px] font-bold text-slate-400 uppercase block mb-1">COMPRESSOR</span>
-                <span class="text-xs font-bold text-emerald-600">LIGADO</span>
+                <span id="st-compressor" class="text-xs font-bold text-emerald-600">LIGADO</span>
               </div>
               <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
                 <span class="text-[9px] font-bold text-slate-400 uppercase block mb-1">PORTA</span>
-                <span class="text-xs font-bold text-slate-600">FECHADA</span>
+                <span id="st-porta" class="text-xs font-bold text-slate-600">FECHADA</span>
               </div>
               <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
                 <span class="text-[9px] font-bold text-slate-400 uppercase block mb-1">VENTILAÇÃO</span>
-                <span class="text-xs font-bold text-emerald-600">ATIVO</span>
+                <span id="st-ventilacao" class="text-xs font-bold text-emerald-600">ATIVO</span>
               </div>
               <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
                 <span class="text-[9px] font-bold text-slate-400 uppercase block mb-1">ALARME</span>
-                <span class="text-xs font-bold text-slate-400">NORMAL</span>
+                <span id="st-alarme" class="text-xs font-bold text-slate-400">NORMAL</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
+      <!-- GRÁFICO -->
       <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
         <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">TREND DE TEMPERATURA</h3>
         <div class="h-64 w-full">
@@ -149,18 +158,18 @@
 
     <!-- ABA 2: TEMPERATURA -->
     <div id="tab-temperatura" class="tab-content bg-white p-6 rounded-xl border border-slate-200/80 shadow-sm space-y-4">
-      <h2 class="text-sm font-extrabold text-slate-800 uppercase">Métricas Registradas</h2>
+      <h2 class="text-sm font-extrabold text-slate-800 uppercase">Métricas Registradas em Tempo Real</h2>
       <div class="grid grid-cols-3 gap-4">
         <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
-          <span class="text-xs text-blue-600 font-bold uppercase">Mínima</span>
+          <span class="text-xs text-blue-600 font-bold uppercase">Temperatura Mínima</span>
           <p id="temp-min" class="text-2xl font-black text-slate-800 mt-1">-- °C</p>
         </div>
         <div class="bg-amber-50 p-4 rounded-lg border border-amber-100">
-          <span class="text-xs text-amber-600 font-bold uppercase">Média</span>
+          <span class="text-xs text-amber-600 font-bold uppercase">Temperatura Média</span>
           <p id="temp-med" class="text-2xl font-black text-slate-800 mt-1">-- °C</p>
         </div>
         <div class="bg-rose-50 p-4 rounded-lg border border-rose-100">
-          <span class="text-xs text-rose-600 font-bold uppercase">Máxima</span>
+          <span class="text-xs text-rose-600 font-bold uppercase">Temperatura Máxima</span>
           <p id="temp-max" class="text-2xl font-black text-slate-800 mt-1">-- °C</p>
         </div>
       </div>
@@ -168,40 +177,44 @@
 
     <!-- ABA 3: ALARMES -->
     <div id="tab-alarmes" class="tab-content bg-white p-6 rounded-xl border border-slate-200/80 shadow-sm space-y-4">
-      <h2 class="text-sm font-extrabold text-slate-800 uppercase">Regras de Alarme</h2>
-      <div class="space-y-3 max-w-md">
+      <h2 class="text-sm font-extrabold text-slate-800 uppercase">Ajuste de Regras de Alarme</h2>
+      <div class="space-y-4 max-w-md">
         <div>
-          <label class="text-xs font-bold text-slate-500 block mb-1">Limite Máximo (°C)</label>
-          <input type="number" value="-1" class="w-full border border-slate-300 rounded-lg p-2 text-xs font-bold">
+          <label class="text-xs font-bold text-slate-500 block mb-1">Limite Máximo Permitido (°C)</label>
+          <input type="number" id="input-limite-max" value="-1" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none">
         </div>
         <div>
-          <label class="text-xs font-bold text-slate-500 block mb-1">Limite Mínimo (°C)</label>
-          <input type="number" value="-20" class="w-full border border-slate-300 rounded-lg p-2 text-xs font-bold">
+          <label class="text-xs font-bold text-slate-500 block mb-1">Limite Mínimo Permitido (°C)</label>
+          <input type="number" id="input-limite-min" value="-20" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none">
         </div>
-        <button onclick="alert('Salvo!')" class="bg-blue-600 text-white font-bold text-xs px-4 py-2 rounded-lg">Salvar</button>
+        <button onclick="salvarLimites()" class="bg-blue-600 text-white font-bold text-xs px-5 py-2.5 rounded-lg shadow-sm hover:bg-blue-700 transition-colors">Salvar Regras</button>
       </div>
     </div>
 
     <!-- ABA 4: CONFIGURAÇÕES -->
     <div id="tab-configuracoes" class="tab-content bg-white p-6 rounded-xl border border-slate-200/80 shadow-sm space-y-4">
-      <h2 class="text-sm font-extrabold text-slate-800 uppercase">Parâmetros do Sistema</h2>
-      <div class="space-y-3 max-w-md">
+      <h2 class="text-sm font-extrabold text-slate-800 uppercase">Parâmetros de Conexão do Arduino</h2>
+      <div class="space-y-4 max-w-md">
         <div>
-          <label class="text-xs font-bold text-slate-500 block mb-1">Tolerância Degelo (Minutos)</label>
-          <input type="number" value="5" class="w-full border border-slate-300 rounded-lg p-2 text-xs font-bold">
+          <label class="text-xs font-bold text-slate-500 block mb-1">Endereço do Arduino (URL / DDNS)</label>
+          <input type="text" id="input-arduino-url" value="http://reidogelo.servepics.com:8080" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none">
         </div>
-        <button onclick="alert('Atualizado!')" class="bg-blue-600 text-white font-bold text-xs px-4 py-2 rounded-lg">Atualizar</button>
+        <button onclick="salvarConfiguracao()" class="bg-blue-600 text-white font-bold text-xs px-5 py-2.5 rounded-lg shadow-sm hover:bg-blue-700 transition-colors">Atualizar Endereço</button>
       </div>
     </div>
 
   </main>
 
   <script>
-    // IP / DDNS do seu Roteador
-    const ARDUINO_URL = "http://reidogelo.servepics.com:8080";
-    
-    // Proxy CORS seguro para converter HTTP em HTTPS
-    const PROXY_URL = "https://api.allorigins.win/raw?url=";
+    let urlArduino = localStorage.getItem('urlArduino') || 'http://reidogelo.servepics.com:8080';
+    let limiteMin = parseFloat(localStorage.getItem('limiteMin') || '-20');
+    let limiteMax = parseFloat(localStorage.getItem('limiteMax') || '-1');
+
+    document.getElementById('input-arduino-url').value = urlArduino;
+    document.getElementById('input-limite-min').value = limiteMin;
+    document.getElementById('input-limite-max').value = limiteMax;
+    document.getElementById('limite-min-text').innerText = `${limiteMin} °C`;
+    document.getElementById('limite-max-text').innerText = `${limiteMax} °C`;
 
     let chartTemp = null;
     let historicoTemp = [];
@@ -226,15 +239,37 @@
       document.getElementById('titulo-aba').innerText = nomeAba.toUpperCase() + " DA CÂMARA FRIA";
     }
 
+    function salvarLimites() {
+      limiteMin = parseFloat(document.getElementById('input-limite-min').value);
+      limiteMax = parseFloat(document.getElementById('input-limite-max').value);
+      localStorage.setItem('limiteMin', limiteMin);
+      localStorage.setItem('limiteMax', limiteMax);
+      document.getElementById('limite-min-text').innerText = `${limiteMin} °C`;
+      document.getElementById('limite-max-text').innerText = `${limiteMax} °C`;
+      alert('Limites atualizados com sucesso!');
+    }
+
+    function salvarConfiguracao() {
+      urlArduino = document.getElementById('input-arduino-url').value;
+      localStorage.setItem('urlArduino', urlArduino);
+      alert('Endereço do Arduino atualizado!');
+    }
+
     async function alternarModoTeste() {
       try {
-        const url = `${PROXY_URL}${encodeURIComponent(ARDUINO_URL + '/api/teste')}`;
-        await fetch(url);
+        await fetch(`${urlArduino}/api/teste`, { mode: 'no-cors' });
         modoTesteAtivo = !modoTesteAtivo;
-        const btn = document.getElementById('btn-teste');
-        btn.innerText = modoTesteAtivo ? "Modo Teste: ON" : "Modo Teste: OFF";
-        btn.className = modoTesteAtivo ? "px-4 py-1.5 bg-amber-500 text-white font-bold rounded-lg shadow-sm" : "px-4 py-1.5 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors";
-      } catch(e) {}
+        atualizarBtnTeste(modoTesteAtivo);
+      } catch(e) {
+        modoTesteAtivo = !modoTesteAtivo;
+        atualizarBtnTeste(modoTesteAtivo);
+      }
+    }
+
+    function atualizarBtnTeste(ativo) {
+      const btn = document.getElementById('btn-teste');
+      btn.innerText = ativo ? "Modo Teste: ON" : "Modo Teste: OFF";
+      btn.className = ativo ? "px-4 py-1.5 bg-amber-500 text-white font-bold rounded-lg shadow-sm" : "px-4 py-1.5 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors";
     }
 
     function iniciarGrafico() {
@@ -269,8 +304,12 @@
 
     async function buscarDados() {
       try {
-        const urlFinal = `${PROXY_URL}${encodeURIComponent(ARDUINO_URL + '/api/dados')}`;
-        const res = await fetch(urlFinal);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+        const res = await fetch(`${urlArduino}/api/dados`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
         if (res.ok) {
           const data = await res.json();
           
@@ -283,6 +322,21 @@
           const temp = parseFloat(data.temp);
           document.getElementById('val-temperatura').innerText = `${temp.toFixed(1)} °C`;
 
+          if (data.modoTeste !== undefined) {
+            atualizarBtnTeste(data.modoTeste);
+          }
+
+          // Alarme Visual na Tela
+          const tagStatus = document.getElementById('tag-status');
+          if (temp > limiteMax || temp < limiteMin) {
+            tagStatus.className = "bg-rose-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-bounce";
+            tagStatus.innerText = "FORA DA FAIXA";
+          } else {
+            tagStatus.className = "bg-blue-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase mt-1";
+            tagStatus.innerText = "OK";
+          }
+
+          // Histórico para Métricas
           historicoTemp.push(temp);
           if (historicoTemp.length > 50) historicoTemp.shift();
           
@@ -317,12 +371,14 @@
       } catch (e) {
         document.getElementById('badge-sistema').className = "bg-rose-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5";
         document.getElementById('badge-sistema').innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> DESCONECTADO`;
+        document.getElementById('txt-arduino').className = "my-1 font-black text-xs text-rose-600 flex items-center justify-center gap-1";
+        document.getElementById('txt-arduino').innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> OFFLINE`;
       }
     }
 
     window.onload = () => {
       iniciarGrafico();
-      setInterval(buscarDados, 3000);
+      setInterval(buscarDados, 2000);
     };
   </script>
 </body>
