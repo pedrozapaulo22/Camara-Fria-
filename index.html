@@ -1,3 +1,4 @@
+HTML
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -7,6 +8,8 @@
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Biblioteca para Geração de PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -64,10 +67,9 @@
 </head>
 <body class="flex flex-col lg:flex-row h-screen overflow-hidden text-slate-700">
 
-  <!-- SIDEBAR DESKTOP (WEB) -->
+  <!-- SIDEBAR DESKTOP -->
   <aside class="w-64 sidebar-bg text-white flex-col justify-between p-4 shrink-0 hidden lg:flex shadow-xl relative overflow-hidden">
     <div class="relative z-10">
-      <!-- CABEÇALHO SIDEBAR -->
       <div class="relative px-1 py-3 mb-6 border-b border-slate-700/50 flex flex-col items-start">
         <div class="flex items-center gap-2.5">
           <div class="text-cyan-400 font-extrabold text-2xl">❄</div>
@@ -81,13 +83,13 @@
         </div>
       </div>
 
-      <!-- MENU LATERAL DESKTOP -->
+      <!-- NAV DESKTOP -->
       <nav class="space-y-1 text-xs">
         <button type="button" onclick="navegarPara('dashboard')" id="nav-dashboard-desktop" class="nav-btn active w-full flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white rounded-lg transition cursor-pointer">
           <span class="text-base">🏠</span> Dashboard
         </button>
         <button type="button" onclick="navegarPara('temperatura')" id="nav-temperatura-desktop" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white rounded-lg transition cursor-pointer">
-          <span class="text-base">🌡️</span> Temperatura
+          <span class="text-base">🌡️</span> Temperatura & Registros
         </button>
         <button type="button" onclick="navegarPara('alarmes')" id="nav-alarmes-desktop" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800/60 hover:text-white rounded-lg transition cursor-pointer">
           <span class="text-base">🔔</span> Alarmes
@@ -98,7 +100,6 @@
       </nav>
     </div>
 
-    <!-- RODAPÉ SIDEBAR -->
     <div class="pt-4 border-t border-slate-700/40 relative z-10">
       <div class="w-8 h-1 bg-cyan-500 mb-2 rounded-full"></div>
       <p class="text-[11px] font-extrabold uppercase tracking-wider text-slate-200 leading-snug">
@@ -109,11 +110,6 @@
 
   <!-- PAINEL PRINCIPAL -->
   <main class="flex-1 overflow-y-auto p-4 lg:p-5 space-y-4 pb-24 lg:pb-5">
-
-    <!-- ALERTA HTTPS (CASO ACESSADO VIA GITHUB PAGES) -->
-    <div id="alerta-https" class="hidden bg-amber-500 text-white p-3 rounded-lg text-xs font-semibold flex items-center justify-between shadow-md">
-      <span>⚠️ <b>Nota de Conexão:</b> Você está acessando via HTTPS (GitHub Pages). Para que o navegador comunique com o IP local do Arduino (192.168.15.2), execute o arquivo <code>index.html</code> diretamente da sua máquina.</span>
-    </div>
 
     <!-- HEADER DE TOPO -->
     <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white px-5 py-3 rounded-lg border border-slate-200/80 shadow-sm gap-3">
@@ -141,7 +137,7 @@
     <section id="tab-dashboard" class="tab-content active space-y-4">
       <div class="grid grid-cols-12 gap-4">
 
-        <!-- GAUGE TEMPERATURA REAL -->
+        <!-- LEITURA DE SENSOR DE TEMPERATURA -->
         <div class="col-span-12 xl:col-span-6 bg-white p-4 rounded-lg border border-slate-200/80 shadow-sm flex flex-col justify-between">
           <h3 class="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-3">
             LEITURA DO SENSOR (PINO 2)
@@ -180,10 +176,11 @@
           </div>
         </div>
 
-        <!-- STATUS DE ENERGIA & ARDUINO -->
+        <!-- STATUS DE ENERGIA, ARDUINO E RELATÓRIOS -->
         <div class="col-span-12 xl:col-span-6 space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <!-- REDE ELÉTRICA REAL (PINO 3) -->
+            
+            <!-- REDE ELÉTRICA (PINO 3) -->
             <div id="card-rede" class="bg-slate-50 border border-slate-200 p-3.5 rounded-lg flex flex-col justify-between">
               <div class="flex items-center justify-between">
                 <span id="label-rede" class="text-[9px] font-bold text-slate-400 uppercase">PINO 3 - ENERGIA</span>
@@ -194,7 +191,7 @@
               </div>
             </div>
 
-            <!-- ARDUINO STATUS -->
+            <!-- ARDUINO REAL -->
             <div id="card-arduino" class="bg-rose-50 border border-rose-200 p-3.5 rounded-lg flex flex-col justify-between transition-colors duration-300">
               <div class="flex items-center justify-between">
                 <span id="label-arduino" class="text-[9px] font-bold text-rose-500 uppercase">ARDUINO REAL</span>
@@ -206,24 +203,52 @@
               </div>
             </div>
 
-            <!-- BOTÃO EXPORTAR SD -->
+            <!-- BOTÕES CSV E PDF -->
             <div class="bg-white border border-slate-200 p-3.5 rounded-lg flex flex-col justify-between shadow-sm">
-              <span class="text-[9px] font-bold text-slate-400 uppercase">REGISTRO SD</span>
-              <button type="button" onclick="exportarCSV()" class="mt-2 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold py-2 px-2 rounded transition shadow-sm">
-                📥 Baixar LOG.CSV
-              </button>
+              <span class="text-[9px] font-bold text-slate-400 uppercase">EXPORTAR DADOS</span>
+              <div class="flex flex-col gap-1.5 mt-2">
+                <button type="button" onclick="exportarCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold py-1 px-2 rounded transition shadow-sm flex items-center justify-center gap-1">
+                  📥 Baixar CSV
+                </button>
+                <button type="button" onclick="exportarPDF()" class="bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold py-1 px-2 rounded transition shadow-sm flex items-center justify-center gap-1">
+                  📄 Gerar PDF
+                </button>
+              </div>
             </div>
+
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ABA 2: TEMPERATURA (GRÁFICO/HISTÓRICO) -->
+    <!-- ABA 2: TEMPERATURA & HISTÓRICO / PERÍODOS -->
     <section id="tab-temperatura" class="tab-content space-y-4">
+      
+      <!-- FILTRO DE PERÍODOS -->
+      <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm space-y-3">
+        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider border-b pb-2">Selecione o Período do Registro</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          <div>
+            <label class="block font-bold text-slate-600 mb-1">Data/Hora Inicial</label>
+            <input type="datetime-local" id="filtro-inicio" class="w-full p-2 border border-slate-300 rounded-md bg-slate-50">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 mb-1">Data/Hora Final</label>
+            <input type="datetime-local" id="filtro-fim" class="w-full p-2 border border-slate-300 rounded-md bg-slate-50">
+          </div>
+          <div class="flex items-end">
+            <button type="button" onclick="filtrarRegistros()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-md transition shadow-sm">
+              🔍 Filtrar Registros
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- GRÁFICO HISTÓRICO -->
       <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm space-y-3">
         <div class="flex justify-between items-center border-b pb-2">
-          <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Histórico de Temperatura em Tempo Real</h3>
-          <span class="text-[10px] text-slate-400 font-semibold">Atualizado a cada 2s</span>
+          <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Gráfico de Variação Térmica</h3>
+          <span class="text-[10px] text-slate-400 font-semibold">Atualização Contínua</span>
         </div>
         <div class="h-64 w-full">
           <canvas id="chartTemperatura"></canvas>
@@ -237,33 +262,36 @@
         <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider border-b pb-2">Central de Notificações e Alarmes</h3>
         <div id="lista-alarmes" class="space-y-2 text-xs">
           <div class="p-3 bg-slate-50 border border-slate-200 rounded-md text-slate-500">
-            Nenhum alarme disparado até o momento.
+            Nenhum alarme recente.
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ABA 4: CONFIGURAÇÕES (PREPARADO PARA O FUTURO) -->
+    <!-- ABA 4: CONFIGURAÇÕES (RESERVADO PARA LEITURAS FUTURAS) -->
     <section id="tab-configuracoes" class="tab-content space-y-4">
       <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm space-y-4">
-        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider border-b pb-2">Configurações do Sistema e Conectividade</h3>
+        <div class="border-b pb-2 flex justify-between items-center">
+          <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Parâmetros do Hardware & Leituras Futuras</h3>
+          <span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded">Módulo Futuro</span>
+        </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
           <div>
-            <label class="block font-bold text-slate-600 mb-1">IP do Arduino</label>
-            <input type="text" id="cfg-ip" value="192.168.15.2" class="w-full p-2 border border-slate-300 rounded-md bg-slate-100 font-mono text-slate-700" readonly>
+            <label class="block font-bold text-slate-600 mb-1">IP do Arduino Real</label>
+            <input type="text" value="192.168.15.2" class="w-full p-2 border border-slate-300 rounded-md bg-slate-100 font-mono text-slate-700" readonly>
           </div>
           <div>
-            <label class="block font-bold text-slate-600 mb-1">Porta HTTP</label>
-            <input type="text" value="80" class="w-full p-2 border border-slate-300 rounded-md bg-slate-100 font-mono text-slate-700" readonly>
+            <label class="block font-bold text-slate-600 mb-1">Pino DS18B20 (Temperatura)</label>
+            <input type="text" value="Pino Digital 2" class="w-full p-2 border border-slate-300 rounded-md bg-slate-100 font-mono text-slate-700" readonly>
           </div>
           <div>
-            <label class="block font-bold text-slate-600 mb-1">Intervalo de Leitura (ms)</label>
-            <input type="number" value="2000" class="w-full p-2 border border-slate-300 rounded-md bg-slate-100 font-mono text-slate-700" readonly>
+            <label class="block font-bold text-slate-600 mb-1">Pino Sensor de Energia</label>
+            <input type="text" value="Pino Digital 3" class="w-full p-2 border border-slate-300 rounded-md bg-slate-100 font-mono text-slate-700" readonly>
           </div>
           <div>
-            <label class="block font-bold text-slate-600 mb-1">Status do Servidor SD</label>
-            <input type="text" value="Ativo (LOG.CSV)" class="w-full p-2 border border-slate-300 rounded-md bg-slate-100 font-mono text-slate-700" readonly>
+            <label class="block font-bold text-slate-600 mb-1">Expandir para Novos Sensores (Futuro)</label>
+            <input type="text" value="Reservado (Umidade, Pressão, Abertura de Porta)" class="w-full p-2 border border-slate-300 rounded-md bg-slate-100 font-mono text-slate-700" readonly>
           </div>
         </div>
       </div>
@@ -271,7 +299,7 @@
 
   </main>
 
-  <!-- NAVEGAÇÃO INFERIOR PARA MOBILE (CELULAR) -->
+  <!-- BOTTOM NAV PARA MOBILE -->
   <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 flex justify-around items-center p-2 z-50 shadow-lg text-[10px]">
     <button type="button" onclick="navegarPara('dashboard')" id="nav-dashboard-mobile" class="flex flex-col items-center text-cyan-400 font-bold p-1">
       <span class="text-lg">🏠</span> Dashboard
@@ -288,17 +316,10 @@
   </nav>
 
   <script>
-    // Configurações do IP e Frequência
-    const IP_ARDUINO = "192.168.15.2"; 
+    const IP_ARDUINO = "192.168.15.2";
     const INTERVALO_LEITURA_MS = 2000;
+    let historicoLeituras = [];
 
-    // Detecta protocolo HTTPS (alerta de bloqueio do navegador)
-    if (window.location.protocol === 'https:') {
-      const el = document.getElementById('alerta-https');
-      if (el) el.classList.remove('hidden');
-    }
-
-    // Atualização de Data/Hora
     function atualizarDataHora() {
       const el = document.getElementById('data-hora');
       if (el) el.innerText = new Date().toLocaleString('pt-BR');
@@ -306,7 +327,6 @@
     setInterval(atualizarDataHora, 1000);
     atualizarDataHora();
 
-    // Controle de Abas
     function navegarPara(aba) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
@@ -317,20 +337,16 @@
       const btnDesktop = document.getElementById(`nav-${aba}-desktop`);
       if (btnDesktop) btnDesktop.classList.add('active');
 
-      // Cores do menu mobile
       ['dashboard', 'temperatura', 'alarmes', 'configuracoes'].forEach(item => {
         const btn = document.getElementById(`nav-${item}-mobile`);
         if (btn) {
-          if (item === aba) {
-            btn.className = "flex flex-col items-center text-cyan-400 font-bold p-1";
-          } else {
-            btn.className = "flex flex-col items-center text-slate-400 p-1";
-          }
+          btn.className = (item === aba) 
+            ? "flex flex-col items-center text-cyan-400 font-bold p-1" 
+            : "flex flex-col items-center text-slate-400 p-1";
         }
       });
     }
 
-    // Inicialização do Gráfico Chart.js
     let chartTemp = null;
     function iniciarGrafico() {
       const ctx = document.getElementById('chartTemperatura');
@@ -351,15 +367,12 @@
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            scales: {
-              y: { suggestedMin: -25, suggestedMax: 10 }
-            }
+            scales: { y: { suggestedMin: -25, suggestedMax: 10 } }
           }
         });
       }
     }
 
-    // Processamento do JSON retornado pelo Arduino
     function processarLeituraReal(data) {
       const valTemp = document.getElementById('val-temperatura');
       const badgeTemp = document.getElementById('badge-temperatura');
@@ -393,25 +406,26 @@
         }
         if (txtStatusHw) txtStatusHw.innerText = "Sensor Conectado e Operando";
 
-        // Adiciona ponto ao gráfico
+        const agora = new Date();
+        historicoLeituras.push({ dataHora: agora, temp: temp });
+
         if (chartTemp) {
-          const agora = new Date().toLocaleTimeString();
-          if (chartTemp.data.labels.length > 15) {
+          if (chartTemp.data.labels.length > 20) {
             chartTemp.data.labels.shift();
             chartTemp.data.datasets[0].data.shift();
           }
-          chartTemp.data.labels.push(agora);
+          chartTemp.data.labels.push(agora.toLocaleTimeString());
           chartTemp.data.datasets[0].data.push(temp);
           chartTemp.update();
         }
       }
 
-      // Atualiza estado do pino de Energia (Pino 3)
+      // Atualiza pino 3 de energia
       const cardRede = document.getElementById('card-rede');
       const txtRede = document.getElementById('txt-rede');
       const labelRede = document.getElementById('label-rede');
 
-      const power = (data.power === true || data.redeOk === true);
+      const power = (data.power === true || data.redeOk === true || data.pino3 === 1);
 
       if (power) {
         if (cardRede) cardRede.className = "bg-emerald-50 border border-emerald-200 p-3.5 rounded-lg flex flex-col justify-between";
@@ -430,7 +444,6 @@
       }
     }
 
-    // Atualização dos Badges de Status do Arduino
     function marcarConectado(online, ipExibicao = IP_ARDUINO) {
       const bgSistema = document.getElementById('badge-sistema');
       const txtSistema = document.getElementById('txt-sistema');
@@ -470,7 +483,6 @@
       }
     }
 
-    // Requisição HTTP ao Arduino
     async function buscarDadosArduino() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 1800);
@@ -494,15 +506,40 @@
       }
     }
 
-    // Loop de requisições em tempo real
     setInterval(buscarDadosArduino, INTERVALO_LEITURA_MS);
 
-    // Download do LOG.CSV
     function exportarCSV() {
       window.location.href = `http://${IP_ARDUINO}/download`;
     }
 
-    // Inicializador da página
+    function exportarPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      doc.setFontSize(16);
+      doc.text("REI DO GELO - Relatório da Câmara Fria", 14, 20);
+      doc.setFontSize(10);
+      doc.text(`Data de Emissão: ${new Date().toLocaleString('pt-BR')}`, 14, 28);
+      doc.text(`IP do Servidor: ${IP_ARDUINO}`, 14, 34);
+
+      let line = 45;
+      doc.text("Histórico Recente de Leituras:", 14, line);
+      line += 8;
+
+      historicoLeituras.slice(-15).forEach((item) => {
+        doc.text(`${item.dataHora.toLocaleString('pt-BR')} - Temp: ${item.temp.toFixed(1)} °C`, 14, line);
+        line += 6;
+      });
+
+      doc.save("relatorio-camara-fria.pdf");
+    }
+
+    function filtrarRegistros() {
+      const inicio = document.getElementById('filtro-inicio').value;
+      const fim = document.getElementById('filtro-fim').value;
+      alert(`Filtrando registros entre ${inicio || 'Início'} e ${fim || 'Agora'}`);
+    }
+
     window.addEventListener('load', () => {
       iniciarGrafico();
       buscarDadosArduino();
