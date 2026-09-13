@@ -131,7 +131,6 @@
           <span>Modo Teste</span>
         </button>
 
-        <!-- BADGE STATUS DO TOPO DIREITO (DINÂMICO) -->
         <span id="badge-sistema" class="flex items-center gap-1.5 bg-rose-600 text-white px-3 py-1 rounded-md text-[11px] font-bold tracking-wide transition-colors duration-300">
           <span id="dot-sistema" class="w-2 h-2 rounded-full bg-white"></span>
           <span id="txt-sistema">DESCONECTADO</span>
@@ -429,7 +428,8 @@
   <script>
     lucide.createIcons();
 
-    // 1. ENDPOINT DA COMUNICAÇÃO (CONFIGURADO COM O SEU IP FIXO)
+    // 1. CONFIGURAÇÃO DE COMUNICAÇÃO
+    // Se o acesso for via rede local padrão deixe a porta 80. Caso utilize o roteamento de porta remota, mude para '192.168.15.12:8080'
     const IP_ARDUINO = "192.168.15.12"; 
     const INTERVALO_LEITURA_MS = 2500;
 
@@ -449,7 +449,7 @@
       { hora: '10:00', temp: -18.0, status: 'Normal' }
     ];
 
-    // 2. DATA E HORA EM TEMPO REAL
+    // 2. RELÓGIO DIGITAL
     function atualizarDataHora() {
       const agora = new Date();
       const dataHoraStr = agora.toLocaleString('pt-BR', {
@@ -464,7 +464,7 @@
 
     let emRequisicao = false;
 
-    // 3. COMUNICAÇÃO EM TEMPO REAL COM O ARDUINO
+    // 3. REQUISIÇÃO AO ARDUINO COM TIMEOUT E EVITA TRANCAMENTO
     async function buscarDadosArduino() {
       const painelSimulador = document.getElementById('painel-simulador');
       if (painelSimulador && !painelSimulador.classList.contains('hidden')) return;
@@ -478,8 +478,8 @@
       try {
         const response = await fetch(`http://${IP_ARDUINO}/?nocache=${Date.now()}`, { 
           method: 'GET',
-          signal: controller.signal,
-          headers: { 'Accept': 'application/json' }
+          mode: 'cors',
+          signal: controller.signal
         });
         clearTimeout(timeoutId);
 
@@ -491,12 +491,12 @@
         }
       } catch (error) {
         simularDesconectado();
-      } finally {
+      } font-finally {
         emRequisicao = false;
       }
     }
 
-    // 4. ATUALIZAÇÃO DOS ESTADOS E CARDS DA INTERFACE
+    // 4. MUDANÇAS DE STATUS VISUAIS
     function marcarConectado(online) {
       const bgSistema = document.getElementById('badge-sistema');
       const txtSistema = document.getElementById('txt-sistema');
@@ -663,7 +663,7 @@
 
     function exportarPDF() { window.print(); }
 
-    // 6. NAVEGAÇÃO DE ABAS
+    // 6. ABAS DE NAVEGAÇÃO
     function navegarPara(aba) {
       ['dashboard', 'temperatura', 'alarmes', 'configuracoes'].forEach(a => {
         const elAba = document.getElementById(`aba-${a}`);
@@ -682,7 +682,7 @@
       });
     }
 
-    // 7. GRÁFICOS INICIAIS (CHART.JS)
+    // 7. INICIALIZAÇÃO DE GRÁFICOS
     window.addEventListener('DOMContentLoaded', () => {
       const ctx = document.getElementById('trendChart').getContext('2d');
       new Chart(ctx, {
