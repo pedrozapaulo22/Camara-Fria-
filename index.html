@@ -3,370 +3,148 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>REI DO GELO - Monitoramento da Câmara Fria</title>
-  <!-- Bootstrap CSS & Icons -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Firebase JS SDK -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
+  <title>Supervisório - Câmara Fria</title>
   <style>
-    :root {
-      --sidebar-bg: #0b1e36;
-      --sidebar-active: #0066ff;
-      --bg-body: #f4f7f6;
-    }
-    body {
-      background-color: var(--bg-body);
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-    .wrapper {
-      display: flex;
-      min-height: 100vh;
-    }
-    /* Sidebar */
-    .sidebar {
-      width: 250px;
-      background-color: var(--sidebar-bg);
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 20px 0;
-    }
-    .sidebar .brand {
-      font-weight: 800;
-      font-size: 1.4rem;
-      padding: 0 20px 20px 20px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      letter-spacing: 1px;
-    }
-    .sidebar .nav-link {
-      color: #a0aec0;
-      padding: 12px 20px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      transition: all 0.3s;
-      border-left: 4px solid transparent;
-    }
-    .sidebar .nav-link:hover, .sidebar .nav-link.active {
-      color: #fff;
-      background-color: rgba(255,255,255,0.05);
-      border-left-color: var(--sidebar-active);
-    }
-    .sidebar .nav-link.active {
-      background-color: var(--sidebar-active);
-      border-left-color: #fff;
-    }
-    .sidebar-footer {
-      padding: 20px;
-      font-size: 0.75rem;
-      color: #00d2ff;
-      font-weight: bold;
-    }
 
-    /* Main Content */
-    .main-content {
-      flex: 1;
-      padding: 25px;
-    }
-    .card-custom {
-      background: #fff;
-      border-radius: 12px;
-      border: none;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-    .temp-circle {
-      width: 140px;
-      height: 140px;
-      border-radius: 50%;
-      border: 8px solid #0066ff;
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      margin: 0 auto;
+      min-height: 100vh;
+      padding: 20px;
     }
-    .temp-val {
-      font-size: 1.8rem;
-      font-weight: 800;
-      color: #2d3748;
-    }
-    .status-card {
+
+    .card {
+      background-color: #1e293b;
+      border-radius: 16px;
+      padding: 30px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
       text-align: center;
-      padding: 15px;
-      border-radius: 8px;
-      background: #f8fafc;
+      border: 1px solid #334155;
     }
-    .badge-status {
-      font-size: 0.85rem;
-      padding: 6px 12px;
-      border-radius: 20px;
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .metric {
+      margin: 25px 0;
+    }
+
+    .label {
+      font-size: 0.9rem;
+      color: #64748b;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+    }
+
+    .value {
+      font-size: 3.5rem;
+      font-weight: bold;
+      color: #38bdf8;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 10px 20px;
+      border-radius: 50px;
+      font-weight: bold;
+      font-size: 1rem;
+      margin-top: 10px;
+      transition: all 0.3s ease;
+    }
+
+    .status-ok {
+      background-color: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+      border: 1px solid #22c55e;
+    }
+
+    .status-error {
+      background-color: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid #ef4444;
+    }
+
+    .footer-info {
+      margin-top: 20px;
+      font-size: 0.75rem;
+      color: #475569;
     }
   </style>
 </head>
 <body>
 
-<div class="wrapper">
-  <!-- BARRA LATERAL (MENU COMPLETO) -->
-  <div class="sidebar">
-    <div>
-      <div class="brand">REI DO GELO</div>
-      <nav class="mt-3">
-        <a href="#dashboard" class="nav-link active" onclick="switchTab('dashboard')"><i class="bi bi-grid-1x2-fill"></i> Dashboard</a>
-        <a href="#temperatura" class="nav-link" onclick="switchTab('temperatura')"><i class="bi bi-thermometer-half"></i> Temperatura</a>
-        <a href="#alarmes" class="nav-link" onclick="switchTab('alarmes')"><i class="bi bi-bell-fill"></i> Alarmes</a>
-        <a href="#configuracoes" class="nav-link" onclick="switchTab('configuracoes')"><i class="bi bi-gear-fill"></i> Configurações</a>
-      </nav>
+  <div class="card">
+    <h1>Câmara Fria</h1>
+
+    <div class="metric">
+      <div class="label">Temperatura Atual</div>
+      <div class="value" id="tempValue">--.- °C</div>
     </div>
-    <div class="sidebar-footer">
-      CONTROLE E SEGURANÇA PARA O SEU PRODUTO.
+
+    <div class="metric">
+      <div class="label">Rede Elétrica</div>
+      <div id="statusPower" class="status-badge status-ok">Aguardando...</div>
     </div>
+
+    <div class="footer-info" id="lastUpdate">Última atualização: --:--:--</div>
   </div>
 
-  <!-- CONTEÚDO PRINCIPAL -->
-  <div class="main-content">
-    
-    <!-- CABEÇALHO -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <div>
-        <h4 class="mb-0 fw-bold">REI DO GELO <span class="text-muted fs-6 font-monospace">| MONITORAMENTO VIA NUVEM (FIREBASE)</span></h4>
-      </div>
-      <div class="d-flex align-items-center gap-3">
-        <span id="connBadge" class="badge bg-danger badge-status"><i class="bi bi-circle-fill"></i> DESCONECTADO</span>
-        <span id="clock" class="text-muted fw-semibold">--/--/---- --:--:--</span>
-      </div>
-    </div>
+  <script>
+    const CHANNEL_ID = "3498175"; 
 
-    <!-- PAINEL DASHBOARD -->
-    <div id="tab-dashboard">
-      <div class="row">
-        <!-- TEMPERATURA ATUAL -->
-        <div class="col-md-6">
-          <div class="card-custom h-100">
-            <h6 class="text-uppercase text-muted fw-bold mb-3">: TEMPERATURA ATUAL</h6>
-            <div class="row align-items-center">
-              <div class="col-6 text-center">
-                <div class="temp-circle" id="tempCircle">
-                  <span class="temp-val" id="tempVal">--.- °C</span>
-                  <span class="badge bg-primary" id="tempStatus">AGUARDANDO</span>
-                </div>
-                <small class="text-muted mt-2 d-block">Setpoint: -18 °C</small>
-              </div>
-              <div class="col-6">
-                <div class="p-2 bg-light rounded mb-2">
-                  <small class="text-muted d-block">Temperatura Mínima Normal</small>
-                  <strong>-20 °C</strong>
-                </div>
-                <div class="p-2 bg-light rounded mb-2">
-                  <small class="text-muted d-block">Temperatura Máxima Normal</small>
-                  <strong>-1 °C</strong>
-                </div>
-                <div class="p-2 bg-light rounded">
-                  <small class="text-muted d-block">Tolerância Degelo / Fora da Faixa</small>
-                  <strong>Até 5 minutos (&lt;= 0 °C)</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+    function atualizarDashboard() {
+      fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds/last.json`)
+        .then(response => response.json())
+        .then(data => {
+          if (!data || data === "-1") {
+            console.warn("Nenhum dado retornado do ThingSpeak.");
+            return;
+          }
 
-        <!-- INDICADORES DE REDE E HARDWARE -->
-        <div class="col-md-6">
-          <div class="row g-2 mb-3">
-            <div class="col-3">
-              <div class="status-card">
-                <small class="text-muted d-block">REDE ELÉTRICA</small>
-                <strong id="powerStatus" class="text-secondary">INATIVA</strong>
-              </div>
-            </div>
-            <div class="col-3">
-              <div class="status-card">
-                <small class="text-muted d-block">BATERIA</small>
-                <strong>-- %</strong>
-              </div>
-            </div>
-            <div class="col-3">
-              <div class="status-card">
-                <small class="text-muted d-block">FORA DA FAIXA</small>
-                <strong>00:00 min</strong>
-              </div>
-            </div>
-            <div class="col-3">
-              <div class="status-card border-danger" id="arduinoCard">
-                <small class="text-muted d-block">ARDUINO UNO</small>
-                <span id="arduinoStatus" class="text-danger fw-bold">● OFFLINE</span>
-              </div>
-            </div>
-          </div>
+          const temp = parseFloat(data.field1).toFixed(1);
+          const powerOk = (data.field2 === "1");
 
-          <!-- STATUS DOS EQUIPAMENTOS -->
-          <div class="card-custom">
-            <h6 class="text-uppercase text-muted fw-bold mb-3">: STATUS DOS EQUIPAMENTOS</h6>
-            <div class="row text-center g-2">
-              <div class="col-3"><div class="p-2 bg-light rounded"><small>COMPRESSOR</small><br><strong>--</strong></div></div>
-              <div class="col-3"><div class="p-2 bg-light rounded"><small>PORTA</small><br><strong>--</strong></div></div>
-              <div class="col-3"><div class="p-2 bg-light rounded"><small>VENTILAÇÃO</small><br><strong>--</strong></div></div>
-              <div class="col-3"><div class="p-2 bg-light rounded"><small>ALARME</small><br><strong>--</strong></div></div>
-            </div>
-          </div>
-        </div>
-      </div>
+          document.getElementById("tempValue").innerText = `${temp} °C`;
+          
+          const elPower = document.getElementById("statusPower");
+          if (powerOk) {
+            elPower.innerText = "🟢 ENERGIA OK";
+            elPower.className = "status-badge status-ok";
+          } else {
+            elPower.innerText = "🔴 QUEDA DE ENERGIA";
+            elPower.className = "status-badge status-error";
+          }
 
-      <!-- GRÁFICO REAL-TIME -->
-      <div class="card-custom mt-4">
-        <h6 class="text-uppercase text-muted fw-bold mb-3">TREND DE TEMPERATURA (REAL-TIME NUVEM)</h6>
-        <div style="height: 250px;">
-          <canvas id="tempChart"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <!-- ABAS SECUNDÁRIAS (TEMPERATURA, ALARMES, CONFIGURAÇÕES) -->
-    <div id="tab-temperatura" style="display:none;" class="card-custom">
-      <h5><i class="bi bi-thermometer-half"></i> Histórico Detalhado de Temperatura</h5>
-      <p class="text-muted">Consulte aqui os registros gravados do sensor de temperatura DS18B20.</p>
-    </div>
-
-    <div id="tab-alarmes" style="display:none;" class="card-custom">
-      <h5><i class="bi bi-bell-fill"></i> Central de Alarmes</h5>
-      <p class="text-muted">Alertas de porta aberta, queda de energia elétrica e variação crítica de temperatura.</p>
-    </div>
-
-    <div id="tab-configuracoes" style="display:none;" class="card-custom">
-      <h5><i class="bi bi-gear-fill"></i> Configurações do Sistema</h5>
-      <div class="row g-3 mt-1">
-        <div class="col-md-4">
-          <label class="form-label">Setpoint da Temperatura (°C)</label>
-          <input type="number" class="form-control" value="-18">
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Tolerância Temp. Máxima (°C)</label>
-          <input type="number" class="form-control" value="-1">
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Tempo Limite Alarme (Minutos)</label>
-          <input type="number" class="form-control" value="5">
-        </div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<script>
-  // 1. CONFIGURAÇÃO DO FIREBASE (SUBSTITUA PELOS SEUS DADOS REALTIME DATABASE)
-  const firebaseConfig = {
-    apiKey: "SUA_API_KEY",
-    authDomain: "SEU_PROJETO.firebaseapp.com",
-    databaseURL: "https://SEU_PROJETO-default-rtdb.firebaseio.com",
-    projectId: "SEU_PROJETO",
-    storageBucket: "SEU_PROJETO.appspot.com",
-    messagingSenderId: "000000000",
-    appId: "1:000000000:web:000000000"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const database = firebase.database();
-
-  // 2. RELÓGIO DO CABEÇALHO
-  setInterval(() => {
-    document.getElementById('clock').innerText = new Date().toLocaleString('pt-BR');
-  }, 1000);
-
-  // 3. ALTERNÂNCIA DE ABAS
-  function switchTab(tabName) {
-    ['dashboard', 'temperatura', 'alarmes', 'configuracoes'].forEach(t => {
-      document.getElementById('tab-' + t).style.display = (t === tabName) ? 'block' : 'none';
-    });
-    document.querySelectorAll('.sidebar .nav-link').forEach(link => {
-      link.classList.remove('active');
-      if (link.getAttribute('href') === '#' + tabName) link.classList.add('active');
-    });
-  }
-
-  // 4. CONFIGURAÇÃO DO GRÁFICO (CHART.JS)
-  const ctx = document.getElementById('tempChart').getContext('2d');
-  const tempChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [{
-        label: 'Temperatura (°C)',
-        data: [],
-        borderColor: '#0066ff',
-        backgroundColor: 'rgba(0, 102, 255, 0.1)',
-        fill: true,
-        tension: 0.3
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        y: { min: -25, max: 15 }
-      }
+          const horaAtual = new Date().toLocaleTimeString('pt-BR');
+          document.getElementById("lastUpdate").innerText = `Última atualização: ${horaAtual}`;
+        })
+        .catch(err => {
+          console.error("Erro ao buscar dados do ThingSpeak:", err);
+          document.getElementById("statusPower").innerText = "⚠️ ERRO DE CONEXÃO";
+          document.getElementById("statusPower").className = "status-badge status-error";
+        });
     }
-  });
 
-  // 5. LEITURA EM TEMPO REAL DO ARDUINO NO FIREBASE
-  let lastUpdateTimeout;
-
-  database.ref('camara_fria').on('value', (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-      // Atualiza Status de Conexão NUVEM & ARDUINO
-      document.getElementById('connBadge').className = 'badge bg-success badge-status';
-      document.getElementById('connBadge').innerHTML = '<i class="bi bi-check-circle-fill"></i> CONECTADO';
-
-      document.getElementById('arduinoStatus').className = 'text-success fw-bold';
-      document.getElementById('arduinoStatus').innerText = '● ONLINE';
-
-      // Atualiza Valores de Temperatura
-      if (data.temp !== undefined) {
-        document.getElementById('tempVal').innerText = data.temp.toFixed(1) + ' °C';
-        
-        // Atualiza Gráfico
-        const timeNow = new Date().toLocaleTimeString('pt-BR');
-        if (tempChart.data.labels.length > 15) {
-          tempChart.data.labels.shift();
-          tempChart.data.datasets[0].data.shift();
-        }
-        tempChart.data.labels.push(timeNow);
-        tempChart.data.datasets[0].data.push(data.temp);
-        tempChart.update();
-      }
-
-      // Atualiza Status da Rede Elétrica
-      if (data.power !== undefined) {
-        const powerElem = document.getElementById('powerStatus');
-        if (data.power) {
-          powerElem.innerText = 'ATIVA';
-          powerElem.className = 'text-success fw-bold';
-        } else {
-          powerElem.innerText = 'QUEDA';
-          powerElem.className = 'text-danger fw-bold';
-        }
-      }
-
-      // Timer de Segurança: Se não receber nada em 30 segundos, marca como Offline
-      clearTimeout(lastUpdateTimeout);
-      lastUpdateTimeout = setTimeout(() => {
-        document.getElementById('connBadge').className = 'badge bg-danger badge-status';
-        document.getElementById('connBadge').innerHTML = '<i class="bi bi-x-circle-fill"></i> DESCONECTADO';
-        document.getElementById('arduinoStatus').className = 'text-danger fw-bold';
-        document.getElementById('arduinoStatus').innerText = '● OFFLINE';
-      }, 30000);
-    }
-  });
-</script>
+    atualizarDashboard();
+    setInterval(atualizarDashboard, 15000);
+  </script>
 
 </body>
 </html>
