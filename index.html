@@ -4,363 +4,369 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>REI DO GELO - Monitoramento da Câmara Fria</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Bootstrap CSS & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-  
-  <!-- Firebase App & Database SDKs -->
+  <!-- Firebase JS SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-    body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
-    .sidebar { background-color: #0b192c; }
-    .gauge-wrapper { width: 130px; height: 130px; position: relative; display: flex; align-items: center; justify-content: center; }
-    .gauge-svg { width: 130px; height: 130px; transform: rotate(-90deg); }
-    .gauge-bg { fill: none; stroke: #e2e8f0; stroke-width: 8; }
-    .gauge-fill { fill: none; stroke: #2563eb; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 251.2; stroke-dashoffset: 251.2; transition: all 0.5s ease; }
-    .gauge-fill-error { stroke: #e11d48 !important; }
+    :root {
+      --sidebar-bg: #0b1e36;
+      --sidebar-active: #0066ff;
+      --bg-body: #f4f7f6;
+    }
+    body {
+      background-color: var(--bg-body);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .wrapper {
+      display: flex;
+      min-height: 100vh;
+    }
+    /* Sidebar */
+    .sidebar {
+      width: 250px;
+      background-color: var(--sidebar-bg);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px 0;
+    }
+    .sidebar .brand {
+      font-weight: 800;
+      font-size: 1.4rem;
+      padding: 0 20px 20px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      letter-spacing: 1px;
+    }
+    .sidebar .nav-link {
+      color: #a0aec0;
+      padding: 12px 20px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.3s;
+      border-left: 4px solid transparent;
+    }
+    .sidebar .nav-link:hover, .sidebar .nav-link.active {
+      color: #fff;
+      background-color: rgba(255,255,255,0.05);
+      border-left-color: var(--sidebar-active);
+    }
+    .sidebar .nav-link.active {
+      background-color: var(--sidebar-active);
+      border-left-color: #fff;
+    }
+    .sidebar-footer {
+      padding: 20px;
+      font-size: 0.75rem;
+      color: #00d2ff;
+      font-weight: bold;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      padding: 25px;
+    }
+    .card-custom {
+      background: #fff;
+      border-radius: 12px;
+      border: none;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .temp-circle {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      border: 8px solid #0066ff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+    }
+    .temp-val {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #2d3748;
+    }
+    .status-card {
+      text-align: center;
+      padding: 15px;
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+    .badge-status {
+      font-size: 0.85rem;
+      padding: 6px 12px;
+      border-radius: 20px;
+    }
   </style>
 </head>
-<body class="flex flex-col md:flex-row h-screen overflow-hidden text-slate-700">
+<body>
 
-  <!-- BARRA LATERAL (DESKTOP) -->
-  <aside class="hidden md:flex w-60 sidebar text-white flex-col justify-between p-5 shrink-0">
+<div class="wrapper">
+  <!-- BARRA LATERAL (MENU COMPLETO) -->
+  <div class="sidebar">
     <div>
-      <div class="mb-8 font-black text-lg tracking-wider text-white">REI DO GELO</div>
-      <nav class="space-y-2 text-xs font-semibold">
-        <button onclick="mudarAba('dashboard')" class="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-lg shadow-md text-left">Dashboard</button>
-        <button onclick="mudarAba('temperatura')" class="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg text-left">Temperatura</button>
-        <button onclick="mudarAba('alarmes')" class="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg text-left">Alarmes</button>
+      <div class="brand">REI DO GELO</div>
+      <nav class="mt-3">
+        <a href="#dashboard" class="nav-link active" onclick="switchTab('dashboard')"><i class="bi bi-grid-1x2-fill"></i> Dashboard</a>
+        <a href="#temperatura" class="nav-link" onclick="switchTab('temperatura')"><i class="bi bi-thermometer-half"></i> Temperatura</a>
+        <a href="#alarmes" class="nav-link" onclick="switchTab('alarmes')"><i class="bi bi-bell-fill"></i> Alarmes</a>
+        <a href="#configuracoes" class="nav-link" onclick="switchTab('configuracoes')"><i class="bi bi-gear-fill"></i> Configurações</a>
       </nav>
     </div>
-    <div class="text-[10px] font-extrabold text-cyan-400 uppercase leading-tight">
+    <div class="sidebar-footer">
       CONTROLE E SEGURANÇA PARA O SEU PRODUTO.
     </div>
-  </aside>
+  </div>
 
   <!-- CONTEÚDO PRINCIPAL -->
-  <main class="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 mb-16 md:mb-0">
+  <div class="main-content">
     
-    <!-- CABEÇALHO SUPERIOR -->
-    <header class="flex flex-wrap justify-between items-center bg-white px-4 md:px-6 py-3.5 rounded-xl border border-slate-200/80 shadow-sm gap-2">
-      <div class="flex items-center gap-3">
-        <h1 class="font-extrabold text-slate-800 text-base">REI DO GELO</h1>
-        <span class="text-slate-300">|</span>
-        <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">MONITORAMENTO VIA NUVEM (FIREBASE)</span>
+    <!-- CABEÇALHO -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h4 class="mb-0 fw-bold">REI DO GELO <span class="text-muted fs-6 font-monospace">| MONITORAMENTO VIA NUVEM (FIREBASE)</span></h4>
       </div>
-      <div class="flex items-center gap-3 text-xs font-bold">
-        <span id="badge-sistema" class="bg-rose-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5">
-          <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> DESCONECTADO
-        </span>
-        <span id="data-hora" class="text-slate-400 font-medium hidden sm:inline ml-2">--/--/---- --:--:--</span>
+      <div class="d-flex align-items-center gap-3">
+        <span id="connBadge" class="badge bg-danger badge-status"><i class="bi bi-circle-fill"></i> DESCONECTADO</span>
+        <span id="clock" class="text-muted fw-semibold">--/--/---- --:--:--</span>
       </div>
-    </header>
+    </div>
 
-    <!-- ABA 1: DASHBOARD -->
-    <div id="aba-dashboard" class="space-y-5">
-      <div class="grid grid-cols-12 gap-5">
-        
+    <!-- PAINEL DASHBOARD -->
+    <div id="tab-dashboard">
+      <div class="row">
         <!-- TEMPERATURA ATUAL -->
-        <div class="col-span-12 lg:col-span-6 bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-          <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-1">
-            <span class="text-blue-600 font-black">:</span> TEMPERATURA ATUAL
-          </h3>
-          <div class="flex flex-col sm:flex-row items-center gap-6">
-            <div class="gauge-wrapper shrink-0">
-              <svg class="gauge-svg" viewBox="0 0 100 100">
-                <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
-                <circle id="gauge-circle" class="gauge-fill" cx="50" cy="50" r="40"></circle>
-              </svg>
-              <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-1">
-                <span id="val-temperatura" class="text-lg font-black text-slate-800">--,- °C</span>
-                <span id="badge-sensor-status" class="bg-blue-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1">AGUARDANDO</span>
-                <span class="text-[9px] text-slate-400 font-medium mt-0.5">Setpoint: -18 °C</span>
+        <div class="col-md-6">
+          <div class="card-custom h-100">
+            <h6 class="text-uppercase text-muted fw-bold mb-3">: TEMPERATURA ATUAL</h6>
+            <div class="row align-items-center">
+              <div class="col-6 text-center">
+                <div class="temp-circle" id="tempCircle">
+                  <span class="temp-val" id="tempVal">--.- °C</span>
+                  <span class="badge bg-primary" id="tempStatus">AGUARDANDO</span>
+                </div>
+                <small class="text-muted mt-2 d-block">Setpoint: -18 °C</small>
               </div>
-            </div>
-
-            <div class="space-y-2.5 w-full flex-1">
-              <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
-                <p class="text-[10px] font-semibold text-slate-400">Temperatura Mínima Normal</p>
-                <p class="text-xs font-extrabold text-slate-800">-20 °C</p>
-              </div>
-              <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
-                <p class="text-[10px] font-semibold text-slate-400">Temperatura Máxima Normal</p>
-                <p class="text-xs font-extrabold text-slate-800">-1 °C</p>
-              </div>
-              <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
-                <p class="text-[10px] font-semibold text-slate-400">Tolerância Degelo / Fora da Faixa</p>
-                <p class="text-xs font-extrabold text-slate-800">Até 5 minutos (&lt;= 0 °C)</p>
+              <div class="col-6">
+                <div class="p-2 bg-light rounded mb-2">
+                  <small class="text-muted d-block">Temperatura Mínima Normal</small>
+                  <strong>-20 °C</strong>
+                </div>
+                <div class="p-2 bg-light rounded mb-2">
+                  <small class="text-muted d-block">Temperatura Máxima Normal</small>
+                  <strong>-1 °C</strong>
+                </div>
+                <div class="p-2 bg-light rounded">
+                  <small class="text-muted d-block">Tolerância Degelo / Fora da Faixa</small>
+                  <strong>Até 5 minutos (&lt;= 0 °C)</strong>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- CARDS DE STATUS -->
-        <div class="col-span-12 lg:col-span-6 space-y-4">
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
-              <span class="text-[9px] font-bold text-slate-400 uppercase">REDE ELÉTRICA</span>
-              <div id="status-rede" class="my-2 font-black text-xs text-slate-400">INATIVA</div>
-              <span class="text-[8px] opacity-0">.</span>
-            </div>
-
-            <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
-              <span class="text-[9px] font-bold text-slate-400 uppercase">BATERIA</span>
-              <div id="val-bateria" class="my-1 font-black text-sm text-slate-700">-- %</div>
-              <span id="sub-bateria" class="text-[8px] text-slate-400">Sem dados</span>
-            </div>
-
-            <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
-              <span class="text-[9px] font-bold text-slate-400 uppercase leading-tight">FORA DA FAIXA</span>
-              <div class="my-1 font-black text-xs text-slate-800">00:00 min</div>
-              <span class="text-[8px] text-slate-400">Lim: 05:00 min</span>
-            </div>
-
-            <div class="bg-rose-50 border border-rose-200/80 p-3 rounded-xl text-center flex flex-col justify-between">
-              <span class="text-[9px] font-bold text-rose-500 uppercase">ARDUINO UNO</span>
-              <div id="txt-arduino" class="my-1 font-black text-xs text-rose-600 flex items-center justify-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> OFFLINE
+        <!-- INDICADORES DE REDE E HARDWARE -->
+        <div class="col-md-6">
+          <div class="row g-2 mb-3">
+            <div class="col-3">
+              <div class="status-card">
+                <small class="text-muted d-block">REDE ELÉTRICA</small>
+                <strong id="powerStatus" class="text-secondary">INATIVA</strong>
               </div>
-              <span class="text-[8px] text-rose-400">Aguardando nuvem</span>
+            </div>
+            <div class="col-3">
+              <div class="status-card">
+                <small class="text-muted d-block">BATERIA</small>
+                <strong>-- %</strong>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="status-card">
+                <small class="text-muted d-block">FORA DA FAIXA</small>
+                <strong>00:00 min</strong>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="status-card border-danger" id="arduinoCard">
+                <small class="text-muted d-block">ARDUINO UNO</small>
+                <span id="arduinoStatus" class="text-danger fw-bold">● OFFLINE</span>
+              </div>
             </div>
           </div>
 
-          <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
-            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1">
-              <span class="text-blue-600 font-black">:</span> STATUS DOS EQUIPAMENTOS
-            </h3>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-              <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                <span class="text-[9px] font-bold text-slate-400 uppercase block mb-1">COMPRESSOR</span>
-                <span id="st-compressor" class="text-xs font-bold text-slate-400">--</span>
-              </div>
-              <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                <span class="text-[9px] font-bold text-slate-400 uppercase block mb-1">PORTA</span>
-                <span id="st-porta" class="text-xs font-bold text-slate-400">--</span>
-              </div>
-              <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                <span class="text-[9px] font-bold text-slate-400 uppercase block mb-1">VENTILAÇÃO</span>
-                <span id="st-ventilacao" class="text-xs font-bold text-slate-400">--</span>
-              </div>
-              <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                <span class="text-[9px] font-bold text-slate-400 uppercase block mb-1">ALARME</span>
-                <span id="st-alarme" class="text-xs font-bold text-slate-400">--</span>
-              </div>
+          <!-- STATUS DOS EQUIPAMENTOS -->
+          <div class="card-custom">
+            <h6 class="text-uppercase text-muted fw-bold mb-3">: STATUS DOS EQUIPAMENTOS</h6>
+            <div class="row text-center g-2">
+              <div class="col-3"><div class="p-2 bg-light rounded"><small>COMPRESSOR</small><br><strong>--</strong></div></div>
+              <div class="col-3"><div class="p-2 bg-light rounded"><small>PORTA</small><br><strong>--</strong></div></div>
+              <div class="col-3"><div class="p-2 bg-light rounded"><small>VENTILAÇÃO</small><br><strong>--</strong></div></div>
+              <div class="col-3"><div class="p-2 bg-light rounded"><small>ALARME</small><br><strong>--</strong></div></div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">TREND DE TEMPERATURA (REAL-TIME NUVEM)</h3>
-        <div class="h-64 w-full">
-          <canvas id="chartTemperatura"></canvas>
+      <!-- GRÁFICO REAL-TIME -->
+      <div class="card-custom mt-4">
+        <h6 class="text-uppercase text-muted fw-bold mb-3">TREND DE TEMPERATURA (REAL-TIME NUVEM)</h6>
+        <div style="height: 250px;">
+          <canvas id="tempChart"></canvas>
         </div>
       </div>
     </div>
 
-    <!-- ABA 2: TEMPERATURA -->
-    <div id="aba-temperatura" class="hidden space-y-5">
-      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">EXPORTAÇÃO DE RELATÓRIOS</h3>
-        <div class="flex gap-4">
-          <button onclick="exportarCSV()" class="bg-emerald-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-emerald-700 transition-colors w-1/2">Gerar CSV</button>
-          <button onclick="exportarPDF()" class="bg-rose-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-rose-700 transition-colors w-1/2">Gerar PDF</button>
+    <!-- ABAS SECUNDÁRIAS (TEMPERATURA, ALARMES, CONFIGURAÇÕES) -->
+    <div id="tab-temperatura" style="display:none;" class="card-custom">
+      <h5><i class="bi bi-thermometer-half"></i> Histórico Detalhado de Temperatura</h5>
+      <p class="text-muted">Consulte aqui os registros gravados do sensor de temperatura DS18B20.</p>
+    </div>
+
+    <div id="tab-alarmes" style="display:none;" class="card-custom">
+      <h5><i class="bi bi-bell-fill"></i> Central de Alarmes</h5>
+      <p class="text-muted">Alertas de porta aberta, queda de energia elétrica e variação crítica de temperatura.</p>
+    </div>
+
+    <div id="tab-configuracoes" style="display:none;" class="card-custom">
+      <h5><i class="bi bi-gear-fill"></i> Configurações do Sistema</h5>
+      <div class="row g-3 mt-1">
+        <div class="col-md-4">
+          <label class="form-label">Setpoint da Temperatura (°C)</label>
+          <input type="number" class="form-control" value="-18">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Tolerância Temp. Máxima (°C)</label>
+          <input type="number" class="form-control" value="-1">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Tempo Limite Alarme (Minutos)</label>
+          <input type="number" class="form-control" value="5">
         </div>
       </div>
     </div>
 
-    <!-- ABA 3: ALARMES -->
-    <div id="aba-alarmes" class="hidden space-y-5">
-      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm overflow-x-auto">
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">HISTÓRICO DE ALARMES</h3>
-        <table class="w-full text-left text-xs">
-          <thead class="bg-slate-50 text-slate-500 uppercase border-b">
-            <tr>
-              <th class="p-3">Data / Hora</th>
-              <th class="p-3">Evento / Alarme</th>
-              <th class="p-3">Nível</th>
-              <th class="p-3">Status</th>
-            </tr>
-          </thead>
-          <tbody id="tabela-alarmes" class="divide-y"></tbody>
-        </table>
-      </div>
-    </div>
+  </div>
+</div>
 
-  </main>
+<script>
+  // 1. CONFIGURAÇÃO DO FIREBASE (SUBSTITUA PELOS SEUS DADOS REALTIME DATABASE)
+  const firebaseConfig = {
+    apiKey: "SUA_API_KEY",
+    authDomain: "SEU_PROJETO.firebaseapp.com",
+    databaseURL: "https://SEU_PROJETO-default-rtdb.firebaseio.com",
+    projectId: "SEU_PROJETO",
+    storageBucket: "SEU_PROJETO.appspot.com",
+    messagingSenderId: "000000000",
+    appId: "1:000000000:web:000000000"
+  };
 
-  <!-- BARRA DE NAVEGAÇÃO INFERIOR (MOBILE) -->
-  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 flex justify-around items-center py-2 z-50 shadow-lg">
-    <button onclick="mudarAba('dashboard')" class="flex flex-col items-center text-slate-300 hover:text-white">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-      <span class="text-[9px] mt-0.5">Dash</span>
-    </button>
-    <button onclick="mudarAba('temperatura')" class="flex flex-col items-center text-slate-300 hover:text-white">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-      <span class="text-[9px] mt-0.5">Temp</span>
-    </button>
-    <button onclick="mudarAba('alarmes')" class="flex flex-col items-center text-slate-300 hover:text-white">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-      <span class="text-[9px] mt-0.5">Alarmes</span>
-    </button>
-  </nav>
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
 
-  <script>
-    // --- INICIALIZAÇÃO DO FIREBASE ---
-    const firebaseConfig = {
-      databaseURL: "https://camarafria-default-rtdb.firebaseio.com"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
+  // 2. RELÓGIO DO CABEÇALHO
+  setInterval(() => {
+    document.getElementById('clock').innerText = new Date().toLocaleString('pt-BR');
+  }, 1000);
 
-    let chartTemp = null;
-    let historicoLeituras = [];
-    let listaAlarmes = [];
-
-    function atualizarDataHora() {
-      document.getElementById('data-hora').innerText = new Date().toLocaleString('pt-BR');
-    }
-    setInterval(atualizarDataHora, 1000);
-
-    function mudarAba(aba) {
-      ['dashboard', 'temperatura', 'alarmes'].forEach(a => {
-        document.getElementById(`aba-${a}`).classList.add('hidden');
-      });
-      document.getElementById(`aba-${aba}`).classList.remove('hidden');
-    }
-
-    function iniciarGrafico() {
-      const ctx = document.getElementById('chartTemperatura');
-      if (ctx) {
-        chartTemp = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: [],
-            datasets: [{
-              label: 'Temperatura (°C)',
-              data: [],
-              borderColor: '#2563eb',
-              backgroundColor: 'rgba(37, 99, 235, 0.08)',
-              borderWidth: 2,
-              fill: true,
-              tension: 0.3
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { grid: { display: false } },
-              y: { grid: { color: '#f1f5f9' }, min: -30, max: 10 }
-            }
-          }
-        });
-      }
-    }
-
-    // --- ESCUTADOR EM TEMPO REAL DO FIREBASE ---
-    database.ref('camara_fria').on('value', (snapshot) => {
-      const data = snapshot.val();
-      if (!data) return;
-
-      const badgeSys = document.getElementById('badge-sistema');
-      badgeSys.className = "bg-emerald-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5";
-      badgeSys.innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> CONECTADO`;
-
-      const txtArduino = document.getElementById('txt-arduino');
-      txtArduino.className = "my-1 font-black text-xs text-emerald-600 flex items-center justify-center gap-1";
-      txtArduino.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> ONLINE`;
-
-      const temp = parseFloat(data.temp);
-      tratarTemperaturaESensor(temp);
-
-      const statusRede = document.getElementById('status-rede');
-      const valBateria = document.getElementById('val-bateria');
-      const subBateria = document.getElementById('sub-bateria');
-
-      if (data.power) {
-        statusRede.innerText = "ATIVA";
-        statusRede.className = "my-2 font-black text-xs text-emerald-600";
-        valBateria.innerText = "100 %";
-        valBateria.className = "my-1 font-black text-sm text-emerald-600";
-        subBateria.innerText = "Carregada";
-        subBateria.className = "text-[8px] text-emerald-600 font-bold";
-      } else {
-        statusRede.innerText = "INATIVA";
-        statusRede.className = "my-2 font-black text-xs text-rose-600";
-        valBateria.innerText = "OPERANDO";
-        valBateria.className = "my-1 font-black text-xs text-amber-500 animate-pulse";
-        subBateria.innerText = "Em uso";
-        subBateria.className = "text-[8px] text-amber-600 font-bold";
-      }
-
-      const agora = new Date().toLocaleTimeString('pt-BR');
-      const dataHoraFull = new Date().toLocaleString('pt-BR');
-      historicoLeituras.push({ hora: dataHoraFull, temp: temp });
-
-      if (chartTemp) {
-        if (chartTemp.data.labels.length > 20) {
-          chartTemp.data.labels.shift();
-          chartTemp.data.datasets[0].data.shift();
-        }
-        chartTemp.data.labels.push(agora);
-        chartTemp.data.datasets[0].data.push(temp <= -127 || temp >= 85 ? null : temp);
-        chartTemp.update();
-      }
+  // 3. ALTERNÂNCIA DE ABAS
+  function switchTab(tabName) {
+    ['dashboard', 'temperatura', 'alarmes', 'configuracoes'].forEach(t => {
+      document.getElementById('tab-' + t).style.display = (t === tabName) ? 'block' : 'none';
     });
+    document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+      link.classList.remove('active');
+      if (link.getAttribute('href') === '#' + tabName) link.classList.add('active');
+    });
+  }
 
-    function tratarTemperaturaESensor(temp) {
-      const elVal = document.getElementById('val-temperatura');
-      const elBadge = document.getElementById('badge-sensor-status');
-      const gauge = document.getElementById('gauge-circle');
-
-      elVal.innerText = `${temp.toFixed(1)} °C`;
-
-      if (temp <= -127.0 || temp >= 85.0) {
-        elBadge.innerText = "FALHA NO SENSOR";
-        elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
-        gauge.classList.add('gauge-fill-error');
-        gauge.style.strokeDashoffset = 0;
-      } else {
-        elBadge.innerText = "NORMAL";
-        elBadge.className = "bg-blue-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1";
-        gauge.classList.remove('gauge-fill-error');
-        
-        let pct = Math.max(0, Math.min(1, (temp - (-30)) / 40));
-        gauge.style.strokeDashoffset = 251.2 * (1 - pct);
+  // 4. CONFIGURAÇÃO DO GRÁFICO (CHART.JS)
+  const ctx = document.getElementById('tempChart').getContext('2d');
+  const tempChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Temperatura (°C)',
+        data: [],
+        borderColor: '#0066ff',
+        backgroundColor: 'rgba(0, 102, 255, 0.1)',
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { min: -25, max: 15 }
       }
     }
+  });
 
-    function exportarCSV() {
-      let csv = "Data/Hora,Temperatura (°C)\n";
-      historicoLeituras.forEach(item => { csv += `"${item.hora}",${item.temp}\n`; });
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.setAttribute('href', url);
-      a.setAttribute('download', 'relatorio_temperatura.csv');
-      a.click();
+  // 5. LEITURA EM TEMPO REAL DO ARDUINO NO FIREBASE
+  let lastUpdateTimeout;
+
+  database.ref('camara_fria').on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      // Atualiza Status de Conexão NUVEM & ARDUINO
+      document.getElementById('connBadge').className = 'badge bg-success badge-status';
+      document.getElementById('connBadge').innerHTML = '<i class="bi bi-check-circle-fill"></i> CONECTADO';
+
+      document.getElementById('arduinoStatus').className = 'text-success fw-bold';
+      document.getElementById('arduinoStatus').innerText = '● ONLINE';
+
+      // Atualiza Valores de Temperatura
+      if (data.temp !== undefined) {
+        document.getElementById('tempVal').innerText = data.temp.toFixed(1) + ' °C';
+        
+        // Atualiza Gráfico
+        const timeNow = new Date().toLocaleTimeString('pt-BR');
+        if (tempChart.data.labels.length > 15) {
+          tempChart.data.labels.shift();
+          tempChart.data.datasets[0].data.shift();
+        }
+        tempChart.data.labels.push(timeNow);
+        tempChart.data.datasets[0].data.push(data.temp);
+        tempChart.update();
+      }
+
+      // Atualiza Status da Rede Elétrica
+      if (data.power !== undefined) {
+        const powerElem = document.getElementById('powerStatus');
+        if (data.power) {
+          powerElem.innerText = 'ATIVA';
+          powerElem.className = 'text-success fw-bold';
+        } else {
+          powerElem.innerText = 'QUEDA';
+          powerElem.className = 'text-danger fw-bold';
+        }
+      }
+
+      // Timer de Segurança: Se não receber nada em 30 segundos, marca como Offline
+      clearTimeout(lastUpdateTimeout);
+      lastUpdateTimeout = setTimeout(() => {
+        document.getElementById('connBadge').className = 'badge bg-danger badge-status';
+        document.getElementById('connBadge').innerHTML = '<i class="bi bi-x-circle-fill"></i> DESCONECTADO';
+        document.getElementById('arduinoStatus').className = 'text-danger fw-bold';
+        document.getElementById('arduinoStatus').innerText = '● OFFLINE';
+      }, 30000);
     }
+  });
+</script>
 
-    function exportarPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      doc.setFont("helvetica", "bold");
-      doc.text("REI DO GELO - Relatório de Temperatura", 14, 15);
-      
-      const rows = historicoLeituras.map(i => [i.hora, `${i.temp} °C`]);
-      doc.autoTable({ head: [['Data / Hora', 'Temperatura']], body: rows, startY: 25 });
-      doc.save('relatorio_temperatura.pdf');
-    }
-
-    window.onload = () => {
-      iniciarGrafico();
-    };
-  </script>
 </body>
 </html>
