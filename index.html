@@ -3,86 +3,99 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Supervisório - Câmara Fria</title>
+  <title>Câmara Fria</title>
   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
     body {
-      background-color: #0f172a;
-      color: #f8fafc;
+      background-color: #0b1326;
+      color: #ffffff;
       display: flex;
-      flex-direction: column;
-      align-items: center;
       justify-content: center;
+      align-items: center;
       min-height: 100vh;
-      padding: 20px;
     }
 
     .card {
-      background-color: #1e293b;
+      background-color: #172238;
       border-radius: 16px;
-      padding: 30px;
+      padding: 40px 30px;
       width: 100%;
-      max-width: 400px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      max-width: 380px;
       text-align: center;
-      border: 1px solid #334155;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     h1 {
-      font-size: 1.5rem;
-      margin-bottom: 20px;
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
       color: #94a3b8;
+      margin-bottom: 30px;
       text-transform: uppercase;
-      letter-spacing: 1px;
     }
 
-    .metric {
-      margin: 25px 0;
-    }
-
-    .label {
-      font-size: 0.9rem;
+    .section-label {
+      font-size: 0.75rem;
       color: #64748b;
-      margin-bottom: 5px;
+      letter-spacing: 1px;
       text-transform: uppercase;
+      margin-bottom: 12px;
     }
 
-    .value {
-      font-size: 3.5rem;
+    .temp-value {
+      font-size: 3.8rem;
       font-weight: bold;
-      color: #38bdf8;
+      color: #00b4d8;
+      margin-bottom: 35px;
     }
 
     .status-badge {
-      display: inline-block;
-      padding: 10px 20px;
-      border-radius: 50px;
-      font-weight: bold;
-      font-size: 1rem;
-      margin-top: 10px;
-      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 24px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-bottom: 35px;
     }
 
     .status-ok {
-      background-color: rgba(34, 197, 94, 0.15);
-      color: #4ade80;
-      border: 1px solid #22c55e;
+      background-color: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
     }
 
     .status-error {
-      background-color: rgba(239, 68, 68, 0.15);
-      color: #f87171;
-      border: 1px solid #ef4444;
+      background-color: rgba(239, 68, 68, 0.12);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
     }
 
-    .footer-info {
-      margin-top: 20px;
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .dot-ok {
+      background-color: #10b981;
+    }
+
+    .dot-error {
+      background-color: #ef4444;
+    }
+
+    .last-update {
       font-size: 0.75rem;
       color: #475569;
     }
@@ -91,59 +104,59 @@
 <body>
 
   <div class="card">
-    <h1>Câmara Fria</h1>
+    <h1>CÂMARA FRIA</h1>
 
-    <div class="metric">
-      <div class="label">Temperatura Atual</div>
-      <div class="value" id="tempValue">--.- °C</div>
+    <div class="section-label">TEMPERATURA ATUAL</div>
+    <div class="temp-value" id="tempDisplay">--.- °C</div>
+
+    <div class="section-label">REDE ELÉTRICA</div>
+    <div id="powerBadge" class="status-badge status-ok">
+      <span id="powerDot" class="dot dot-ok"></span>
+      <span id="powerText">ENERGIA OK</span>
     </div>
 
-    <div class="metric">
-      <div class="label">Rede Elétrica</div>
-      <div id="statusPower" class="status-badge status-ok">Aguardando...</div>
-    </div>
-
-    <div class="footer-info" id="lastUpdate">Última atualização: --:--:--</div>
+    <div class="last-update" id="updateDisplay">Última atualização: --:--:--</div>
   </div>
 
   <script>
-    const CHANNEL_ID = "3498175"; 
+    const CHANNEL_ID = "3498175";
 
-    function atualizarDashboard() {
+    function carregarDados() {
       fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds/last.json`)
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
-          if (!data || data === "-1") {
-            console.warn("Nenhum dado retornado do ThingSpeak.");
-            return;
-          }
+          if (!data || data === "-1") return;
 
+          // Atualiza Temperatura
           const temp = parseFloat(data.field1).toFixed(1);
-          const powerOk = (data.field2 === "1");
+          document.getElementById("tempDisplay").innerText = `${temp} °C`;
 
-          document.getElementById("tempValue").innerText = `${temp} °C`;
-          
-          const elPower = document.getElementById("statusPower");
-          if (powerOk) {
-            elPower.innerText = "🟢 ENERGIA OK";
-            elPower.className = "status-badge status-ok";
+          // Atualiza Rede Elétrica
+          const isPowerOk = (data.field2 === "1");
+          const badge = document.getElementById("powerBadge");
+          const dot = document.getElementById("powerDot");
+          const text = document.getElementById("powerText");
+
+          if (isPowerOk) {
+            badge.className = "status-badge status-ok";
+            dot.className = "dot dot-ok";
+            text.innerText = "ENERGIA OK";
           } else {
-            elPower.innerText = "🔴 QUEDA DE ENERGIA";
-            elPower.className = "status-badge status-error";
+            badge.className = "status-badge status-error";
+            dot.className = "dot dot-error";
+            text.innerText = "QUEDA DE ENERGIA";
           }
 
-          const horaAtual = new Date().toLocaleTimeString('pt-BR');
-          document.getElementById("lastUpdate").innerText = `Última atualização: ${horaAtual}`;
+          // Atualiza Horário
+          const now = new Date().toLocaleTimeString('pt-BR');
+          document.getElementById("updateDisplay").innerText = `Última atualização: ${now}`;
         })
-        .catch(err => {
-          console.error("Erro ao buscar dados do ThingSpeak:", err);
-          document.getElementById("statusPower").innerText = "⚠️ ERRO DE CONEXÃO";
-          document.getElementById("statusPower").className = "status-badge status-error";
-        });
+        .catch(err => console.error("Erro na atualização:", err));
     }
 
-    atualizarDashboard();
-    setInterval(atualizarDashboard, 15000);
+    // Primeira chamada e atualização a cada 15 segundos
+    carregarDados();
+    setInterval(carregarDados, 15000);
   </script>
 
 </body>
