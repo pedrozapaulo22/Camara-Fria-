@@ -8,6 +8,11 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  
+  <!-- Firebase App & Database SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
@@ -25,11 +30,10 @@
   <aside class="hidden md:flex w-60 sidebar text-white flex-col justify-between p-5 shrink-0">
     <div>
       <div class="mb-8 font-black text-lg tracking-wider text-white">REI DO GELO</div>
-      <nav class="space-y-2 text-xs font-semibold" id="nav-desktop">
-        <button onclick="mudarAba('dashboard')" id="btn-dash" class="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-lg shadow-md transition-colors text-left">Dashboard</button>
-        <button onclick="mudarAba('temperatura')" id="btn-temp" class="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-left">Temperatura</button>
-        <button onclick="mudarAba('alarmes')" id="btn-alarm" class="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-left">Alarmes</button>
-        <button onclick="mudarAba('configuracoes')" id="btn-config" class="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-left">Configurações</button>
+      <nav class="space-y-2 text-xs font-semibold">
+        <button onclick="mudarAba('dashboard')" class="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-lg shadow-md text-left">Dashboard</button>
+        <button onclick="mudarAba('temperatura')" class="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg text-left">Temperatura</button>
+        <button onclick="mudarAba('alarmes')" class="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg text-left">Alarmes</button>
       </nav>
     </div>
     <div class="text-[10px] font-extrabold text-cyan-400 uppercase leading-tight">
@@ -45,7 +49,7 @@
       <div class="flex items-center gap-3">
         <h1 class="font-extrabold text-slate-800 text-base">REI DO GELO</h1>
         <span class="text-slate-300">|</span>
-        <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">MONITORAMENTO DA CÂMARA FRIA</span>
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">MONITORAMENTO VIA NUVEM (FIREBASE)</span>
       </div>
       <div class="flex items-center gap-3 text-xs font-bold">
         <span id="badge-sistema" class="bg-rose-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5">
@@ -120,7 +124,7 @@
               <div id="txt-arduino" class="my-1 font-black text-xs text-rose-600 flex items-center justify-center gap-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> OFFLINE
               </div>
-              <span class="text-[8px] text-rose-400">Aguardando conexão</span>
+              <span class="text-[8px] text-rose-400">Aguardando nuvem</span>
             </div>
           </div>
 
@@ -151,7 +155,7 @@
       </div>
 
       <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">TREND DE TEMPERATURA</h3>
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">TREND DE TEMPERATURA (REAL-TIME NUVEM)</h3>
         <div class="h-64 w-full">
           <canvas id="chartTemperatura"></canvas>
         </div>
@@ -161,30 +165,10 @@
     <!-- ABA 2: TEMPERATURA -->
     <div id="aba-temperatura" class="hidden space-y-5">
       <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">FILTRO DE PERÍODO E EXPORTAÇÃO DE RELATÓRIOS</h3>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-          <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">Data/Hora Início</label>
-            <input type="datetime-local" id="temp-inicio" class="w-full border border-slate-300 rounded-lg p-2 text-xs">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">Data/Hora Fim</label>
-            <input type="datetime-local" id="temp-fim" class="w-full border border-slate-300 rounded-lg p-2 text-xs">
-          </div>
-          <div>
-            <button onclick="filtrarGraficoTemperatura()" class="bg-blue-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors w-full">Filtrar Período</button>
-          </div>
-          <div class="flex gap-2">
-            <button onclick="exportarCSV()" class="bg-emerald-600 text-white font-bold text-xs px-3 py-2.5 rounded-lg hover:bg-emerald-700 transition-colors w-1/2">Gerar CSV</button>
-            <button onclick="exportarPDF()" class="bg-rose-600 text-white font-bold text-xs px-3 py-2.5 rounded-lg hover:bg-rose-700 transition-colors w-1/2">Gerar PDF</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">GRÁFICO DO PERÍODO SELECIONADO</h3>
-        <div class="h-72 w-full">
-          <canvas id="chartPeriodo"></canvas>
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">EXPORTAÇÃO DE RELATÓRIOS</h3>
+        <div class="flex gap-4">
+          <button onclick="exportarCSV()" class="bg-emerald-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-emerald-700 transition-colors w-1/2">Gerar CSV</button>
+          <button onclick="exportarPDF()" class="bg-rose-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-rose-700 transition-colors w-1/2">Gerar PDF</button>
         </div>
       </div>
     </div>
@@ -202,23 +186,8 @@
               <th class="p-3">Status</th>
             </tr>
           </thead>
-          <tbody id="tabela-alarmes" class="divide-y">
-          </tbody>
+          <tbody id="tabela-alarmes" class="divide-y"></tbody>
         </table>
-      </div>
-    </div>
-
-    <!-- ABA 4: CONFIGURAÇÕES DE CONEXÃO -->
-    <div id="aba-configuracoes" class="hidden bg-white p-6 rounded-xl border border-slate-200/80 shadow-sm space-y-4">
-      <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">CONFIGURAÇÕES DE CONEXÃO</h3>
-      <p class="text-xs text-slate-500">Informe o seu endereço DDNS com o protocolo <code class="bg-slate-100 p-1 rounded">http://</code> e a porta do roteador (exemplo: <code class="bg-slate-100 p-1 rounded">http://seu-ddns.ddns.net:8080</code>).</p>
-      
-      <div class="max-w-md space-y-3">
-        <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">Endereço DDNS do Arduino</label>
-          <input type="text" id="input-url-arduino" placeholder="http://meudddns.ddns.net:8080" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none">
-        </div>
-        <button onclick="salvarConfiguracao()" class="bg-blue-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar Endereço DDNS</button>
       </div>
     </div>
 
@@ -238,19 +207,17 @@
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
       <span class="text-[9px] mt-0.5">Alarmes</span>
     </button>
-    <button onclick="mudarAba('configuracoes')" class="flex flex-col items-center text-slate-300 hover:text-white">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
-      <span class="text-[9px] mt-0.5">Config</span>
-    </button>
   </nav>
 
   <script>
-    // Recupera URL do DDNS ou define o IP local como padrão inicial
-    let urlArduino = localStorage.getItem('urlArduino') || 'http://192.168.15.2:8080';
-    document.getElementById('input-url-arduino').value = urlArduino;
+    // --- INICIALIZAÇÃO DO FIREBASE ---
+    const firebaseConfig = {
+      databaseURL: "https://camarafria-default-rtdb.firebaseio.com"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
 
     let chartTemp = null;
-    let chartPeriodo = null;
     let historicoLeituras = [];
     let listaAlarmes = [];
 
@@ -259,32 +226,17 @@
     }
     setInterval(atualizarDataHora, 1000);
 
-    function salvarConfiguracao() {
-      let urlInput = document.getElementById('input-url-arduino').value.trim();
-      if (!urlInput.startsWith('http://') && !urlInput.startsWith('https://')) {
-        urlInput = 'http://' + urlInput;
-      }
-      urlArduino = urlInput.replace(/\/$/, ""); // Remove barra final se houver
-      localStorage.setItem('urlArduino', urlArduino);
-      document.getElementById('input-url-arduino').value = urlArduino;
-      alert('Endereço DDNS configurado com sucesso!');
-    }
-
     function mudarAba(aba) {
-      ['dashboard', 'temperatura', 'alarmes', 'configuracoes'].forEach(a => {
+      ['dashboard', 'temperatura', 'alarmes'].forEach(a => {
         document.getElementById(`aba-${a}`).classList.add('hidden');
       });
       document.getElementById(`aba-${aba}`).classList.remove('hidden');
-
-      if (aba === 'temperatura' && !chartPeriodo) {
-        iniciarGraficoPeriodo();
-      }
     }
 
-    function iniciarGraficos() {
-      const ctx1 = document.getElementById('chartTemperatura');
-      if (ctx1) {
-        chartTemp = new Chart(ctx1, {
+    function iniciarGrafico() {
+      const ctx = document.getElementById('chartTemperatura');
+      if (ctx) {
+        chartTemp = new Chart(ctx, {
           type: 'line',
           data: {
             labels: [],
@@ -311,60 +263,11 @@
       }
     }
 
-    function iniciarGraficoPeriodo() {
-      const ctx2 = document.getElementById('chartPeriodo');
-      if (ctx2) {
-        chartPeriodo = new Chart(ctx2, {
-          type: 'line',
-          data: {
-            labels: historicoLeituras.map(i => i.hora),
-            datasets: [{
-              label: 'Histórico (°C)',
-              data: historicoLeituras.map(i => i.temp),
-              borderColor: '#0284c7',
-              backgroundColor: 'rgba(2, 132, 199, 0.08)',
-              borderWidth: 2,
-              fill: true,
-              tension: 0.2
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              x: { grid: { display: false } },
-              y: { grid: { color: '#f1f5f9' } }
-            }
-          }
-        });
-      }
-    }
+    // --- ESCUTADOR EM TEMPO REAL DO FIREBASE ---
+    database.ref('camara_fria').on('value', (snapshot) => {
+      const data = snapshot.val();
+      if (!data) return;
 
-    // BUSCA OS DADOS NO ARDUINO USANDO INJEÇÃO DE TAG SCRIPT (JSONP)
-    function buscarDados() {
-      const scriptAntigo = document.getElementById('jsonp-script');
-      if (scriptAntigo) scriptAntigo.remove();
-
-      const script = document.createElement('script');
-      script.id = 'jsonp-script';
-      script.src = `${urlArduino}/api/dados?t=${new Date().getTime()}`;
-
-      script.onerror = () => {
-        // Marca como desconectado se a requisição falhar (porta fechada, offline, etc)
-        const badgeSys = document.getElementById('badge-sistema');
-        badgeSys.className = "bg-rose-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5";
-        badgeSys.innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> DESCONECTADO`;
-
-        const txtArduino = document.getElementById('txt-arduino');
-        txtArduino.className = "my-1 font-black text-xs text-rose-600 flex items-center justify-center gap-1";
-        txtArduino.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> OFFLINE`;
-      };
-
-      document.body.appendChild(script);
-    }
-
-    // CALLBACK EXECUTADO AUTOMATICAMENTE QUANDO O ARDUINO RESPONDE
-    function processarDadosArduino(data) {
       const badgeSys = document.getElementById('badge-sistema');
       badgeSys.className = "bg-emerald-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5";
       badgeSys.innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> CONECTADO`;
@@ -398,7 +301,6 @@
 
       const agora = new Date().toLocaleTimeString('pt-BR');
       const dataHoraFull = new Date().toLocaleString('pt-BR');
-
       historicoLeituras.push({ hora: dataHoraFull, temp: temp });
 
       if (chartTemp) {
@@ -410,7 +312,7 @@
         chartTemp.data.datasets[0].data.push(temp <= -127 || temp >= 85 ? null : temp);
         chartTemp.update();
       }
-    }
+    });
 
     function tratarTemperaturaESensor(temp) {
       const elVal = document.getElementById('val-temperatura');
@@ -424,8 +326,6 @@
         elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
         gauge.classList.add('gauge-fill-error');
         gauge.style.strokeDashoffset = 0;
-        
-        adicionarAlarme("Falha no Sensor DS18B20", "CRÍTICO");
       } else {
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1";
@@ -436,42 +336,9 @@
       }
     }
 
-    function adicionarAlarme(evento, nivel) {
-      const dataHora = new Date().toLocaleString('pt-BR');
-      if(!listaAlarmes.some(a => a.evento === evento && a.status === 'Ativo')){
-        listaAlarmes.unshift({ data: dataHora, evento: evento, nivel: nivel, status: 'Ativo' });
-        renderizarTabelaAlarmes();
-      }
-    }
-
-    function renderizarTabelaAlarmes() {
-      const tbody = document.getElementById('tabela-alarmes');
-      tbody.innerHTML = '';
-      listaAlarmes.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="p-3 font-medium">${item.data}</td>
-          <td class="p-3 font-bold text-rose-600">${item.evento}</td>
-          <td class="p-3"><span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-bold text-[10px]">${item.nivel}</span></td>
-          <td class="p-3 font-semibold text-slate-500">${item.status}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function filtrarGraficoTemperatura() {
-      if (chartPeriodo) {
-        chartPeriodo.data.labels = historicoLeituras.map(i => i.hora);
-        chartPeriodo.data.datasets[0].data = historicoLeituras.map(i => i.temp <= -127 || i.temp >= 85 ? null : i.temp);
-        chartPeriodo.update();
-      }
-    }
-
     function exportarCSV() {
       let csv = "Data/Hora,Temperatura (°C)\n";
-      historicoLeituras.forEach(item => {
-        csv += `"${item.hora}",${item.temp}\n`;
-      });
+      historicoLeituras.forEach(item => { csv += `"${item.hora}",${item.temp}\n`; });
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -487,17 +354,12 @@
       doc.text("REI DO GELO - Relatório de Temperatura", 14, 15);
       
       const rows = historicoLeituras.map(i => [i.hora, `${i.temp} °C`]);
-      doc.autoTable({
-        head: [['Data / Hora', 'Temperatura']],
-        body: rows,
-        startY: 25
-      });
+      doc.autoTable({ head: [['Data / Hora', 'Temperatura']], body: rows, startY: 25 });
       doc.save('relatorio_temperatura.pdf');
     }
 
     window.onload = () => {
-      iniciarGraficos();
-      setInterval(buscarDados, 2000);
+      iniciarGrafico();
     };
   </script>
 </body>
