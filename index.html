@@ -68,11 +68,11 @@
             <div class="gauge-wrapper shrink-0">
               <svg class="gauge-svg" viewBox="0 0 100 100">
                 <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
-                <circle id="gauge-circle" class="gauge-fill gauge-fill-error" cx="50" cy="50" r="40" style="stroke-dashoffset: 0;"></circle>
+                <circle id="gauge-circle" class="gauge-fill" cx="50" cy="50" r="40"></circle>
               </svg>
               <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-1">
-                <span id="val-temperatura" class="text-3xl font-black text-slate-800">-</span>
-                <span id="badge-sensor-status" class="bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse">FALHA NO SENSOR DE TEMPERATURA</span>
+                <span id="val-temperatura" class="text-lg font-black text-slate-800">--,- °C</span>
+                <span id="badge-sensor-status" class="bg-blue-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1">AGUARDANDO</span>
                 <span class="text-[9px] text-slate-400 font-medium mt-0.5">Setpoint: -18 °C</span>
               </div>
             </div>
@@ -347,11 +347,10 @@
             marcarDesconectado();
             return;
           }
-          marcarConectado();
           processarDadosThingSpeak(data);
         })
         .catch(err => {
-          console.error("Erro na busca (perda de comunicação):", err);
+          console.error("Erro na busca:", err);
           marcarDesconectado();
         });
     }
@@ -366,7 +365,8 @@
       txtArduino.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> OFFLINE`;
     }
 
-    function marcarConectado() {
+    function processarDadosThingSpeak(data) {
+      // Status Conectado
       const badgeSys = document.getElementById('badge-sistema');
       badgeSys.className = "bg-emerald-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5";
       badgeSys.innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> CONECTADO`;
@@ -374,14 +374,16 @@
       const txtArduino = document.getElementById('txt-arduino');
       txtArduino.className = "my-1 font-black text-xs text-emerald-600 flex items-center justify-center gap-1";
       txtArduino.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> ONLINE`;
-    }
 
-    function processarDadosThingSpeak(data) {
-      // Leitura da Rede Elétrica (field2: "1" = OK, "0" = Queda/Sem Sinal)
-      const isPowerOk = (String(data.field2) === "1");
+      // Leitura da Temperatura (field1)
+      const temp = parseFloat(data.field1 || 0);
+      tratarTemperaturaESensor(temp);
+
+      // Leitura da Rede Elétrica (field2: "1" = OK, "0" = Queda)
       const statusRede = document.getElementById('status-rede');
       const valBateria = document.getElementById('val-bateria');
       const subBateria = document.getElementById('sub-bateria');
+      const isPowerOk = (String(data.field2) === "1");
 
       if (isPowerOk) {
         statusRede.innerText = "ATIVA";
@@ -401,18 +403,13 @@
         adicionarAlarme("Queda na Rede Elétrica", "ALERTA");
       }
 
-      // Leitura da Temperatura (field1)
-      const temp = parseFloat(data.field1);
-      tratarTemperaturaESensor(temp);
-
       const agora = new Date().toLocaleTimeString('pt-BR');
       const dataHoraFull = new Date().toLocaleString('pt-BR');
 
-      const isFalha = isNaN(temp) || temp <= -127.0 || temp >= 85.0 || temp === 0;
-
+      // Evita duplicar se a requisição retornar o mesmo registro sem alteração de horário
       const ultimo = historicoLeituras[historicoLeituras.length - 1];
       if (!ultimo || ultimo.hora !== dataHoraFull) {
-        historicoLeituras.push({ hora: dataHoraFull, temp: isFalha ? null : temp });
+        historicoLeituras.push({ hora: dataHoraFull, temp: temp });
       }
 
       if (chartTemp) {
@@ -421,7 +418,7 @@
           chartTemp.data.datasets[0].data.shift();
         }
         chartTemp.data.labels.push(agora);
-        chartTemp.data.datasets[0].data.push(isFalha ? null : temp);
+        chartTemp.data.datasets[0].data.push(temp <= -127 || temp >= 85 ? null : temp);
         chartTemp.update();
       }
     }
@@ -431,19 +428,16 @@
       const elBadge = document.getElementById('badge-sensor-status');
       const gauge = document.getElementById('gauge-circle');
 
-      // VERIFICAÇÃO DE FALHA DO SENSOR (Incluindo valor igual a 0 ou 0.0)
-      const isFalha = isNaN(temp) || temp <= -127.0 || temp >= 85.0 || temp === 0;
+      elVal.innerText = `${temp.toFixed(1)} °C`;
 
-      if (isFalha) {
-        elVal.innerText = "-";
-        elBadge.innerText = "FALHA NO SENSOR DE TEMPERATURA";
+      if (temp <= -127.0 || temp >= 85.0 || isNaN(temp)) {
+        elBadge.innerText = "FALHA NO SENSOR";
         elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
         gauge.classList.add('gauge-fill-error');
         gauge.style.strokeDashoffset = 0;
         
-        adicionarAlarme("Falha no Sensor de Temperatura", "CRÍTICO");
+        adicionarAlarme("Falha no Sensor DS18B20", "CRÍTICO");
       } else {
-        elVal.innerText = `${temp.toFixed(1)} °C`;
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1";
         gauge.classList.remove('gauge-fill-error');
@@ -479,7 +473,7 @@
     function filtrarGraficoTemperatura() {
       if (chartPeriodo) {
         chartPeriodo.data.labels = historicoLeituras.map(i => i.hora);
-        chartPeriodo.data.datasets[0].data = historicoLeituras.map(i => i.temp);
+        chartPeriodo.data.datasets[0].data = historicoLeituras.map(i => i.temp <= -127 || i.temp >= 85 ? null : i.temp);
         chartPeriodo.update();
       }
     }
@@ -487,7 +481,7 @@
     function exportarCSV() {
       let csv = "Data/Hora,Temperatura (°C)\n";
       historicoLeituras.forEach(item => {
-        csv += `"${item.hora}",${item.temp !== null ? item.temp : ''}\n`;
+        csv += `"${item.hora}",${item.temp}\n`;
       });
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
@@ -503,7 +497,7 @@
       doc.setFont("helvetica", "bold");
       doc.text("REI DO GELO - Relatório de Temperatura", 14, 15);
       
-      const rows = historicoLeituras.map(i => [i.hora, i.temp !== null ? `${i.temp} °C` : 'FALHA']);
+      const rows = historicoLeituras.map(i => [i.hora, `${i.temp} °C`]);
       doc.autoTable({
         head: [['Data / Hora', 'Temperatura']],
         body: rows,
@@ -515,6 +509,7 @@
     window.onload = () => {
       iniciarGraficos();
       buscarDados();
+      // Atualização periódica da tela a cada 10 segundos
       setInterval(buscarDados, 10000);
     };
   </script>
