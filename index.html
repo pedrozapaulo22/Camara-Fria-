@@ -59,7 +59,7 @@
     <div id="aba-dashboard" class="space-y-5">
       <div class="grid grid-cols-12 gap-5">
         
-        <!-- TEMPERATURA ATUAL (CARD CORRIGIDO NO DASHBOARD) -->
+        <!-- TEMPERATURA ATUAL -->
         <div class="col-span-12 lg:col-span-6 bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
           <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-1">
             <span class="text-blue-600 font-black">:</span> TEMPERATURA ATUAL
@@ -71,9 +71,7 @@
                 <circle id="gauge-circle" class="gauge-fill gauge-fill-error" cx="50" cy="50" r="40" style="stroke-dashoffset: 0;"></circle>
               </svg>
               <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-1">
-                <!-- MOSTRADOR PRINCIPAL: EXIBE APENAS "-" QUANDO SEM SINAL -->
                 <span id="val-temperatura" class="text-3xl font-black text-slate-800">-</span>
-                <!-- BADGE DE STATUS: EXIBE A MENSAGEM PEDIDA -->
                 <span id="badge-sensor-status" class="bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse">FALHA NO SENSOR DE TEMPERATURA</span>
                 <span class="text-[9px] text-slate-400 font-medium mt-0.5">Setpoint: -18 °C</span>
               </div>
@@ -410,9 +408,11 @@
       const agora = new Date().toLocaleTimeString('pt-BR');
       const dataHoraFull = new Date().toLocaleString('pt-BR');
 
+      const isFalha = isNaN(temp) || temp <= -127.0 || temp >= 85.0 || temp === 0;
+
       const ultimo = historicoLeituras[historicoLeituras.length - 1];
       if (!ultimo || ultimo.hora !== dataHoraFull) {
-        historicoLeituras.push({ hora: dataHoraFull, temp: isNaN(temp) ? null : temp });
+        historicoLeituras.push({ hora: dataHoraFull, temp: isFalha ? null : temp });
       }
 
       if (chartTemp) {
@@ -421,7 +421,7 @@
           chartTemp.data.datasets[0].data.shift();
         }
         chartTemp.data.labels.push(agora);
-        chartTemp.data.datasets[0].data.push(isNaN(temp) || temp <= -127 || temp >= 85 ? null : temp);
+        chartTemp.data.datasets[0].data.push(isFalha ? null : temp);
         chartTemp.update();
       }
     }
@@ -431,8 +431,10 @@
       const elBadge = document.getElementById('badge-sensor-status');
       const gauge = document.getElementById('gauge-circle');
 
-      // VERIFICAÇÃO DE FALHA DO SENSOR
-      if (isNaN(temp) || temp <= -127.0 || temp >= 85.0) {
+      // VERIFICAÇÃO DE FALHA DO SENSOR (Incluindo valor igual a 0 ou 0.0)
+      const isFalha = isNaN(temp) || temp <= -127.0 || temp >= 85.0 || temp === 0;
+
+      if (isFalha) {
         elVal.innerText = "-";
         elBadge.innerText = "FALHA NO SENSOR DE TEMPERATURA";
         elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
@@ -477,7 +479,7 @@
     function filtrarGraficoTemperatura() {
       if (chartPeriodo) {
         chartPeriodo.data.labels = historicoLeituras.map(i => i.hora);
-        chartPeriodo.data.datasets[0].data = historicoLeituras.map(i => (i.temp === null || i.temp <= -127 || i.temp >= 85) ? null : i.temp);
+        chartPeriodo.data.datasets[0].data = historicoLeituras.map(i => i.temp);
         chartPeriodo.update();
       }
     }
