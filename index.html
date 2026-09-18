@@ -347,10 +347,12 @@
             marcarDesconectado();
             return;
           }
+          // Comunicação com o Arduino estabelecida com sucesso
+          marcarConectado();
           processarDadosThingSpeak(data);
         })
         .catch(err => {
-          console.error("Erro na busca:", err);
+          console.error("Erro na busca (perda de comunicação):", err);
           marcarDesconectado();
         });
     }
@@ -365,8 +367,7 @@
       txtArduino.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> OFFLINE`;
     }
 
-    function processarDadosThingSpeak(data) {
-      // Status Conectado
+    function marcarConectado() {
       const badgeSys = document.getElementById('badge-sistema');
       badgeSys.className = "bg-emerald-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5";
       badgeSys.innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> CONECTADO`;
@@ -374,16 +375,14 @@
       const txtArduino = document.getElementById('txt-arduino');
       txtArduino.className = "my-1 font-black text-xs text-emerald-600 flex items-center justify-center gap-1";
       txtArduino.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> ONLINE`;
+    }
 
-      // Leitura da Temperatura (field1)
-      const temp = parseFloat(data.field1 || 0);
-      tratarTemperaturaESensor(temp);
-
-      // Leitura da Rede Elétrica (field2: "1" = OK, "0" = Queda)
+    function processarDadosThingSpeak(data) {
+      // Leitura da Rede Elétrica (field2: "1" = OK, "0" = Queda/Sem Sinal)
+      const isPowerOk = (String(data.field2) === "1");
       const statusRede = document.getElementById('status-rede');
       const valBateria = document.getElementById('val-bateria');
       const subBateria = document.getElementById('sub-bateria');
-      const isPowerOk = (String(data.field2) === "1");
 
       if (isPowerOk) {
         statusRede.innerText = "ATIVA";
@@ -403,13 +402,16 @@
         adicionarAlarme("Queda na Rede Elétrica", "ALERTA");
       }
 
+      // Leitura da Temperatura (field1)
+      const temp = parseFloat(data.field1);
+      tratarTemperaturaESensor(temp);
+
       const agora = new Date().toLocaleTimeString('pt-BR');
       const dataHoraFull = new Date().toLocaleString('pt-BR');
 
-      // Evita duplicar se a requisição retornar o mesmo registro sem alteração de horário
       const ultimo = historicoLeituras[historicoLeituras.length - 1];
       if (!ultimo || ultimo.hora !== dataHoraFull) {
-        historicoLeituras.push({ hora: dataHoraFull, temp: temp });
+        historicoLeituras.push({ hora: dataHoraFull, temp: isNaN(temp) ? null : temp });
       }
 
       if (chartTemp) {
@@ -418,7 +420,7 @@
           chartTemp.data.datasets[0].data.shift();
         }
         chartTemp.data.labels.push(agora);
-        chartTemp.data.datasets[0].data.push(temp <= -127 || temp >= 85 ? null : temp);
+        chartTemp.data.datasets[0].data.push(isNaN(temp) || temp <= -127 || temp >= 85 ? null : temp);
         chartTemp.update();
       }
     }
@@ -428,16 +430,16 @@
       const elBadge = document.getElementById('badge-sensor-status');
       const gauge = document.getElementById('gauge-circle');
 
-      elVal.innerText = `${temp.toFixed(1)} °C`;
-
-      if (temp <= -127.0 || temp >= 85.0 || isNaN(temp)) {
-        elBadge.innerText = "FALHA NO SENSOR";
+      if (isNaN(temp) || temp <= -127.0 || temp >= 85.0) {
+        elVal.innerText = "--,- °C";
+        elBadge.innerText = "FALHA NO SENSOR DE TEMPERATURA";
         elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
         gauge.classList.add('gauge-fill-error');
         gauge.style.strokeDashoffset = 0;
         
-        adicionarAlarme("Falha no Sensor DS18B20", "CRÍTICO");
+        adicionarAlarme("Falha no Sensor de Temperatura", "CRÍTICO");
       } else {
+        elVal.innerText = `${temp.toFixed(1)} °C`;
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1";
         gauge.classList.remove('gauge-fill-error');
@@ -473,7 +475,7 @@
     function filtrarGraficoTemperatura() {
       if (chartPeriodo) {
         chartPeriodo.data.labels = historicoLeituras.map(i => i.hora);
-        chartPeriodo.data.datasets[0].data = historicoLeituras.map(i => i.temp <= -127 || i.temp >= 85 ? null : i.temp);
+        chartPeriodo.data.datasets[0].data = historicoLeituras.map(i => (i.temp === null || i.temp <= -127 || i.temp >= 85) ? null : i.temp);
         chartPeriodo.update();
       }
     }
@@ -481,7 +483,7 @@
     function exportarCSV() {
       let csv = "Data/Hora,Temperatura (°C)\n";
       historicoLeituras.forEach(item => {
-        csv += `"${item.hora}",${item.temp}\n`;
+        csv += `"${item.hora}",${item.temp !== null ? item.temp : ''}\n`;
       });
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
@@ -497,7 +499,7 @@
       doc.setFont("helvetica", "bold");
       doc.text("REI DO GELO - Relatório de Temperatura", 14, 15);
       
-      const rows = historicoLeituras.map(i => [i.hora, `${i.temp} °C`]);
+      const rows = historicoLeituras.map(i => [i.hora, i.temp !== null ? `${i.temp} °C` : 'FALHA']);
       doc.autoTable({
         head: [['Data / Hora', 'Temperatura']],
         body: rows,
@@ -509,7 +511,6 @@
     window.onload = () => {
       iniciarGraficos();
       buscarDados();
-      // Atualização periódica da tela a cada 10 segundos
       setInterval(buscarDados, 10000);
     };
   </script>
