@@ -71,7 +71,7 @@
                 <circle id="gauge-circle" class="gauge-fill" cx="50" cy="50" r="40"></circle>
               </svg>
               <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-1">
-                <span id="val-temperatura" class="text-lg font-black text-slate-800">--,- °C</span>
+                <span id="val-temperatura" class="text-2xl font-black text-slate-800">-</span>
                 <span id="badge-sensor-status" class="bg-blue-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1">AGUARDANDO</span>
                 <span class="text-[9px] text-slate-400 font-medium mt-0.5">Setpoint: -18 °C</span>
               </div>
@@ -347,7 +347,6 @@
             marcarDesconectado();
             return;
           }
-          // Comunicação com o Arduino estabelecida com sucesso
           marcarConectado();
           processarDadosThingSpeak(data);
         })
@@ -430,9 +429,10 @@
       const elBadge = document.getElementById('badge-sensor-status');
       const gauge = document.getElementById('gauge-circle');
 
+      // VERIFICAÇÃO DE FALHA DO SENSOR
       if (isNaN(temp) || temp <= -127.0 || temp >= 85.0) {
-        elVal.innerText = "--,- °C";
-        elBadge.innerText = "FALHA NO SENSOR DE TEMPERATURA";
+        elVal.innerText = "-";
+        elBadge.innerText = "falha no sensor de temperatura";
         elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
         gauge.classList.add('gauge-fill-error');
         gauge.style.strokeDashoffset = 0;
