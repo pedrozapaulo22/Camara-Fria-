@@ -88,8 +88,8 @@
                 <p class="text-xs font-extrabold text-slate-800">-1 °C</p>
               </div>
               <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
-                <p class="text-[10px] font-semibold text-slate-400">Tolerância Degelo / Fora da Faixa</p>
-                <p class="text-xs font-extrabold text-slate-800">Até <span id="lbl-tol-degelo">5</span> minutos (&lt;= 0 °C)</p>
+                <p class="text-[10px] font-semibold text-slate-400">Tempo Limite Fora da Faixa</p>
+                <p class="text-xs font-extrabold text-slate-800">Até <span id="lbl-tol-degelo">5</span> minutos</p>
               </div>
             </div>
           </div>
@@ -229,7 +229,7 @@
         <div>
           <label class="block text-xs font-bold text-slate-500 mb-1">Ajuste Tempo de Degelo (Minutos)</label>
           <input type="number" min="1" max="120" id="input-tempo-degelo" placeholder="Ex: 5" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none">
-          <p class="text-[10px] text-slate-400 mt-1">Tempo tolerado fora da faixa ideal antes de disparar o alarme crítico (Padrão: 5 min).</p>
+          <p class="text-[10px] text-slate-400 mt-1">Tempo tolerado fora da faixa ideal antes de disparar o alarme crítico.</p>
         </div>
 
         <button onclick="salvarConfiguracao()" class="bg-blue-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar Configurações</button>
