@@ -89,7 +89,7 @@
               </div>
               <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
                 <p class="text-[10px] font-semibold text-slate-400">Tolerância Degelo / Fora da Faixa</p>
-                <p class="text-xs font-extrabold text-slate-800">Até 5 minutos (&lt;= 0 °C)</p>
+                <p class="text-xs font-extrabold text-slate-800">Até <span id="lbl-tol-degelo">5</span> minutos (&lt;= 0 °C)</p>
               </div>
             </div>
           </div>
@@ -113,7 +113,7 @@
             <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
               <span class="text-[9px] font-bold text-slate-400 uppercase leading-tight">FORA DA FAIXA</span>
               <div id="val-fora-faixa" class="my-1 font-black text-xs text-slate-800">00:00 min</div>
-              <span class="text-[8px] text-slate-400">Lim: 05:00 min</span>
+              <span class="text-[8px] text-slate-400">Lim: <span id="lbl-lim-degelo">05:00</span> min</span>
             </div>
 
             <div class="bg-rose-50 border border-rose-200/80 p-3 rounded-xl text-center flex flex-col justify-between">
@@ -211,8 +211,8 @@
 
     <!-- ABA 4: CONFIGURAÇÕES -->
     <div id="aba-configuracoes" class="hidden bg-white p-6 rounded-xl border border-slate-200/80 shadow-sm space-y-4">
-      <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">CONFIGURAÇÕES DE CONEXÃO E CALIBRAÇÃO</h3>
-      <p class="text-xs text-slate-500">Ajuste as configurações de comunicação e faça a calibração de Offset do sensor de temperatura.</p>
+      <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">CONFIGURAÇÕES DE CONEXÃO, CALIBRAÇÃO E TEMPOS</h3>
+      <p class="text-xs text-slate-500">Ajuste os parâmetros do sistema de monitoramento da câmara fria.</p>
       
       <div class="max-w-md space-y-4">
         <div>
@@ -224,6 +224,12 @@
           <label class="block text-xs font-bold text-slate-500 mb-1">Offset de Temperatura (°C)</label>
           <input type="number" step="0.1" id="input-temp-offset" placeholder="Ex: -4.9 ou 1.2" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none">
           <p class="text-[10px] text-slate-400 mt-1">Valor adicionado ou subtraído do sensor (Use 0 se o sensor estiver correto).</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1">Ajuste Tempo de Degelo (Minutos)</label>
+          <input type="number" min="1" max="120" id="input-tempo-degelo" placeholder="Ex: 5" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none">
+          <p class="text-[10px] text-slate-400 mt-1">Tempo tolerado fora da faixa ideal antes de disparar o alarme crítico (Padrão: 5 min).</p>
         </div>
 
         <button onclick="salvarConfiguracao()" class="bg-blue-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar Configurações</button>
@@ -255,9 +261,11 @@
   <script>
     let channelId = localStorage.getItem('channelId') || '3498175';
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
+    let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
     document.getElementById('input-channel-id').value = channelId;
     document.getElementById('input-temp-offset').value = tempOffset;
+    document.getElementById('input-tempo-degelo').value = tempoDegeloMinutos;
 
     let chartTemp = null;
     let chartPeriodo = null;
@@ -273,9 +281,16 @@
     }
     setInterval(atualizarDataHora, 1000);
 
+    function atualizarRotulosDegelo() {
+      document.getElementById('lbl-tol-degelo').innerText = tempoDegeloMinutos;
+      const strMin = String(tempoDegeloMinutos).padStart(2, '0');
+      document.getElementById('lbl-lim-degelo').innerText = `${strMin}:00`;
+    }
+
     function salvarConfiguracao() {
       let idInput = document.getElementById('input-channel-id').value.trim();
       let offsetInput = parseFloat(document.getElementById('input-temp-offset').value);
+      let degeloInput = parseInt(document.getElementById('input-tempo-degelo').value);
 
       if(idInput) {
         channelId = idInput;
@@ -285,6 +300,12 @@
       tempOffset = isNaN(offsetInput) ? 0.0 : offsetInput;
       localStorage.setItem('tempOffset', tempOffset);
 
+      if(!isNaN(degeloInput) && degeloInput > 0) {
+        tempoDegeloMinutos = degeloInput;
+        localStorage.setItem('tempoDegeloMinutos', tempoDegeloMinutos);
+      }
+
+      atualizarRotulosDegelo();
       alert('Configurações salvas com sucesso!');
       buscarDados();
     }
@@ -472,6 +493,9 @@
       let pct = Math.max(0, Math.min(1, (temp - (-30)) / 40));
       gauge.style.strokeDashoffset = 251.2 * (1 - pct);
 
+      // Limite em segundos baseado na configuração salva
+      const limiteSegundos = tempoDegeloMinutos * 60;
+
       // 2. Lógica dos Estados (Faixa de Operação)
       if (temp >= -20.0 && temp <= -1.0) {
         // DENTRO DA FAIXA NORMAL
@@ -483,18 +507,17 @@
         // FORA DA FAIXA NORMAL -> Inicia/Mantém o temporizador
         iniciarContadorForaDaFaixa();
 
-        // Limite de 5 minutos = 300 segundos
-        if (segundosForaDaFaixa <= 300) {
+        if (segundosForaDaFaixa <= limiteSegundos) {
           elBadge.innerText = "DEGELO";
           elBadge.className = "bg-amber-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
           gauge.classList.add('gauge-fill-degelo');
         } else {
-          // Passaram 5 minutos fora da faixa -> Exibe ALERTA/FALHA
+          // Passou o tempo limite configurado -> Exibe ALERTA/FALHA
           elBadge.innerText = temp > -1.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
           elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
           gauge.classList.add('gauge-fill-error');
           
-          adicionarAlarme("Tempo de Degelo Excedido (>5 min)", "CRÍTICO");
+          adicionarAlarme(`Tempo de Degelo Excedido (>${tempoDegeloMinutos} min)`, "CRÍTICO");
         }
       }
     }
@@ -527,7 +550,8 @@
       
       elFora.innerText = `${mins}:${segs} min`;
       
-      if (segundosForaDaFaixa > 300) {
+      const limiteSegundos = tempoDegeloMinutos * 60;
+      if (segundosForaDaFaixa > limiteSegundos) {
         elFora.className = "my-1 font-black text-xs text-rose-600 animate-pulse";
       } else if (segundosForaDaFaixa > 0) {
         elFora.className = "my-1 font-black text-xs text-amber-500";
@@ -596,6 +620,7 @@
     }
 
     window.onload = () => {
+      atualizarRotulosDegelo();
       iniciarGraficos();
       buscarDados();
       setInterval(buscarDados, 10000);
