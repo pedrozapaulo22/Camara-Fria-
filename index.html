@@ -381,9 +381,15 @@
 
     function buscarDados() {
       fetch(`https://api.thingspeak.com/channels/${channelId}/feeds/last.json?nocache=${new Date().getTime()}`)
-        .then(res => res.json())
+        .then(res => {
+          // Validação explícita de erro no protocolo HTTP
+          if (!res.ok) {
+            throw new Error(`Erro na comunicação HTTP: Status ${res.status}`);
+          }
+          return res.json();
+        })
         .then(data => {
-          if (!data || data === "-1") {
+          if (!data || data === "-1" || Object.keys(data).length === 0) {
             marcarDesconectado();
             return;
           }
@@ -391,7 +397,7 @@
           processarDadosThingSpeak(data);
         })
         .catch(err => {
-          console.error("Erro na busca (perda de comunicação):", err);
+          console.error("Erro na busca (falha HTTP ou cabo desconectado):", err);
           marcarDesconectado();
         });
     }
