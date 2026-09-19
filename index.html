@@ -112,7 +112,7 @@
 
             <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
               <span class="text-[9px] font-bold text-slate-400 uppercase leading-tight">FORA DA FAIXA</span>
-              <div class="my-1 font-black text-xs text-slate-800">00:00 min</div>
+              <div id="val-fora-faixa" class="my-1 font-black text-xs text-slate-800">00:00 min</div>
               <span class="text-[8px] text-slate-400">Lim: 05:00 min</span>
             </div>
 
@@ -263,6 +263,10 @@
     let chartPeriodo = null;
     let historicoLeituras = [];
     let listaAlarmes = [];
+
+    // --- CONTROLO DO TEMPORIZADOR "FORA DA FAIXA" ---
+    let segundosForaDaFaixa = 0;
+    let timerForaDaFaixa = null;
 
     function atualizarDataHora() {
       document.getElementById('data-hora').innerText = new Date().toLocaleString('pt-BR');
@@ -448,7 +452,6 @@
       const elBadge = document.getElementById('badge-sensor-status');
       const gauge = document.getElementById('gauge-circle');
 
-      // Reset de classes do arco do gauge
       gauge.classList.remove('gauge-fill-error', 'gauge-fill-degelo');
 
       // 1. Falha de Leitura no Sensor
@@ -460,33 +463,76 @@
         gauge.style.strokeDashoffset = 0;
         
         adicionarAlarme("Falha no Sensor de Temperatura", "CRÍTICO");
+        pararContadorForaDaFaixa(true);
         return;
       }
 
-      // Atualiza o texto da temperatura na tela
       elVal.innerText = `${temp.toFixed(1)} °C`;
 
-      // Cálculo da porcentagem do ponteiro (Gauge)
       let pct = Math.max(0, Math.min(1, (temp - (-30)) / 40));
       gauge.style.strokeDashoffset = 251.2 * (1 - pct);
 
       // 2. Lógica dos Estados (Faixa de Operação)
       if (temp >= -20.0 && temp <= -1.0) {
-        // DENTRO DA FAIXA NORMAL (-20°C a -1°C)
+        // DENTRO DA FAIXA NORMAL
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1";
-      } 
-      else if (temp > -1.0 && temp <= 5.0) {
-        // FAIXA DE DEGELO (-0.9°C a 5.0°C)
-        elBadge.innerText = "DEGELO";
-        elBadge.className = "bg-amber-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
-        gauge.classList.add('gauge-fill-degelo');
+        pararContadorForaDaFaixa(true); // Reseta o tempo se voltou ao normal
       } 
       else {
-        // TEMPERATURA ALTA OU BAIXA FORA DA SEGURANÇA (> 5°C ou < -20°C)
-        elBadge.innerText = temp > 5.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
-        elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
-        gauge.classList.add('gauge-fill-error');
+        // FORA DA FAIXA NORMAL -> Inicia/Mantém o temporizador
+        iniciarContadorForaDaFaixa();
+
+        // Limite de 5 minutos = 300 segundos
+        if (segundosForaDaFaixa <= 300) {
+          elBadge.innerText = "DEGELO";
+          elBadge.className = "bg-amber-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
+          gauge.classList.add('gauge-fill-degelo');
+        } else {
+          // Passaram 5 minutos fora da faixa -> Exibe ALERTA/FALHA
+          elBadge.innerText = temp > -1.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
+          elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
+          gauge.classList.add('gauge-fill-error');
+          
+          adicionarAlarme("Tempo de Degelo Excedido (>5 min)", "CRÍTICO");
+        }
+      }
+    }
+
+    // --- FUNÇÕES DO TEMPORIZADOR ---
+    function iniciarContadorForaDaFaixa() {
+      if (!timerForaDaFaixa) {
+        timerForaDaFaixa = setInterval(() => {
+          segundosForaDaFaixa++;
+          atualizarDisplayForaDaFaixa();
+        }, 1000);
+      }
+    }
+
+    function pararContadorForaDaFaixa(resetar = false) {
+      if (timerForaDaFaixa) {
+        clearInterval(timerForaDaFaixa);
+        timerForaDaFaixa = null;
+      }
+      if (resetar) {
+        segundosForaDaFaixa = 0;
+        atualizarDisplayForaDaFaixa();
+      }
+    }
+
+    function atualizarDisplayForaDaFaixa() {
+      const mins = String(Math.floor(segundosForaDaFaixa / 60)).padStart(2, '0');
+      const segs = String(segundosForaDaFaixa % 60).padStart(2, '0');
+      const elFora = document.getElementById('val-fora-faixa');
+      
+      elFora.innerText = `${mins}:${segs} min`;
+      
+      if (segundosForaDaFaixa > 300) {
+        elFora.className = "my-1 font-black text-xs text-rose-600 animate-pulse";
+      } else if (segundosForaDaFaixa > 0) {
+        elFora.className = "my-1 font-black text-xs text-amber-500";
+      } else {
+        elFora.className = "my-1 font-black text-xs text-slate-800";
       }
     }
 
