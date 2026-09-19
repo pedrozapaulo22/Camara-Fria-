@@ -17,6 +17,7 @@
     .gauge-bg { fill: none; stroke: #e2e8f0; stroke-width: 8; }
     .gauge-fill { fill: none; stroke: #2563eb; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 251.2; stroke-dashoffset: 251.2; transition: all 0.5s ease; }
     .gauge-fill-error { stroke: #e11d48 !important; }
+    .gauge-fill-degelo { stroke: #f59e0b !important; }
   </style>
 </head>
 <body class="flex flex-col md:flex-row h-screen overflow-hidden text-slate-700">
@@ -72,7 +73,7 @@
               </svg>
               <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-1">
                 <span id="val-temperatura" class="text-3xl font-black text-slate-800">-</span>
-                <span id="badge-sensor-status" class="bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse">FALHA NO SENSOR DE TEMPERATURA</span>
+                <span id="badge-sensor-status" class="bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse">FALHA NO SENSOR</span>
                 <span class="text-[9px] text-slate-400 font-medium mt-0.5">Setpoint: -18 °C</span>
               </div>
             </div>
@@ -447,22 +448,45 @@
       const elBadge = document.getElementById('badge-sensor-status');
       const gauge = document.getElementById('gauge-circle');
 
+      // Reset de classes do arco do gauge
+      gauge.classList.remove('gauge-fill-error', 'gauge-fill-degelo');
+
+      // 1. Falha de Leitura no Sensor
       if (isFalha || temp === null) {
         elVal.innerText = "-";
-        elBadge.innerText = "FALHA NO SENSOR DE TEMPERATURA";
+        elBadge.innerText = "FALHA NO SENSOR";
         elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
         gauge.classList.add('gauge-fill-error');
         gauge.style.strokeDashoffset = 0;
         
         adicionarAlarme("Falha no Sensor de Temperatura", "CRÍTICO");
-      } else {
-        elVal.innerText = `${temp.toFixed(1)} °C`;
+        return;
+      }
+
+      // Atualiza o texto da temperatura na tela
+      elVal.innerText = `${temp.toFixed(1)} °C`;
+
+      // Cálculo da porcentagem do ponteiro (Gauge)
+      let pct = Math.max(0, Math.min(1, (temp - (-30)) / 40));
+      gauge.style.strokeDashoffset = 251.2 * (1 - pct);
+
+      // 2. Lógica dos Estados (Faixa de Operação)
+      if (temp >= -20.0 && temp <= -1.0) {
+        // DENTRO DA FAIXA NORMAL (-20°C a -1°C)
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1";
-        gauge.classList.remove('gauge-fill-error');
-        
-        let pct = Math.max(0, Math.min(1, (temp - (-30)) / 40));
-        gauge.style.strokeDashoffset = 251.2 * (1 - pct);
+      } 
+      else if (temp > -1.0 && temp <= 5.0) {
+        // FAIXA DE DEGELO (-0.9°C a 5.0°C)
+        elBadge.innerText = "DEGELO";
+        elBadge.className = "bg-amber-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
+        gauge.classList.add('gauge-fill-degelo');
+      } 
+      else {
+        // TEMPERATURA ALTA OU BAIXA FORA DA SEGURANÇA (> 5°C ou < -20°C)
+        elBadge.innerText = temp > 5.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
+        elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
+        gauge.classList.add('gauge-fill-error');
       }
     }
 
