@@ -116,12 +116,12 @@
               <span class="text-[8px] text-slate-400">Lim: <span id="lbl-lim-degelo">05:00</span> min</span>
             </div>
 
-            <div class="bg-rose-50 border border-rose-200/80 p-3 rounded-xl text-center flex flex-col justify-between">
-              <span class="text-[9px] font-bold text-rose-500 uppercase">ARDUINO UNO</span>
+            <div id="card-arduino" class="bg-rose-50 border border-rose-200/80 p-3 rounded-xl text-center flex flex-col justify-between">
+              <span class="text-[9px] font-bold text-rose-500 uppercase" id="title-arduino">ARDUINO UNO</span>
               <div id="txt-arduino" class="my-1 font-black text-xs text-rose-600 flex items-center justify-center gap-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> OFFLINE
               </div>
-              <span class="text-[8px] text-rose-400">Aguardando conexão</span>
+              <span id="sub-arduino" class="text-[8px] text-rose-400 font-medium">Aguardando conexão</span>
             </div>
           </div>
 
@@ -245,7 +245,7 @@
       <span class="text-[9px] mt-0.5">Dash</span>
     </button>
     <button onclick="mudarAba('temperatura')" class="flex flex-col items-center text-slate-300 hover:text-white">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 022 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
       <span class="text-[9px] mt-0.5">Temp</span>
     </button>
     <button onclick="mudarAba('alarmes')" class="flex flex-col items-center text-slate-300 hover:text-white">
@@ -272,7 +272,6 @@
     let historicoLeituras = [];
     let listaAlarmes = [];
 
-    // --- CONTROLO DO TEMPORIZADOR "FORA DA FAIXA" ---
     let segundosForaDaFaixa = 0;
     let timerForaDaFaixa = null;
 
@@ -402,9 +401,19 @@
       badgeSys.className = "bg-rose-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5";
       badgeSys.innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> DESCONECTADO`;
 
+      const cardArduino = document.getElementById('card-arduino');
+      cardArduino.className = "bg-rose-50 border border-rose-200/80 p-3 rounded-xl text-center flex flex-col justify-between";
+
+      const titleArduino = document.getElementById('title-arduino');
+      titleArduino.className = "text-[9px] font-bold text-rose-500 uppercase";
+
       const txtArduino = document.getElementById('txt-arduino');
       txtArduino.className = "my-1 font-black text-xs text-rose-600 flex items-center justify-center gap-1";
       txtArduino.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> OFFLINE`;
+
+      const subArduino = document.getElementById('sub-arduino');
+      subArduino.className = "text-[8px] text-rose-400 font-medium";
+      subArduino.innerText = "Aguardando conexão";
     }
 
     function marcarConectado() {
@@ -412,9 +421,19 @@
       badgeSys.className = "bg-emerald-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5";
       badgeSys.innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> CONECTADO`;
 
+      const cardArduino = document.getElementById('card-arduino');
+      cardArduino.className = "bg-emerald-50 border border-emerald-200/80 p-3 rounded-xl text-center flex flex-col justify-between";
+
+      const titleArduino = document.getElementById('title-arduino');
+      titleArduino.className = "text-[9px] font-bold text-emerald-600 uppercase";
+
       const txtArduino = document.getElementById('txt-arduino');
       txtArduino.className = "my-1 font-black text-xs text-emerald-600 flex items-center justify-center gap-1";
       txtArduino.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> ONLINE`;
+
+      const subArduino = document.getElementById('sub-arduino');
+      subArduino.className = "text-[8px] text-emerald-600 font-bold";
+      subArduino.innerText = "Conectado";
     }
 
     function processarDadosThingSpeak(data) {
@@ -444,7 +463,6 @@
       let tempBruta = parseFloat(data.field1);
       const isFalha = isNaN(tempBruta) || tempBruta <= -127.0 || tempBruta >= 85.0 || tempBruta === 0;
 
-      // APLICAÇÃO DO OFFSET
       let tempFinal = isFalha ? null : (tempBruta + tempOffset);
 
       tratarTemperaturaESensor(tempFinal, isFalha);
@@ -475,7 +493,6 @@
 
       gauge.classList.remove('gauge-fill-error', 'gauge-fill-degelo');
 
-      // 1. Falha de Leitura no Sensor
       if (isFalha || temp === null) {
         elVal.innerText = "-";
         elBadge.innerText = "FALHA NO SENSOR";
@@ -493,18 +510,14 @@
       let pct = Math.max(0, Math.min(1, (temp - (-30)) / 40));
       gauge.style.strokeDashoffset = 251.2 * (1 - pct);
 
-      // Limite em segundos baseado na configuração salva
       const limiteSegundos = tempoDegeloMinutos * 60;
 
-      // 2. Lógica dos Estados (Faixa de Operação)
       if (temp >= -20.0 && temp <= -1.0) {
-        // DENTRO DA FAIXA NORMAL
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1";
-        pararContadorForaDaFaixa(true); // Reseta o tempo se voltou ao normal
+        pararContadorForaDaFaixa(true);
       } 
       else {
-        // FORA DA FAIXA NORMAL -> Inicia/Mantém o temporizador
         iniciarContadorForaDaFaixa();
 
         if (segundosForaDaFaixa <= limiteSegundos) {
@@ -512,7 +525,6 @@
           elBadge.className = "bg-amber-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
           gauge.classList.add('gauge-fill-degelo');
         } else {
-          // Passou o tempo limite configurado -> Exibe ALERTA/FALHA
           elBadge.innerText = temp > -1.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
           elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
           gauge.classList.add('gauge-fill-error');
@@ -522,7 +534,6 @@
       }
     }
 
-    // --- FUNÇÕES DO TEMPORIZADOR ---
     function iniciarContadorForaDaFaixa() {
       if (!timerForaDaFaixa) {
         timerForaDaFaixa = setInterval(() => {
