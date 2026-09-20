@@ -291,7 +291,6 @@
     let historicoLeituras = [];
 
     let timerForaDaFaixa = null;
-    
     let ultimaRespostaComSucesso = Date.now();
     const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 600000;
 
@@ -333,18 +332,13 @@
 
       if (writeApiKey) {
         const urlUpdate = `https://api.thingspeak.com/update?api_key=${writeApiKey}&field3=${tempOffset}`;
-
         const imgSync = new Image();
         imgSync.src = `${urlUpdate}&_nocache=${Date.now()}`;
 
-        alert('Offset enviado para a nuvem! Aguarde o próximo ciclo para sincronizar no telemóvel.');
-        
-        setTimeout(() => {
-          buscarDados();
-        }, 3000);
-
+        alert('Offset salvo e enviado para a nuvem!');
+        setTimeout(() => { buscarDados(); }, 2000);
       } else {
-        alert('Configurações salvas localmente! (Insira a Write API Key para sincronizar em outros aparelhos)');
+        alert('Configurações salvas localmente!');
         buscarDados();
       }
     }
@@ -401,11 +395,7 @@
             plugins: { legend: { display: false } },
             scales: {
               x: { grid: { display: false } },
-              y: { 
-                grid: { color: '#f1f5f9' }, 
-                min: -30, 
-                max: 30 
-              }
+              y: { grid: { color: '#f1f5f9' }, min: -30, max: 30 }
             }
           }
         });
@@ -434,11 +424,7 @@
             maintainAspectRatio: false,
             scales: {
               x: { grid: { display: false } },
-              y: { 
-                grid: { color: '#f1f5f9' },
-                min: -30,
-                max: 30
-              }
+              y: { grid: { color: '#f1f5f9' }, min: -30, max: 30 }
             }
           }
         });
@@ -451,26 +437,19 @@
         return;
       }
 
-      // Procura nos últimos 100 resultados para localizar o offset registado no Field 3
       fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=100&_nocache=${Date.now()}`)
         .then(res => {
           if (!res.ok) throw new Error("Erro na conexão HTTP");
           return res.json();
         })
         .then(data => {
-          if (!data || !data.feeds || data.feeds.length === 0) {
-            return;
-          }
+          if (!data || !data.feeds || data.feeds.length === 0) return;
 
           const feeds = data.feeds;
           const ultimoFeed = feeds[feeds.length - 1];
-          
-          if (!ultimoFeed || !ultimoFeed.created_at) {
-            return;
-          }
+          if (!ultimoFeed || !ultimoFeed.created_at) return;
 
-          const agora = Date.now();
-          ultimaRespostaComSucesso = agora;
+          ultimaRespostaComSucesso = Date.now();
           marcarConectado();
           processarDadosThingSpeak(feeds);
         })
@@ -531,21 +510,28 @@
     }
 
     function processarDadosThingSpeak(feeds) {
-      // BUSCA DO MODO REVERSO: Procura no histórico até encontrar o último offset VÁLIDO enviado no Field 3
+      // BUSCA O ÚLTIMO OFFSET VÁLIDO NO HISTÓRICO (Ignora nulos)
+      let offsetEncontrado = false;
       for (let i = feeds.length - 1; i >= 0; i--) {
-        if (feeds[i].field3 !== null && feeds[i].field3 !== undefined && feeds[i].field3 !== "") {
-          let offsetNuvem = parseFloat(feeds[i].field3);
-          if (!isNaN(offsetNuvem)) {
-            tempOffset = offsetNuvem;
+        if (feeds[i].field3 !== null && feeds[i].field3 !== undefined && feeds[i].field3.trim() !== "") {
+          let val = parseFloat(feeds[i].field3);
+          if (!isNaN(val)) {
+            tempOffset = val;
             localStorage.setItem('tempOffset', tempOffset);
-            document.getElementById('input-temp-offset').value = tempOffset;
+            offsetEncontrado = true;
             break;
           }
         }
       }
 
-      const ultimoFeed = feeds[feeds.length - 1];
+      // Se não houver registro no Field3, mantém o offset gravado no localStorage
+      if (!offsetEncontrado) {
+        tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
+      }
 
+      document.getElementById('input-temp-offset').value = tempOffset;
+
+      const ultimoFeed = feeds[feeds.length - 1];
       const isPowerOk = (String(ultimoFeed.field2) === "1" || String(ultimoFeed.field2) === "true");
       const statusRede = document.getElementById('status-rede');
       const valBateria = document.getElementById('val-bateria');
@@ -565,13 +551,11 @@
         valBateria.className = "my-1 font-black text-xs text-amber-500 animate-pulse";
         subBateria.innerText = "Em uso";
         subBateria.className = "text-[8px] text-amber-600 font-bold";
-        
         adicionarAlarme("Queda na Rede Elétrica", "ALERTA");
       }
 
       let tempBruta = parseFloat(ultimoFeed.field1);
       const isFalha = isNaN(tempBruta) || tempBruta <= -127.0 || tempBruta >= 85.0;
-
       let tempFinal = isFalha ? null : (tempBruta + tempOffset);
 
       tratarTemperaturaESensor(tempFinal, isFalha);
@@ -580,7 +564,6 @@
       let dataValores = [];
       historicoLeituras = [];
 
-      // Filtra e exibe os últimos 20 pontos nos gráficos
       const feedsRecentes = feeds.slice(-20);
 
       feedsRecentes.forEach(f => {
@@ -643,7 +626,6 @@
           elBadge.innerText = temp > -1.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
           elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
           gauge.classList.add('gauge-fill-error');
-          
           adicionarAlarme(`Tempo de Degelo Excedido (>${tempoDegeloMinutos} min)`, "CRÍTICO");
         }
       }
