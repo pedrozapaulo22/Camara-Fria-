@@ -10,27 +10,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-    body { font-family: 'Inter', sans-serif; background-color: #f3f6f9; }
-    
-    /* Sidebar styling com fundo escuro e montanha decorativa */
-    .sidebar { 
-      background: linear-gradient(180deg, #0b1e36 0%, #081424 100%); 
-      position: relative;
-    }
-    .sidebar-bg-mountains {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 180px;
-      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23102a45" fill-opacity="0.4" d="M0,224L60,213.3C120,203,240,181,360,186.7C480,192,600,224,720,218.7C840,213,960,171,1080,160C1200,149,1320,171,1380,181.3L1440,192L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,160,320,80,320L0,320Z"></path><path fill="%231a3b5c" fill-opacity="0.3" d="M0,288L80,266.7C160,245,320,203,480,208C640,213,800,267,960,266.7C1120,267,1280,213,1360,186.7L1440,160L1440,320L1360,320C1280,320,1120,320,960,320C800,320,640,320,480,320C320,320,160,320,80,320L0,320Z"></path></svg>') no-repeat bottom;
-      background-size: cover;
-      pointer-events: none;
-    }
-
-    /* Gauge Personalizado */
-    .gauge-wrapper { width: 140px; height: 140px; position: relative; display: flex; align-items: center; justify-content: center; }
-    .gauge-svg { width: 140px; height: 140px; transform: rotate(-90deg); }
+    body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+    .sidebar { background-color: #0b192c; }
+    .gauge-wrapper { width: 130px; height: 130px; position: relative; display: flex; align-items: center; justify-content: center; }
+    .gauge-svg { width: 130px; height: 130px; transform: rotate(-90deg); }
     .gauge-bg { fill: none; stroke: #e2e8f0; stroke-width: 8; }
     .gauge-fill { fill: none; stroke: #2563eb; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 251.2; stroke-dashoffset: 251.2; transition: all 0.5s ease; }
     .gauge-fill-error { stroke: #e11d48 !important; }
@@ -40,46 +23,18 @@
 <body class="flex flex-col md:flex-row h-screen overflow-hidden text-slate-700">
 
   <!-- BARRA LATERAL (DESKTOP) -->
-  <aside class="hidden md:flex w-64 sidebar text-white flex-col justify-between p-4 shrink-0 z-10">
-    <div class="z-10">
-      <!-- Logo com Ícone de Floco de Neve -->
-      <div class="flex items-center gap-3 mb-8 px-2 pt-2">
-        <div class="p-2 bg-blue-600/30 rounded-xl border border-blue-400/30">
-          <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v18m0-18l3 3m-3-3L9 6m3 15l3-3m-3 3l-3-3m9-6H3m18 0l-3 3m3-3l-3-3M3 12l3 3M3 12l3-3"></path></svg>
-        </div>
-        <div>
-          <h2 class="font-black text-base tracking-wider text-white uppercase leading-none">REI DO GELO</h2>
-          <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">CÂMARA FRIA</span>
-        </div>
-      </div>
-
-      <!-- Navegação Lateral -->
-      <nav class="space-y-1 text-xs font-semibold" id="nav-desktop">
-        <button onclick="mudarAba('dashboard')" id="btn-dash" class="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-900/40 transition-colors text-left">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-          Dashboard
-        </button>
-        <button onclick="mudarAba('temperatura')" id="btn-temp" class="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800/60 rounded-xl transition-colors text-left">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-          Temperatura
-        </button>
-        <button onclick="mudarAba('dashboard')" class="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800/60 rounded-xl transition-colors text-left">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-          Trend
-        </button>
-        <button onclick="mudarAba('alarmes')" id="btn-alarm" class="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800/60 rounded-xl transition-colors text-left">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 01-6 0v-1m6 0H9"></path></svg>
-          Alarmes
-        </button>
+  <aside class="hidden md:flex w-60 sidebar text-white flex-col justify-between p-5 shrink-0">
+    <div>
+      <div class="mb-8 font-black text-lg tracking-wider text-white">REI DO GELO</div>
+      <nav class="space-y-2 text-xs font-semibold" id="nav-desktop">
+        <button onclick="mudarAba('dashboard')" id="btn-dash" class="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-lg shadow-md transition-colors text-left">Dashboard</button>
+        <button onclick="mudarAba('temperatura')" id="btn-temp" class="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-left">Temperatura</button>
+        <button onclick="mudarAba('alarmes')" id="btn-alarm" class="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-left">Alarmes</button>
+        <button onclick="mudarAba('configuracoes')" id="btn-config" class="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-left">Configurações</button>
       </nav>
     </div>
-
-    <!-- Decoração inferior -->
-    <div class="sidebar-bg-mountains"></div>
-    <div class="z-10 border-t border-slate-700/50 pt-4">
-      <div class="text-[10px] font-extrabold text-slate-300 uppercase leading-tight tracking-wider">
-        CONTROLE E SEGURANÇA PARA O SEU PRODUTO.
-      </div>
+    <div class="text-[10px] font-extrabold text-cyan-400 uppercase leading-tight">
+      CONTROLE E SEGURANÇA PARA O SEU PRODUTO.
     </div>
   </aside>
 
@@ -87,300 +42,127 @@
   <main class="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 mb-16 md:mb-0">
     
     <!-- CABEÇALHO SUPERIOR -->
-    <header class="flex justify-between items-center bg-white px-6 py-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+    <header class="flex flex-wrap justify-between items-center bg-white px-4 md:px-6 py-3.5 rounded-xl border border-slate-200/80 shadow-sm gap-2">
       <div class="flex items-center gap-3">
-        <h1 class="font-black text-slate-800 text-sm tracking-wide">REI DO GELO</h1>
+        <h1 class="font-extrabold text-slate-800 text-base">REI DO GELO</h1>
         <span class="text-slate-300">|</span>
-        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">MONITORAMENTO DA CÂMARA FRIA</span>
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">MONITORAMENTO DA CÂMARA FRIA</span>
       </div>
-      <div class="flex items-center gap-4 text-xs font-bold">
-        <span id="badge-sistema" class="bg-emerald-600 text-white px-3 py-1 rounded-md flex items-center gap-1.5 text-[11px]">
-          <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> ONLINE
+      <div class="flex items-center gap-3 text-xs font-bold">
+        <span id="badge-sistema" class="bg-rose-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> DESCONECTADO
         </span>
-        <span id="data-hora" class="text-slate-500 font-semibold hidden sm:inline">--/--/---- --:--:--</span>
+        <span id="data-hora" class="text-slate-400 font-medium hidden sm:inline ml-2">--/--/---- --:--:--</span>
       </div>
     </header>
 
     <!-- ABA 1: DASHBOARD -->
     <div id="aba-dashboard" class="space-y-5">
-      
-      <!-- PAINEL SUPERIOR: TEMPERATURA + CARDS DE STATUS -->
       <div class="grid grid-cols-12 gap-5">
         
-        <!-- CARD TEMPERATURA ATUAL -->
-        <div class="col-span-12 lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
-          <h3 class="text-[11px] font-extrabold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+        <!-- TEMPERATURA ATUAL -->
+        <div class="col-span-12 lg:col-span-6 bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
+          <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-1">
             <span class="text-blue-600 font-black">:</span> TEMPERATURA ATUAL
           </h3>
-          <div class="flex items-center justify-between gap-2 my-2">
-            <!-- Gauge Circular -->
+          <div class="flex flex-col sm:flex-row items-center gap-6">
             <div class="gauge-wrapper shrink-0">
               <svg class="gauge-svg" viewBox="0 0 100 100">
                 <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
-                <circle id="gauge-circle" class="gauge-fill" cx="50" cy="50" r="40" style="stroke-dashoffset: 60;"></circle>
+                <circle id="gauge-circle" class="gauge-fill gauge-fill-error" cx="50" cy="50" r="40" style="stroke-dashoffset: 0;"></circle>
               </svg>
               <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-1">
-                <div class="flex items-center text-blue-600 mb-0.5">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                </div>
-                <span id="val-temperatura" class="text-2xl font-black text-slate-800 tracking-tight">-18,6 °C</span>
-                <span id="badge-sensor-status" class="bg-emerald-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase mt-1">DENTRO DA FAIXA</span>
-                <span class="text-[9px] text-slate-400 font-bold mt-1">Setpoint: -18 °C</span>
+                <span id="val-temperatura" class="text-3xl font-black text-slate-800">-</span>
+                <span id="badge-sensor-status" class="bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse">SEM SINAL</span>
+                <span class="text-[9px] text-slate-400 font-medium mt-0.5">Setpoint: -18 °C</span>
               </div>
             </div>
 
-            <!-- Faixas de Configuração com Ícones -->
-            <div class="space-y-2 w-full max-w-[170px]">
-              <div class="bg-slate-50 p-2 rounded-xl border border-slate-100 flex items-center gap-2.5">
-                <div class="text-blue-500 bg-blue-100/60 p-1.5 rounded-lg shrink-0">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v18m0-18l3 3m-3-3L9 6m3 15l3-3m-3 3l-3-3m9-6H3m18 0l-3 3m3-3l-3-3M3 12l3 3M3 12l3-3"></path></svg>
-                </div>
-                <div>
-                  <p class="text-[9px] font-bold text-slate-400 leading-none">Temperatura mínima (alarme)</p>
-                  <p class="text-xs font-black text-slate-800 mt-0.5">0 °C</p>
-                </div>
+            <div class="space-y-2.5 w-full flex-1">
+              <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
+                <p class="text-[10px] font-semibold text-slate-400">Temperatura Mínima Normal</p>
+                <p class="text-xs font-extrabold text-slate-800">-20 °C</p>
               </div>
-
-              <div class="bg-slate-50 p-2 rounded-xl border border-slate-100 flex items-center gap-2.5">
-                <div class="text-amber-500 bg-amber-100/60 p-1.5 rounded-lg shrink-0">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                </div>
-                <div>
-                  <p class="text-[9px] font-bold text-slate-400 leading-none">Temperatura máxima (alarme)</p>
-                  <p class="text-xs font-black text-slate-800 mt-0.5">30 °C</p>
-                </div>
+              <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
+                <p class="text-[10px] font-semibold text-slate-400">Temperatura Máxima Normal</p>
+                <p class="text-xs font-extrabold text-slate-800">-1 °C</p>
               </div>
-
-              <div class="bg-slate-50 p-2 rounded-xl border border-slate-100 flex items-center gap-2.5">
-                <div class="text-slate-500 bg-slate-200/60 p-1.5 rounded-lg shrink-0">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                </div>
-                <div>
-                  <p class="text-[9px] font-bold text-slate-400 leading-none">Faixa de operação</p>
-                  <p class="text-xs font-black text-slate-800 mt-0.5">-22 °C a -1 °C</p>
-                </div>
+              <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
+                <p class="text-[10px] font-semibold text-slate-400">Tempo Limite Fora da Faixa</p>
+                <p class="text-xs font-extrabold text-slate-800">Até <span id="lbl-tol-degelo">5</span> minutos</p>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- CARDS DE STATUS DO SISTEMA E EQUIPAMENTOS -->
-        <div class="col-span-12 lg:col-span-7 space-y-4 flex flex-col justify-between">
-          <!-- 4 Cards Superiores -->
+        <!-- CARDS DE STATUS -->
+        <div class="col-span-12 lg:col-span-6 space-y-4">
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <!-- Rede Elétrica -->
-            <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
-              <div class="flex items-center gap-1.5 text-emerald-600">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                <span class="text-[9px] font-extrabold text-emerald-600 uppercase">REDE ELÉTRICA</span>
-              </div>
-              <div id="status-rede" class="my-2 font-black text-sm text-emerald-600 flex items-center gap-1">
-                ⚡ ATIVA
-              </div>
-              <span class="text-[8px] text-slate-300 opacity-0">.</span>
+            <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
+              <span class="text-[9px] font-bold text-slate-400 uppercase">REDE ELÉTRICA</span>
+              <div id="status-rede" class="my-2 font-black text-xs text-slate-400">DESCONHECIDO</div>
+              <span class="text-[8px] opacity-0">.</span>
             </div>
 
-            <!-- Bateria -->
-            <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
-              <div class="flex items-center justify-between text-blue-600">
-                <div class="flex items-center gap-1.5">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                  <span class="text-[9px] font-extrabold text-blue-600 uppercase">BATERIA / POWER BANK</span>
-                </div>
-              </div>
-              <div id="val-bateria" class="my-1 font-black text-base text-slate-800">87%</div>
-              <span id="sub-bateria" class="text-[8px] text-slate-400 font-semibold">Autonomia estimada<br>12 h 30 min</span>
+            <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
+              <span class="text-[9px] font-bold text-slate-400 uppercase">BATERIA</span>
+              <div id="val-bateria" class="my-1 font-black text-sm text-slate-700">-- %</div>
+              <span id="sub-bateria" class="text-[8px] text-slate-400">Sem dados</span>
             </div>
 
-            <!-- Última Leitura -->
-            <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
-              <div class="flex items-center gap-1.5 text-slate-500">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <span class="text-[9px] font-extrabold text-slate-400 uppercase leading-tight">ÚLTIMA LEITURA</span>
-              </div>
-              <div id="val-ultima-hora" class="my-1 font-black text-sm text-slate-800">--:--:--</div>
-              <span id="val-ultima-data" class="text-[8px] text-slate-400 font-medium">--/--/----</span>
+            <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
+              <span class="text-[9px] font-bold text-slate-400 uppercase leading-tight">FORA DA FAIXA</span>
+              <div id="val-fora-faixa" class="my-1 font-black text-xs text-slate-800">00:00 min</div>
+              <span class="text-[8px] text-slate-400">Lim: <span id="lbl-lim-degelo">05:00</span> min</span>
             </div>
 
-            <!-- Arduino / Conexão -->
-            <div id="card-arduino" class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
-              <div class="flex items-center gap-1.5 text-blue-600">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path></svg>
-                <span class="text-[9px] font-extrabold text-blue-600 uppercase" id="title-arduino">ARDUINO UNO</span>
+            <!-- CARD ARDUINO UNO -->
+            <div id="card-arduino" class="bg-rose-50 border border-rose-200/80 p-3 rounded-xl text-center flex flex-col justify-between">
+              <span class="text-[9px] font-bold text-rose-500 uppercase" id="title-arduino">ARDUINO UNO</span>
+              <div id="txt-arduino" class="my-1 font-black text-xs text-rose-600 flex items-center justify-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> OFFLINE
               </div>
-              <div id="txt-arduino" class="my-1 font-black text-xs text-emerald-600 flex items-center gap-1">
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> ONLINE
-              </div>
-              <span id="sub-arduino" class="text-[8px] text-slate-400 font-medium">Coleta de dados ativa</span>
+              <span id="sub-arduino" class="text-[8px] text-rose-400 font-medium">Sem Comunicação</span>
             </div>
           </div>
 
-          <!-- Status dos Equipamentos -->
-          <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-            <h3 class="text-[11px] font-extrabold text-slate-600 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1">
               <span class="text-blue-600 font-black">:</span> STATUS DOS EQUIPAMENTOS
             </h3>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-              <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center gap-2">
-                <div class="p-2 bg-slate-200/60 text-slate-700 rounded-lg">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                </div>
-                <div class="text-left">
-                  <span class="text-[9px] font-bold text-slate-400 uppercase block">COMPRESSOR</span>
-                  <span id="st-compressor" class="text-xs font-black text-slate-400 flex items-center gap-1">
-                    —
-                  </span>
-                </div>
+              <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                <span class="text-[9px] font-bold text-slate-400 uppercase block mb-1">COMPRESSOR</span>
+                <span id="st-compressor" class="text-xs font-bold text-slate-400">--</span>
               </div>
-
-              <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center gap-2">
-                <div class="p-2 bg-slate-200/60 text-slate-700 rounded-lg">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path></svg>
-                </div>
-                <div class="text-left">
-                  <span class="text-[9px] font-bold text-slate-400 uppercase block">PORTA</span>
-                  <span id="st-porta" class="text-xs font-black text-slate-400 flex items-center gap-1">
-                    —
-                  </span>
-                </div>
+              <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                <span class="text-[9px] font-bold text-slate-400 uppercase block mb-1">PORTA</span>
+                <span id="st-porta" class="text-xs font-bold text-slate-400">--</span>
               </div>
-
-              <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center gap-2">
-                <div class="p-2 bg-slate-200/60 text-slate-700 rounded-lg">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1m0 0l-2 1m2-1v2.5M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m0 0l-2 1m2-1v-2.5"></path></svg>
-                </div>
-                <div class="text-left">
-                  <span class="text-[9px] font-bold text-slate-400 uppercase block">VENTILAÇÃO</span>
-                  <span id="st-ventilacao" class="text-xs font-black text-slate-400 flex items-center gap-1">
-                    —
-                  </span>
-                </div>
+              <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                <span class="text-[9px] font-bold text-slate-400 uppercase block mb-1">VENTILAÇÃO</span>
+                <span id="st-ventilacao" class="text-xs font-bold text-slate-400">--</span>
               </div>
-
-              <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center gap-2">
-                <div class="p-2 bg-slate-200/60 text-slate-700 rounded-lg">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 01-6 0v-1m6 0H9"></path></svg>
-                </div>
-                <div class="text-left">
-                  <span class="text-[9px] font-bold text-slate-400 uppercase block">ALARME</span>
-                  <span id="st-alarme" class="text-xs font-black text-slate-500 flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> NENHUM
-                  </span>
-                </div>
+              <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                <span class="text-[9px] font-bold text-slate-400 uppercase block mb-1">ALARME</span>
+                <span id="st-alarme" class="text-xs font-bold text-slate-400">--</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- PAINEL CENTRAL: GRÁFICO TREND + PAINÉIS LATERAIS -->
-      <div class="grid grid-cols-12 gap-5">
-        <!-- Gráfico Principal (Esquerda) -->
-        <div class="col-span-12 lg:col-span-8 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider flex items-center gap-2">
-              <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-              TREND DE TEMPERATURA (TEMPO REAL)
-            </h3>
-            <span class="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Atualização ao vivo
-            </span>
-          </div>
-          <div class="h-64 w-full">
-            <canvas id="chartTemperatura"></canvas>
-          </div>
-        </div>
-
-        <!-- Coluna de Controle Direita (Amostragem, Relatório, Info) -->
-        <div class="col-span-12 lg:col-span-4 space-y-4">
-          
-          <!-- Card Amostragem -->
-          <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-            <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-              AMOSTRAGEM
-            </h4>
-            <div class="grid grid-cols-2 gap-3 mb-3 text-center">
-              <div class="bg-slate-50 p-2 rounded-xl border border-slate-100">
-                <span class="text-[8px] font-bold text-slate-400 uppercase block">Intervalo de coleta</span>
-                <span class="text-sm font-black text-slate-800">10 s</span>
-              </div>
-              <div class="bg-slate-50 p-2 rounded-xl border border-slate-100">
-                <span class="text-[8px] font-bold text-slate-400 uppercase block">Leituras por hora</span>
-                <span class="text-sm font-black text-slate-800">360</span>
-              </div>
-            </div>
-            <div class="flex items-center gap-2 text-[9px] font-semibold text-slate-400 bg-slate-50 p-2 rounded-xl">
-              <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path></svg>
-              <span>Leitura da temperatura registrada a cada 10 segundos</span>
-            </div>
-          </div>
-
-          <!-- Card Gerar Relatório -->
-          <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm space-y-2">
-            <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-              GERAR RELATÓRIO
-            </h4>
-            <button onclick="exportarPDF()" class="w-full bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-colors">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-              GERAR RELATÓRIO PDF
-            </button>
-            <button onclick="exportarCSV()" class="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs py-2 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors">
-              EXPORTAR CSV
-            </button>
-          </div>
-
-          <!-- Card Institucional Câmara Fria -->
-          <div class="bg-gradient-to-br from-slate-50 to-blue-50/50 p-4 rounded-2xl border border-blue-100 flex items-center justify-between">
-            <div>
-              <h5 class="text-xs font-black text-slate-800">CÂMARA FRIA</h5>
-              <p class="text-[9px] font-bold text-slate-400">Monitoramento em tempo real</p>
-              <p class="text-[8px] text-slate-400 mt-1 max-w-[170px]">Temperatura, energia e segurança na palma da sua mão.</p>
-            </div>
-            <div class="text-right">
-              <span class="text-[8px] font-black text-blue-600 block">MAIS CONTROLE,</span>
-              <span class="text-[8px] font-black text-blue-600 block">MAIS TRANQUILIDADE</span>
-            </div>
-          </div>
-
+      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">TREND DE TEMPERATURA</h3>
+        <div class="h-64 w-full">
+          <canvas id="chartTemperatura"></canvas>
         </div>
       </div>
-
-      <!-- PAINEL INFERIOR: HISTÓRICO DE EVENTOS -->
-      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm overflow-x-auto">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider flex items-center gap-2">
-            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            HISTÓRICO DE EVENTOS
-          </h3>
-        </div>
-
-        <table class="w-full text-left text-xs">
-          <thead class="bg-slate-50 text-slate-400 uppercase text-[10px] font-bold border-b border-slate-100">
-            <tr>
-              <th class="p-3">Data / Hora</th>
-              <th class="p-3">Evento</th>
-              <th class="p-3">Valor</th>
-              <th class="p-3">Status</th>
-            </tr>
-          </thead>
-          <tbody id="tabela-alarmes" class="divide-y divide-slate-100 text-slate-600 font-medium">
-            <tr>
-              <td class="p-3" id="hist-hora-1">--/--/---- --:--</td>
-              <td class="p-3 font-semibold text-slate-800">Leitura de temperatura</td>
-              <td class="p-3 font-bold text-slate-800" id="hist-val-1">-18,6 °C</td>
-              <td class="p-3"><span class="bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full text-[10px] font-bold">Normal</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
     </div>
 
     <!-- ABA 2: TEMPERATURA -->
     <div id="aba-temperatura" class="hidden space-y-5">
-      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
         <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">FILTRO DE PERÍODO E EXPORTAÇÃO DE RELATÓRIOS</h3>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           <div>
@@ -401,7 +183,7 @@
         </div>
       </div>
 
-      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
         <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">GRÁFICO DO PERÍODO SELECIONADO</h3>
         <div class="h-72 w-full">
           <canvas id="chartPeriodo"></canvas>
@@ -411,127 +193,496 @@
 
     <!-- ABA 3: ALARMES -->
     <div id="aba-alarmes" class="hidden space-y-5">
-      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm overflow-x-auto">
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">REGISTRO DE ALARMES</h3>
-        <p class="text-xs text-slate-400">Nenhum alarme crítico registrado no período.</p>
+      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm overflow-x-auto">
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">HISTÓRICO DE ALARMES</h3>
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-50 text-slate-500 uppercase border-b">
+            <tr>
+              <th class="p-3">Data / Hora</th>
+              <th class="p-3">Evento / Alarme</th>
+              <th class="p-3">Nível</th>
+              <th class="p-3">Status</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-alarmes" class="divide-y">
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ABA 4: CONFIGURAÇÕES -->
+    <div id="aba-configuracoes" class="hidden bg-white p-6 rounded-xl border border-slate-200/80 shadow-sm space-y-4">
+      <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">CONFIGURAÇÕES DE CONEXÃO, CALIBRAÇÃO E TEMPOS</h3>
+      <p class="text-xs text-slate-500">Ajuste os parâmetros do sistema de monitoramento da câmara fria.</p>
+      
+      <div class="max-w-md space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1">ID do Canal ThingSpeak</label>
+          <input type="text" id="input-channel-id" placeholder="Ex: 3498175" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1">Offset de Temperatura (°C)</label>
+          <input type="number" step="0.1" id="input-temp-offset" placeholder="Ex: -4.9 ou 1.2" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1">Ajuste Tempo de Degelo (Minutos)</label>
+          <input type="number" min="1" max="120" id="input-tempo-degelo" placeholder="Ex: 5" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <button onclick="salvarConfiguracao()" class="bg-blue-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar Configurações</button>
       </div>
     </div>
 
   </main>
 
   <script>
-    // Atualização de Data e Hora no Cabeçalho
+    let channelId = localStorage.getItem('channelId') || '3498175';
+    let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
+    let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
+
+    document.getElementById('input-channel-id').value = channelId;
+    document.getElementById('input-temp-offset').value = tempOffset;
+    document.getElementById('input-tempo-degelo').value = tempoDegeloMinutos;
+
+    let chartTemp = null;
+    let chartPeriodo = null;
+    let historicoLeituras = [];
+    let listaAlarmes = [];
+
+    let segundosForaDaFaixa = 0;
+    let timerForaDaFaixa = null;
+    
+    let ultimaRespostaComSucesso = 0;
+    const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 120000; // 120 segundos
+
     function atualizarDataHora() {
-      const agora = new Date();
-      const stringDataHora = agora.toLocaleString('pt-BR');
-      document.getElementById('data-hora').innerText = stringDataHora;
+      document.getElementById('data-hora').innerText = new Date().toLocaleString('pt-BR');
     }
     setInterval(atualizarDataHora, 1000);
-    atualizarDataHora();
 
-    // Lógica para Troca de Abas
+    function atualizarRotulosDegelo() {
+      document.getElementById('lbl-tol-degelo').innerText = tempoDegeloMinutos;
+      const strMin = String(tempoDegeloMinutos).padStart(2, '0');
+      document.getElementById('lbl-lim-degelo').innerText = `${strMin}:00`;
+    }
+
+    function salvarConfiguracao() {
+      let idInput = document.getElementById('input-channel-id').value.trim();
+      let offsetInput = parseFloat(document.getElementById('input-temp-offset').value);
+      let degeloInput = parseInt(document.getElementById('input-tempo-degelo').value);
+
+      if(idInput) { channelId = idInput; localStorage.setItem('channelId', channelId); }
+      tempOffset = isNaN(offsetInput) ? 0.0 : offsetInput;
+      localStorage.setItem('tempOffset', tempOffset);
+
+      if(!isNaN(degeloInput) && degeloInput > 0) {
+        tempoDegeloMinutos = degeloInput;
+        localStorage.setItem('tempoDegeloMinutos', tempoDegeloMinutos);
+      }
+
+      atualizarRotulosDegelo();
+      alert('Configurações salvas!');
+      buscarDados();
+    }
+
     function mudarAba(aba) {
-      document.getElementById('aba-dashboard').classList.add('hidden');
-      document.getElementById('aba-temperatura').classList.add('hidden');
-      document.getElementById('aba-alarmes').classList.add('hidden');
+      ['dashboard', 'temperatura', 'alarmes', 'configuracoes'].forEach(a => {
+        document.getElementById(`aba-${a}`).classList.add('hidden');
+      });
+      document.getElementById(`aba-${aba}`).classList.remove('hidden');
 
-      if(aba === 'dashboard') document.getElementById('aba-dashboard').classList.remove('hidden');
-      if(aba === 'temperatura') document.getElementById('aba-temperatura').classList.remove('hidden');
-      if(aba === 'alarmes') document.getElementById('aba-alarmes').classList.remove('hidden');
+      if (aba === 'temperatura' && !chartPeriodo) {
+        iniciarGraficoPeriodo();
+      }
     }
 
-    // Configuração do Gráfico Trend em Tempo Real
-    const ctxTrend = document.getElementById('chartTemperatura').getContext('2d');
-    
-    const maxPontos = 15;
-    const labelsIniciais = [];
-    const dadosIniciais = [];
-
-    const agora = new Date();
-    for (let i = maxPontos - 1; i >= 0; i--) {
-      let d = new Date(agora.getTime() - i * 10000);
-      labelsIniciais.push(d.toLocaleTimeString('pt-BR'));
-      dadosIniciais.push((-18.5 + (Math.random() * 0.8 - 0.4)).toFixed(1));
-    }
-
-    const chartTrend = new Chart(ctxTrend, {
-      type: 'line',
-      data: {
-        labels: labelsIniciais,
-        datasets: [{
-          label: 'Temperatura (°C)',
-          data: dadosIniciais,
-          borderColor: '#2563eb',
-          backgroundColor: 'rgba(37, 99, 235, 0.1)',
-          fill: true,
-          tension: 0.3,
-          borderWidth: 2,
-          pointRadius: 3,
-          pointBackgroundColor: '#2563eb'
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            min: -25,
-            max: 5,
-            grid: { color: '#f1f5f9' }
+    function iniciarGraficos() {
+      const ctx1 = document.getElementById('chartTemperatura');
+      if (ctx1) {
+        chartTemp = new Chart(ctx1, {
+          type: 'line',
+          data: {
+            labels: [],
+            datasets: [{
+              label: 'Temperatura (°C)',
+              data: [],
+              borderColor: '#2563eb',
+              backgroundColor: 'rgba(37, 99, 235, 0.08)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.3
+            }]
           },
-          x: {
-            grid: { display: false }
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { display: false } },
+              y: { grid: { color: '#f1f5f9' }, min: -30, max: 10 }
+            }
           }
-        },
-        plugins: {
-          legend: { display: false }
+        });
+      }
+    }
+
+    function iniciarGraficoPeriodo() {
+      const ctx2 = document.getElementById('chartPeriodo');
+      if (ctx2) {
+        chartPeriodo = new Chart(ctx2, {
+          type: 'line',
+          data: {
+            labels: historicoLeituras.map(i => i.hora),
+            datasets: [{
+              label: 'Histórico (°C)',
+              data: historicoLeituras.map(i => i.temp),
+              borderColor: '#0284c7',
+              backgroundColor: 'rgba(2, 132, 199, 0.08)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { grid: { display: false } },
+              y: { grid: { color: '#f1f5f9' } }
+            }
+          }
+        });
+      }
+    }
+
+    // BUSCA OS DADOS NA API DE FEEDS COMPLETA
+    function buscarDados() {
+      if (!navigator.onLine) {
+        marcarDesconectado();
+        return;
+      }
+
+      fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=20&nocache=${new Date().getTime()}`)
+        .then(res => {
+          if (!res.ok) throw new Error("Erro na conexão HTTP");
+          return res.json();
+        })
+        .then(data => {
+          if (!data || !data.feeds || data.feeds.length === 0) {
+            marcarDesconectado();
+            return;
+          }
+
+          const feeds = data.feeds;
+          const ultimoFeed = feeds[feeds.length - 1];
+          
+          if (!ultimoFeed || !ultimoFeed.created_at) {
+            marcarDesconectado();
+            return;
+          }
+
+          const dataCriacaoDado = new Date(ultimoFeed.created_at).getTime();
+          const agora = Date.now();
+          const diferencaTempo = agora - dataCriacaoDado;
+
+          if (diferencaTempo > TEMPO_MAXIMO_DADO_EXPIRADO_MS) {
+            marcarDesconectado();
+            return;
+          }
+          
+          ultimaRespostaComSucesso = agora;
+          marcarConectado();
+          processarDadosThingSpeak(feeds);
+        })
+        .catch(err => {
+          console.error("Falha na requisição ao ThingSpeak:", err);
+          marcarDesconectado();
+        });
+    }
+
+    function checarInatividade() {
+      const tempoSemResposta = Date.now() - ultimaRespostaComSucesso;
+      if (!navigator.onLine || tempoSemResposta > TEMPO_MAXIMO_DADO_EXPIRADO_MS) {
+        marcarDesconectado();
+      }
+    }
+
+    function marcarDesconectado() {
+      const badgeSys = document.getElementById('badge-sistema');
+      badgeSys.className = "bg-rose-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5";
+      badgeSys.innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> DESCONECTADO`;
+
+      const cardArduino = document.getElementById('card-arduino');
+      cardArduino.className = "bg-rose-50 border border-rose-200/80 p-3 rounded-xl text-center flex flex-col justify-between";
+
+      const titleArduino = document.getElementById('title-arduino');
+      titleArduino.className = "text-[9px] font-bold text-rose-500 uppercase";
+
+      const txtArduino = document.getElementById('txt-arduino');
+      txtArduino.className = "my-1 font-black text-xs text-rose-600 flex items-center justify-center gap-1";
+      txtArduino.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> OFFLINE`;
+
+      const subArduino = document.getElementById('sub-arduino');
+      subArduino.className = "text-[8px] text-rose-400 font-medium";
+      subArduino.innerText = "Sem Comunicação";
+
+      document.getElementById('val-temperatura').innerText = "-";
+      const elBadge = document.getElementById('badge-sensor-status');
+      elBadge.innerText = "SEM SINAL";
+      elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
+
+      const statusRede = document.getElementById('status-rede');
+      statusRede.innerText = "INATIVA";
+      statusRede.className = "my-2 font-black text-xs text-rose-600";
+
+      const valBateria = document.getElementById('val-bateria');
+      valBateria.innerText = "-- %";
+      valBateria.className = "my-1 font-black text-sm text-slate-400";
+
+      const subBateria = document.getElementById('sub-bateria');
+      subBateria.innerText = "Sem comunicação";
+      subBateria.className = "text-[8px] text-slate-400";
+
+      const gauge = document.getElementById('gauge-circle');
+      gauge.classList.add('gauge-fill-error');
+      gauge.style.strokeDashoffset = 0;
+
+      adicionarAlarme("Perda de Conexão com Servidor/Hardware", "CRÍTICO");
+    }
+
+    function marcarConectado() {
+      const badgeSys = document.getElementById('badge-sistema');
+      badgeSys.className = "bg-emerald-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5";
+      badgeSys.innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> CONECTADO`;
+
+      const cardArduino = document.getElementById('card-arduino');
+      cardArduino.className = "bg-emerald-50 border border-emerald-200/80 p-3 rounded-xl text-center flex flex-col justify-between";
+
+      const titleArduino = document.getElementById('title-arduino');
+      titleArduino.className = "text-[9px] font-bold text-emerald-600 uppercase";
+
+      const txtArduino = document.getElementById('txt-arduino');
+      txtArduino.className = "my-1 font-black text-xs text-emerald-600 flex items-center justify-center gap-1";
+      txtArduino.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> ONLINE`;
+
+      const subArduino = document.getElementById('sub-arduino');
+      subArduino.className = "text-[8px] text-emerald-600 font-bold";
+      subArduino.innerText = "Conectado";
+    }
+
+    function processarDadosThingSpeak(feeds) {
+      const ultimoFeed = feeds[feeds.length - 1];
+      
+      const isPowerOk = (String(ultimoFeed.field2) === "1" || String(ultimoFeed.field2) === "true");
+      const statusRede = document.getElementById('status-rede');
+      const valBateria = document.getElementById('val-bateria');
+      const subBateria = document.getElementById('sub-bateria');
+
+      if (isPowerOk) {
+        statusRede.innerText = "ATIVA";
+        statusRede.className = "my-2 font-black text-xs text-emerald-600";
+        valBateria.innerText = "100 %";
+        valBateria.className = "my-1 font-black text-sm text-emerald-600";
+        subBateria.innerText = "Carregada";
+        subBateria.className = "text-[8px] text-emerald-600 font-bold";
+      } else {
+        statusRede.innerText = "INATIVA";
+        statusRede.className = "my-2 font-black text-xs text-rose-600";
+        valBateria.innerText = "OPERANDO";
+        valBateria.className = "my-1 font-black text-xs text-amber-500 animate-pulse";
+        subBateria.innerText = "Em uso";
+        subBateria.className = "text-[8px] text-amber-600 font-bold";
+        
+        adicionarAlarme("Queda na Rede Elétrica", "ALERTA");
+      }
+
+      let tempBruta = parseFloat(ultimoFeed.field1);
+      const isFalha = isNaN(tempBruta) || tempBruta <= -127.0 || tempBruta >= 85.0;
+
+      let tempFinal = isFalha ? null : (tempBruta + tempOffset);
+
+      tratarTemperaturaESensor(tempFinal, isFalha);
+
+      // Processamento de histórico do gráfico
+      let labels = [];
+      let dataValores = [];
+      historicoLeituras = [];
+
+      feeds.forEach(f => {
+        let tRaw = parseFloat(f.field1);
+        let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
+        let horaFormatada = new Date(f.created_at).toLocaleTimeString('pt-BR');
+        let dataHoraFull = new Date(f.created_at).toLocaleString('pt-BR');
+
+        labels.push(horaFormatada);
+        dataValores.push(tVal);
+        historicoLeituras.push({ hora: dataHoraFull, temp: tVal });
+      });
+
+      if (chartTemp) {
+        chartTemp.data.labels = labels;
+        chartTemp.data.datasets[0].data = dataValores;
+        chartTemp.update();
+      }
+    }
+
+    function tratarTemperaturaESensor(temp, isFalha) {
+      const elVal = document.getElementById('val-temperatura');
+      const elBadge = document.getElementById('badge-sensor-status');
+      const gauge = document.getElementById('gauge-circle');
+
+      gauge.classList.remove('gauge-fill-error', 'gauge-fill-degelo');
+
+      if (isFalha || temp === null) {
+        elVal.innerText = "-";
+        elBadge.innerText = "FALHA NO SENSOR";
+        elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
+        gauge.classList.add('gauge-fill-error');
+        gauge.style.strokeDashoffset = 0;
+        
+        adicionarAlarme("Falha no Sensor de Temperatura", "CRÍTICO");
+        pararContadorForaDaFaixa(true);
+        return;
+      }
+
+      elVal.innerText = `${temp.toFixed(1)} °C`;
+
+      let pct = Math.max(0, Math.min(1, (temp - (-30)) / 40));
+      gauge.style.strokeDashoffset = 251.2 * (1 - pct);
+
+      const limiteSegundos = tempoDegeloMinutos * 60;
+
+      if (temp >= -20.0 && temp <= -1.0) {
+        elBadge.innerText = "NORMAL";
+        elBadge.className = "bg-blue-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1";
+        pararContadorForaDaFaixa(true);
+      } 
+      else {
+        iniciarContadorForaDaFaixa();
+
+        if (segundosForaDaFaixa <= limiteSegundos) {
+          elBadge.innerText = "DEGELO";
+          elBadge.className = "bg-amber-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
+          gauge.classList.add('gauge-fill-degelo');
+        } else {
+          elBadge.innerText = temp > -1.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
+          elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
+          gauge.classList.add('gauge-fill-error');
+          
+          adicionarAlarme(`Tempo de Degelo Excedido (>${tempoDegeloMinutos} min)`, "CRÍTICO");
         }
       }
-    });
+    }
 
-    // Função de atualização em tempo real do Trend e do horário de envio de dados
-    function adicionarLeituraTempoReal() {
-      const agora = new Date();
-      const horaStr = agora.toLocaleTimeString('pt-BR');
-      const dataStr = agora.toLocaleDateString('pt-BR');
-      
-      // Gera variação leve de temperatura para o Trend
-      const novaTemp = (-18.6 + (Math.random() * 0.6 - 0.3)).toFixed(1);
-
-      // Atualiza o Card de Temperatura Atual
-      document.getElementById('val-temperatura').innerText = novaTemp.replace('.', ',') + ' °C';
-
-      // Atualiza Card da Última Leitura com o horário do envio
-      document.getElementById('val-ultima-hora').innerText = horaStr;
-      document.getElementById('val-ultima-data').innerText = dataStr;
-      
-      // Atualiza primeira linha da tabela
-      document.getElementById('hist-hora-1').innerText = dataStr + ' ' + horaStr.substring(0, 5);
-      document.getElementById('hist-val-1').innerText = novaTemp.replace('.', ',') + ' °C';
-
-      // Atualiza Gráfico
-      chartTrend.data.labels.push(horaStr);
-      chartTrend.data.datasets[0].data.push(novaTemp);
-
-      if (chartTrend.data.labels.length > maxPontos) {
-        chartTrend.data.labels.shift();
-        chartTrend.data.datasets[0].data.shift();
+    function iniciarContadorForaDaFaixa() {
+      if (!timerForaDaFaixa) {
+        timerForaDaFaixa = setInterval(() => {
+          segundosForaDaFaixa++;
+          atualizarDisplayForaDaFaixa();
+        }, 1000);
       }
-
-      chartTrend.update();
     }
 
-    // Dispara novas leituras em tempo real a cada 10 segundos
-    setInterval(adicionarLeituraTempoReal, 10000);
-    adicionarLeituraTempoReal();
-
-    // Exportação em PDF / CSV
-    function exportarPDF() {
-      alert("Gerando relatório PDF...");
+    function pararContadorForaDaFaixa(resetar = false) {
+      if (timerForaDaFaixa) {
+        clearInterval(timerForaDaFaixa);
+        timerForaDaFaixa = null;
+      }
+      if (resetar) {
+        segundosForaDaFaixa = 0;
+        atualizarDisplayForaDaFaixa();
+      }
     }
+
+    function atualizarDisplayForaDaFaixa() {
+      const mins = String(Math.floor(segundosForaDaFaixa / 60)).padStart(2, '0');
+      const segs = String(segundosForaDaFaixa % 60).padStart(2, '0');
+      const elFora = document.getElementById('val-fora-faixa');
+      
+      elFora.innerText = `${mins}:${segs} min`;
+      
+      const limiteSegundos = tempoDegeloMinutos * 60;
+      if (segundosForaDaFaixa > limiteSegundos) {
+        elFora.className = "my-1 font-black text-xs text-rose-600 animate-pulse";
+      } else if (segundosForaDaFaixa > 0) {
+        elFora.className = "my-1 font-black text-xs text-amber-500";
+      } else {
+        elFora.className = "my-1 font-black text-xs text-slate-800";
+      }
+    }
+
+    function adicionarAlarme(evento, nivel) {
+      const dataHora = new Date().toLocaleString('pt-BR');
+      if(!listaAlarmes.some(a => a.evento === evento && a.status === 'Ativo')){
+        listaAlarmes.unshift({ data: dataHora, evento: evento, nivel: nivel, status: 'Ativo' });
+        renderizarTabelaAlarmes();
+      }
+    }
+
+    function renderizarTabelaAlarmes() {
+      const tbody = document.getElementById('tabela-alarmes');
+      tbody.innerHTML = '';
+      listaAlarmes.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-3 font-medium">${item.data}</td>
+          <td class="p-3 font-bold text-rose-600">${item.evento}</td>
+          <td class="p-3"><span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-bold text-[10px]">${item.nivel}</span></td>
+          <td class="p-3 font-semibold text-slate-500">${item.status}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filtrarGraficoTemperatura() {
+      if (chartPeriodo) {
+        chartPeriodo.data.labels = historicoLeituras.map(i => i.hora);
+        chartPeriodo.data.datasets[0].data = historicoLeituras.map(i => i.temp);
+        chartPeriodo.update();
+      }
+    }
+
     function exportarCSV() {
-      alert("Exportando relatório CSV...");
+      let csv = "Data/Hora,Temperatura (°C)\n";
+      historicoLeituras.forEach(item => {
+        csv += `"${item.hora}",${item.temp !== null ? item.temp : ''}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('download', 'relatorio_temperatura.csv');
+      a.click();
     }
+
+    function exportarPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.setFont("helvetica", "bold");
+      doc.text("REI DO GELO - Relatório de Temperatura", 14, 15);
+      
+      const rows = historicoLeituras.map(i => [i.hora, i.temp !== null ? `${i.temp} °C` : 'FALHA']);
+      doc.autoTable({
+        head: [['Data / Hora', 'Temperatura']],
+        body: rows,
+        startY: 25
+      });
+      doc.save('relatorio_temperatura.pdf');
+    }
+
+    window.addEventListener('offline', marcarDesconectado);
+    window.addEventListener('online', buscarDados);
+
+    window.onload = () => {
+      atualizarRotulosDegelo();
+      iniciarGraficos();
+      buscarDados();
+      
+      setInterval(buscarDados, 5000);
+      setInterval(checarInatividade, 2000);
+    };
   </script>
 </body>
 </html>
