@@ -331,15 +331,13 @@
 
       atualizarRotulosDegelo();
 
-      // ENVIO GARANTIDO PARA O THINGSPEAK (Sincronização Cloud via Field 3)
       if (writeApiKey) {
         const urlUpdate = `https://api.thingspeak.com/update?api_key=${writeApiKey}&field3=${tempOffset}`;
 
-        // Usa requisição de imagem para garantir envio sem bloqueio CORS do navegador
         const imgSync = new Image();
         imgSync.src = `${urlUpdate}&_nocache=${Date.now()}`;
 
-        alert('Offset enviado para a nuvem! Aguarde 15 segundos para atualizar no mobile.');
+        alert('Offset enviado para a nuvem! Aguarde o próximo ciclo para sincronizar no telemóvel.');
         
         setTimeout(() => {
           buscarDados();
@@ -453,7 +451,8 @@
         return;
       }
 
-      fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=20`)
+      // Procura nos últimos 100 resultados para localizar o offset registado no Field 3
+      fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=100&_nocache=${Date.now()}`)
         .then(res => {
           if (!res.ok) throw new Error("Erro na conexão HTTP");
           return res.json();
@@ -532,7 +531,7 @@
     }
 
     function processarDadosThingSpeak(feeds) {
-      // BUSCA O OFFSET MAIS RECENTE REGISTRADO NO FIELD 3
+      // BUSCA DO MODO REVERSO: Procura no histórico até encontrar o último offset VÁLIDO enviado no Field 3
       for (let i = feeds.length - 1; i >= 0; i--) {
         if (feeds[i].field3 !== null && feeds[i].field3 !== undefined && feeds[i].field3 !== "") {
           let offsetNuvem = parseFloat(feeds[i].field3);
@@ -581,7 +580,10 @@
       let dataValores = [];
       historicoLeituras = [];
 
-      feeds.forEach(f => {
+      // Filtra e exibe os últimos 20 pontos nos gráficos
+      const feedsRecentes = feeds.slice(-20);
+
+      feedsRecentes.forEach(f => {
         let tRaw = parseFloat(f.field1);
         let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
         let horaFormatada = new Date(f.created_at).toLocaleTimeString('pt-BR');
