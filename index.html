@@ -599,7 +599,7 @@
         gauge.style.strokeDashoffset = 0;
         
         adicionarAlarme("Falha no Sensor de Temperatura", "CRÍTICO");
-        pararContadorForaDaFaixa(true);
+        iniciarContadorForaDaFaixa();
         return;
       }
 
@@ -610,11 +610,15 @@
 
       const limiteSegundos = tempoDegeloMinutos * 60;
 
+      // Temperatura de Operação Normal (-20°C até -1°C)
       if (temp >= -20.0 && temp <= -1.0) {
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1";
+        
+        // Zera o cronômetro e interrompe a contagem
         pararContadorForaDaFaixa(true);
       } 
+      // Fora da faixa de operação
       else {
         iniciarContadorForaDaFaixa();
 
