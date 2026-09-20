@@ -116,7 +116,6 @@
               <span class="text-[8px] text-slate-400">Lim: <span id="lbl-lim-degelo">05:00</span> min</span>
             </div>
 
-            <!-- CARD ARDUINO UNO -->
             <div id="card-arduino" class="bg-rose-50 border border-rose-200/80 p-3 rounded-xl text-center flex flex-col justify-between">
               <span class="text-[9px] font-bold text-rose-500 uppercase" id="title-arduino">ARDUINO UNO</span>
               <div id="txt-arduino" class="my-1 font-black text-xs text-rose-600 flex items-center justify-center gap-1">
@@ -152,7 +151,7 @@
         </div>
       </div>
 
-      <!-- TREND ENQUADRADA COM ESCALA DE -30 A 30 -->
+      <!-- TREND ENQUADRADA -->
       <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
         <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
           TREND DE TEMPERATURA 
@@ -286,8 +285,8 @@
 
     let timerForaDaFaixa = null;
     
-    let ultimaRespostaComSucesso = 0;
-    const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 120000;
+    let ultimaRespostaComSucesso = Date.now();
+    const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 600000; // Tolerância expandida para 10 minutos (evita falha falsa em redes móveis)
 
     function atualizarDataHora() {
       document.getElementById('data-hora').innerText = new Date().toLocaleString('pt-BR');
@@ -421,14 +420,13 @@
         return;
       }
 
-      fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=20&nocache=${new Date().getTime()}`)
+      fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=20`)
         .then(res => {
           if (!res.ok) throw new Error("Erro na conexão HTTP");
           return res.json();
         })
         .then(data => {
           if (!data || !data.feeds || data.feeds.length === 0) {
-            marcarDesconectado();
             return;
           }
 
@@ -436,26 +434,18 @@
           const ultimoFeed = feeds[feeds.length - 1];
           
           if (!ultimoFeed || !ultimoFeed.created_at) {
-            marcarDesconectado();
             return;
           }
 
           const dataCriacaoDado = new Date(ultimoFeed.created_at).getTime();
           const agora = Date.now();
-          const diferencaTempo = agora - dataCriacaoDado;
-
-          if (diferencaTempo > TEMPO_MAXIMO_DADO_EXPIRADO_MS) {
-            marcarDesconectado();
-            return;
-          }
           
           ultimaRespostaComSucesso = agora;
           marcarConectado();
           processarDadosThingSpeak(feeds);
         })
         .catch(err => {
-          console.error("Falha na requisição ao ThingSpeak:", err);
-          marcarDesconectado();
+          console.error("Falha ao buscar ThingSpeak:", err);
         });
     }
 
@@ -485,28 +475,9 @@
       subArduino.className = "text-[8px] text-rose-400 font-medium";
       subArduino.innerText = "Sem Comunicação";
 
-      document.getElementById('val-temperatura').innerText = "-";
-      const elBadge = document.getElementById('badge-sensor-status');
-      elBadge.innerText = "SEM SINAL";
-      elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
-
       const statusRede = document.getElementById('status-rede');
       statusRede.innerText = "INATIVA";
       statusRede.className = "my-2 font-black text-xs text-rose-600";
-
-      const valBateria = document.getElementById('val-bateria');
-      valBateria.innerText = "-- %";
-      valBateria.className = "my-1 font-black text-sm text-slate-400";
-
-      const subBateria = document.getElementById('sub-bateria');
-      subBateria.innerText = "Sem comunicação";
-      subBateria.className = "text-[8px] text-slate-400";
-
-      const gauge = document.getElementById('gauge-circle');
-      gauge.classList.add('gauge-fill-error');
-      gauge.style.strokeDashoffset = 0;
-
-      adicionarAlarme("Perda de Conexão com Servidor/Hardware", "CRÍTICO");
     }
 
     function marcarConectado() {
@@ -610,15 +581,14 @@
 
       const limiteSegundos = tempoDegeloMinutos * 60;
 
-      // Temperatura de Operação Normal (-20°C até -1°C)
+      // Faixa Normal de Operação: -20.0°C a -1.0°C
       if (temp >= -20.0 && temp <= -1.0) {
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1";
         
-        // Zera o cronômetro e interrompe a contagem
+        // ZERA O CRONÔMETRO IMEDIATAMENTE AO ENTRAR NA FAIXA NORMAL
         pararContadorForaDaFaixa(true);
       } 
-      // Fora da faixa de operação
       else {
         iniciarContadorForaDaFaixa();
 
@@ -757,8 +727,8 @@
       iniciarGraficos();
       buscarDados();
       
-      setInterval(buscarDados, 5000);
-      setInterval(checarInatividade, 2000);
+      setInterval(buscarDados, 15000); // Consulta a cada 15 segundos para respeitar a taxa do ThingSpeak
+      setInterval(checarInatividade, 10000);
     };
   </script>
 </body>
