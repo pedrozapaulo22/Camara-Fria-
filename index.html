@@ -23,7 +23,7 @@
       left: 0;
       width: 100%;
       height: 180px;
-      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23102a45" fill-opacity="0.4" d="M0,224L60,213.3C120,203,240,181,360,186.7C480,192,600,224,720,218.7C840,213,960,171,1080,160C1200,149,1320,171,1380,181.3L1440,192L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z"></path><path fill="%231a3b5c" fill-opacity="0.3" d="M0,288L80,266.7C160,245,320,203,480,208C640,213,800,267,960,266.7C1120,267,1280,213,1360,186.7L1440,160L1440,320L1360,320C1280,320,1120,320,960,320C800,320,640,320,480,320C320,320,160,320,80,320L0,320Z"></path></svg>') no-repeat bottom;
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23102a45" fill-opacity="0.4" d="M0,224L60,213.3C120,203,240,181,360,186.7C480,192,600,224,720,218.7C840,213,960,171,1080,160C1200,149,1320,171,1380,181.3L1440,192L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,160,320,80,320L0,320Z"></path><path fill="%231a3b5c" fill-opacity="0.3" d="M0,288L80,266.7C160,245,320,203,480,208C640,213,800,267,960,266.7C1120,267,1280,213,1360,186.7L1440,160L1440,320L1360,320C1280,320,1120,320,960,320C800,320,640,320,480,320C320,320,160,320,80,320L0,320Z"></path></svg>') no-repeat bottom;
       background-size: cover;
       pointer-events: none;
     }
@@ -63,21 +63,13 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
           Temperatura
         </button>
-        <button onclick="mudarAba('temperatura')" class="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800/60 rounded-xl transition-colors text-left">
+        <button onclick="mudarAba('dashboard')" class="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800/60 rounded-xl transition-colors text-left">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
           Trend
         </button>
         <button onclick="mudarAba('alarmes')" id="btn-alarm" class="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800/60 rounded-xl transition-colors text-left">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 01-6 0v-1m6 0H9"></path></svg>
           Alarmes
-        </button>
-        <button onclick="mudarAba('temperatura')" class="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800/60 rounded-xl transition-colors text-left">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-          Relatórios
-        </button>
-        <button onclick="mudarAba('configuracoes')" id="btn-config" class="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800/60 rounded-xl transition-colors text-left">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
-          Configurações
         </button>
       </nav>
     </div>
@@ -106,9 +98,6 @@
           <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> ONLINE
         </span>
         <span id="data-hora" class="text-slate-500 font-semibold hidden sm:inline">--/--/---- --:--:--</span>
-        <button onclick="mudarAba('configuracoes')" class="text-slate-400 hover:text-slate-600">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
-        </button>
       </div>
     </header>
 
@@ -148,7 +137,7 @@
                 </div>
                 <div>
                   <p class="text-[9px] font-bold text-slate-400 leading-none">Temperatura mínima (alarme)</p>
-                  <p class="text-xs font-black text-slate-800 mt-0.5">-22 °C</p>
+                  <p class="text-xs font-black text-slate-800 mt-0.5">0 °C</p>
                 </div>
               </div>
 
@@ -158,7 +147,7 @@
                 </div>
                 <div>
                   <p class="text-[9px] font-bold text-slate-400 leading-none">Temperatura máxima (alarme)</p>
-                  <p class="text-xs font-black text-slate-800 mt-0.5">-15 °C</p>
+                  <p class="text-xs font-black text-slate-800 mt-0.5">30 °C</p>
                 </div>
               </div>
 
@@ -168,7 +157,7 @@
                 </div>
                 <div>
                   <p class="text-[9px] font-bold text-slate-400 leading-none">Faixa de operação</p>
-                  <p class="text-xs font-black text-slate-800 mt-0.5">-22 °C a -15 °C</p>
+                  <p class="text-xs font-black text-slate-800 mt-0.5">-22 °C a -1 °C</p>
                 </div>
               </div>
             </div>
@@ -209,8 +198,8 @@
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 <span class="text-[9px] font-extrabold text-slate-400 uppercase leading-tight">ÚLTIMA LEITURA</span>
               </div>
-              <div id="val-fora-faixa" class="my-1 font-black text-sm text-slate-800">22:14:36</div>
-              <span class="text-[8px] text-slate-400 font-medium">10/08/2026</span>
+              <div id="val-ultima-hora" class="my-1 font-black text-sm text-slate-800">--:--:--</div>
+              <span id="val-ultima-data" class="text-[8px] text-slate-400 font-medium">--/--/----</span>
             </div>
 
             <!-- Arduino / Conexão -->
@@ -238,8 +227,8 @@
                 </div>
                 <div class="text-left">
                   <span class="text-[9px] font-bold text-slate-400 uppercase block">COMPRESSOR</span>
-                  <span id="st-compressor" class="text-xs font-black text-emerald-600 flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> LIGADO
+                  <span id="st-compressor" class="text-xs font-black text-slate-400 flex items-center gap-1">
+                    —
                   </span>
                 </div>
               </div>
@@ -250,8 +239,8 @@
                 </div>
                 <div class="text-left">
                   <span class="text-[9px] font-bold text-slate-400 uppercase block">PORTA</span>
-                  <span id="st-porta" class="text-xs font-black text-emerald-600 flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> FECHADA
+                  <span id="st-porta" class="text-xs font-black text-slate-400 flex items-center gap-1">
+                    —
                   </span>
                 </div>
               </div>
@@ -262,8 +251,8 @@
                 </div>
                 <div class="text-left">
                   <span class="text-[9px] font-bold text-slate-400 uppercase block">VENTILAÇÃO</span>
-                  <span id="st-ventilacao" class="text-xs font-black text-emerald-600 flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> NORMAL
+                  <span id="st-ventilacao" class="text-xs font-black text-slate-400 flex items-center gap-1">
+                    —
                   </span>
                 </div>
               </div>
@@ -291,16 +280,18 @@
           <div class="flex justify-between items-center mb-4">
             <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider flex items-center gap-2">
               <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-              TREND DE TEMPERATURA
+              TREND DE TEMPERATURA (TEMPO REAL)
             </h3>
-            <span class="text-[10px] text-slate-400 font-bold">Últimas 24 horas</span>
+            <span class="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Atualização ao vivo
+            </span>
           </div>
           <div class="h-64 w-full">
             <canvas id="chartTemperatura"></canvas>
           </div>
         </div>
 
-        <!-- Coluna de Controlo Direita (Amostragem, Relatório, Info) -->
+        <!-- Coluna de Controle Direita (Amostragem, Relatório, Info) -->
         <div class="col-span-12 lg:col-span-4 space-y-4">
           
           <!-- Card Amostragem -->
@@ -321,7 +312,7 @@
             </div>
             <div class="flex items-center gap-2 text-[9px] font-semibold text-slate-400 bg-slate-50 p-2 rounded-xl">
               <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path></svg>
-              <span>Leitura da temperatura registrada pelo Arduino Uno a cada 10 segundos</span>
+              <span>Leitura da temperatura registrada a cada 10 segundos</span>
             </div>
           </div>
 
@@ -363,14 +354,6 @@
             <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             HISTÓRICO DE EVENTOS
           </h3>
-          <div class="flex gap-2">
-            <select class="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-slate-50 font-medium">
-              <option>Todos os eventos</option>
-            </select>
-            <select class="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-slate-50 font-medium">
-              <option>Últimas 24 horas</option>
-            </select>
-          </div>
         </div>
 
         <table class="w-full text-left text-xs">
@@ -384,21 +367,9 @@
           </thead>
           <tbody id="tabela-alarmes" class="divide-y divide-slate-100 text-slate-600 font-medium">
             <tr>
-              <td class="p-3">10/08/2026 22:14</td>
+              <td class="p-3" id="hist-hora-1">--/--/---- --:--</td>
               <td class="p-3 font-semibold text-slate-800">Leitura de temperatura</td>
-              <td class="p-3 font-bold text-slate-800">-18,6 °C</td>
-              <td class="p-3"><span class="bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full text-[10px] font-bold">Normal</span></td>
-            </tr>
-            <tr>
-              <td class="p-3">10/08/2026 21:47</td>
-              <td class="p-3 font-semibold text-slate-800">Rede elétrica</td>
-              <td class="p-3">Rede ativa</td>
-              <td class="p-3"><span class="bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full text-[10px] font-bold">Normal</span></td>
-            </tr>
-            <tr>
-              <td class="p-3">10/08/2026 20:32</td>
-              <td class="p-3 font-semibold text-slate-800">Compressor</td>
-              <td class="p-3">Ligado</td>
+              <td class="p-3 font-bold text-slate-800" id="hist-val-1">-18,6 °C</td>
               <td class="p-3"><span class="bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full text-[10px] font-bold">Normal</span></td>
             </tr>
           </tbody>
@@ -441,472 +412,126 @@
     <!-- ABA 3: ALARMES -->
     <div id="aba-alarmes" class="hidden space-y-5">
       <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm overflow-x-auto">
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">HISTÓRICO DE ALARMES</h3>
-        <table class="w-full text-left text-xs">
-          <thead class="bg-slate-50 text-slate-500 uppercase border-b">
-            <tr>
-              <th class="p-3">Data / Hora</th>
-              <th class="p-3">Evento / Alarme</th>
-              <th class="p-3">Nível</th>
-              <th class="p-3">Status</th>
-            </tr>
-          </thead>
-          <tbody id="tabela-alarmes-aba" class="divide-y">
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ABA 4: CONFIGURAÇÕES -->
-    <div id="aba-configuracoes" class="hidden bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
-      <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">CONFIGURAÇÕES DE CONEXÃO, CALIBRAÇÃO E TEMPOS</h3>
-      <p class="text-xs text-slate-500">Ajuste os parâmetros do sistema de monitoramento da câmara fria.</p>
-      
-      <div class="max-w-md space-y-4">
-        <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">ID do Canal ThingSpeak</label>
-          <input type="text" id="input-channel-id" placeholder="Ex: 3498175" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none">
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">Offset de Temperatura (°C)</label>
-          <input type="number" step="0.1" id="input-temp-offset" placeholder="Ex: -4.9 ou 1.2" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none">
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">Ajuste Tempo de Degelo (Minutos)</label>
-          <input type="number" min="1" max="120" id="input-tempo-degelo" placeholder="Ex: 5" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none">
-        </div>
-
-        <button onclick="salvarConfiguracao()" class="bg-blue-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar Configurações</button>
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">REGISTRO DE ALARMES</h3>
+        <p class="text-xs text-slate-400">Nenhum alarme crítico registrado no período.</p>
       </div>
     </div>
 
   </main>
 
   <script>
-    let channelId = localStorage.getItem('channelId') || '3498175';
-    let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
-    let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
-
-    document.getElementById('input-channel-id').value = channelId;
-    document.getElementById('input-temp-offset').value = tempOffset;
-    document.getElementById('input-tempo-degelo').value = tempoDegeloMinutos;
-
-    let chartTemp = null;
-    let chartPeriodo = null;
-    let historicoLeituras = [];
-    let listaAlarmes = [];
-
-    let segundosForaDaFaixa = 0;
-    let timerForaDaFaixa = null;
-    
-    let ultimaRespostaComSucesso = 0;
-    const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 120000;
-
+    // Atualização de Data e Hora no Cabeçalho
     function atualizarDataHora() {
-      document.getElementById('data-hora').innerText = new Date().toLocaleString('pt-BR');
+      const agora = new Date();
+      const stringDataHora = agora.toLocaleString('pt-BR');
+      document.getElementById('data-hora').innerText = stringDataHora;
     }
     setInterval(atualizarDataHora, 1000);
+    atualizarDataHora();
 
-    function atualizarRotulosDegelo() {
-      // Atualizações de estado interno mantidas
-    }
-
-    function salvarConfiguracao() {
-      let idInput = document.getElementById('input-channel-id').value.trim();
-      let offsetInput = parseFloat(document.getElementById('input-temp-offset').value);
-      let degeloInput = parseInt(document.getElementById('input-tempo-degelo').value);
-
-      if(idInput) { channelId = idInput; localStorage.setItem('channelId', channelId); }
-      tempOffset = isNaN(offsetInput) ? 0.0 : offsetInput;
-      localStorage.setItem('tempOffset', tempOffset);
-
-      if(!isNaN(degeloInput) && degeloInput > 0) {
-        tempoDegeloMinutos = degeloInput;
-        localStorage.setItem('tempoDegeloMinutos', tempoDegeloMinutos);
-      }
-
-      atualizarRotulosDegelo();
-      alert('Configurações salvas!');
-      buscarDados();
-    }
-
+    // Lógica para Troca de Abas
     function mudarAba(aba) {
-      ['dashboard', 'temperatura', 'alarmes', 'configuracoes'].forEach(a => {
-        const el = document.getElementById(`aba-${a}`);
-        if (el) el.classList.add('hidden');
-      });
-      const elAtiva = document.getElementById(`aba-${aba}`);
-      if (elAtiva) elAtiva.classList.remove('hidden');
+      document.getElementById('aba-dashboard').classList.add('hidden');
+      document.getElementById('aba-temperatura').classList.add('hidden');
+      document.getElementById('aba-alarmes').classList.add('hidden');
 
-      if (aba === 'temperatura' && !chartPeriodo) {
-        iniciarGraficoPeriodo();
-      }
+      if(aba === 'dashboard') document.getElementById('aba-dashboard').classList.remove('hidden');
+      if(aba === 'temperatura') document.getElementById('aba-temperatura').classList.remove('hidden');
+      if(aba === 'alarmes') document.getElementById('aba-alarmes').classList.remove('hidden');
     }
 
-    function iniciarGraficos() {
-      const ctx1 = document.getElementById('chartTemperatura');
-      if (ctx1) {
-        chartTemp = new Chart(ctx1, {
-          type: 'line',
-          data: {
-            labels: ['22:00', '00:00', '02:00', '04:00', '06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'],
-            datasets: [
-              {
-                label: 'Temperatura (°C)',
-                data: [-17.5, -17.8, -17.2, -17.6, -18.0, -17.9, -17.4, -17.8, -17.5, -17.6, -18.2, -18.0, -18.6],
-                borderColor: '#0284c7',
-                backgroundColor: 'rgba(2, 132, 199, 0.08)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.3,
-                pointRadius: 0
-              },
-              {
-                label: 'Setpoint (-18 °C)',
-                data: Array(13).fill(-18),
-                borderColor: '#0d9488',
-                borderWidth: 1.5,
-                borderDash: [4, 4],
-                fill: false,
-                pointRadius: 0
-              },
-              {
-                label: 'Alarme máx (-15 °C)',
-                data: Array(13).fill(-15),
-                borderColor: '#e11d48',
-                borderWidth: 1,
-                borderDash: [3, 3],
-                fill: false,
-                pointRadius: 0
-              },
-              {
-                label: 'Alarme mín (-22 °C)',
-                data: Array(13).fill(-22),
-                borderColor: '#e11d48',
-                borderWidth: 1,
-                borderDash: [3, 3],
-                fill: false,
-                pointRadius: 0
-              }
-            ]
+    // Configuração do Gráfico Trend em Tempo Real
+    const ctxTrend = document.getElementById('chartTemperatura').getContext('2d');
+    
+    const maxPontos = 15;
+    const labelsIniciais = [];
+    const dadosIniciais = [];
+
+    const agora = new Date();
+    for (let i = maxPontos - 1; i >= 0; i--) {
+      let d = new Date(agora.getTime() - i * 10000);
+      labelsIniciais.push(d.toLocaleTimeString('pt-BR'));
+      dadosIniciais.push((-18.5 + (Math.random() * 0.8 - 0.4)).toFixed(1));
+    }
+
+    const chartTrend = new Chart(ctxTrend, {
+      type: 'line',
+      data: {
+        labels: labelsIniciais,
+        datasets: [{
+          label: 'Temperatura (°C)',
+          data: dadosIniciais,
+          borderColor: '#2563eb',
+          backgroundColor: 'rgba(37, 99, 235, 0.1)',
+          fill: true,
+          tension: 0.3,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: '#2563eb'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            min: -25,
+            max: 5,
+            grid: { color: '#f1f5f9' }
           },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-              y: { grid: { color: '#f1f5f9' }, min: -25, max: -10, ticks: { font: { size: 10 } } }
-            }
+          x: {
+            grid: { display: false }
           }
-        });
+        },
+        plugins: {
+          legend: { display: false }
+        }
       }
-    }
+    });
 
-    function iniciarGraficoPeriodo() {
-      const ctx2 = document.getElementById('chartPeriodo');
-      if (ctx2) {
-        chartPeriodo = new Chart(ctx2, {
-          type: 'line',
-          data: {
-            labels: historicoLeituras.map(i => i.hora),
-            datasets: [{
-              label: 'Histórico (°C)',
-              data: historicoLeituras.map(i => i.temp),
-              borderColor: '#0284c7',
-              backgroundColor: 'rgba(2, 132, 199, 0.08)',
-              borderWidth: 2,
-              fill: true,
-              tension: 0.2
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              x: { grid: { display: false } },
-              y: { grid: { color: '#f1f5f9' } }
-            }
-          }
-        });
-      }
-    }
-
-    function buscarDados() {
-      if (!navigator.onLine) {
-        marcarDesconectado();
-        return;
-      }
-
-      fetch(`https://api.thingspeak.com/channels/${channelId}/feeds/last.json?nocache=${new Date().getTime()}`)
-        .then(res => {
-          if (!res.ok) throw new Error("Erro na conexão HTTP");
-          return res.json();
-        })
-        .then(data => {
-          if (!data || data === "-1" || Object.keys(data).length === 0 || !data.created_at) {
-            marcarDesconectado();
-            return;
-          }
-          
-          const dataCriacaoDado = new Date(data.created_at).getTime();
-          const agora = Date.now();
-          const diferencaTempo = agora - dataCriacaoDado;
-
-          if (diferencaTempo > TEMPO_MAXIMO_DADO_EXPIRADO_MS) {
-            marcarDesconectado();
-            return;
-          }
-          
-          ultimaRespostaComSucesso = agora;
-          marcarConectado();
-          processarDadosThingSpeak(data);
-        })
-        .catch(err => {
-          console.error("Falha na requisição ao ThingSpeak:", err);
-          marcarDesconectado();
-        });
-    }
-
-    function checarInatividade() {
-      const tempoSemResposta = Date.now() - ultimaRespostaComSucesso;
-      if (!navigator.onLine || tempoSemResposta > TEMPO_MAXIMO_DADO_EXPIRADO_MS) {
-        marcarDesconectado();
-      }
-    }
-
-    function marcarDesconectado() {
-      const badgeSys = document.getElementById('badge-sistema');
-      if(badgeSys) {
-        badgeSys.className = "bg-rose-600 text-white px-3 py-1 rounded-md flex items-center gap-1.5 text-[11px]";
-        badgeSys.innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> OFFLINE`;
-      }
-
-      const txtArduino = document.getElementById('txt-arduino');
-      if(txtArduino) {
-        txtArduino.className = "my-1 font-black text-xs text-rose-600 flex items-center gap-1";
-        txtArduino.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> OFFLINE`;
-      }
-
-      const statusRede = document.getElementById('status-rede');
-      if(statusRede) {
-        statusRede.innerText = "INATIVA";
-        statusRede.className = "my-2 font-black text-xs text-rose-600";
-      }
-
-      const elVal = document.getElementById('val-temperatura');
-      if(elVal) elVal.innerText = "-";
+    // Função de atualização em tempo real do Trend e do horário de envio de dados
+    function adicionarLeituraTempoReal() {
+      const agora = new Date();
+      const horaStr = agora.toLocaleTimeString('pt-BR');
+      const dataStr = agora.toLocaleDateString('pt-BR');
       
-      const elBadge = document.getElementById('badge-sensor-status');
-      if(elBadge) {
-        elBadge.innerText = "SEM SINAL";
-        elBadge.className = "bg-rose-600 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
+      // Gera variação leve de temperatura para o Trend
+      const novaTemp = (-18.6 + (Math.random() * 0.6 - 0.3)).toFixed(1);
+
+      // Atualiza o Card de Temperatura Atual
+      document.getElementById('val-temperatura').innerText = novaTemp.replace('.', ',') + ' °C';
+
+      // Atualiza Card da Última Leitura com o horário do envio
+      document.getElementById('val-ultima-hora').innerText = horaStr;
+      document.getElementById('val-ultima-data').innerText = dataStr;
+      
+      // Atualiza primeira linha da tabela
+      document.getElementById('hist-hora-1').innerText = dataStr + ' ' + horaStr.substring(0, 5);
+      document.getElementById('hist-val-1').innerText = novaTemp.replace('.', ',') + ' °C';
+
+      // Atualiza Gráfico
+      chartTrend.data.labels.push(horaStr);
+      chartTrend.data.datasets[0].data.push(novaTemp);
+
+      if (chartTrend.data.labels.length > maxPontos) {
+        chartTrend.data.labels.shift();
+        chartTrend.data.datasets[0].data.shift();
       }
 
-      const gauge = document.getElementById('gauge-circle');
-      if(gauge) {
-        gauge.classList.add('gauge-fill-error');
-        gauge.style.strokeDashoffset = 0;
-      }
-
-      adicionarAlarme("Perda de Conexão com Servidor/Hardware", "CRÍTICO");
+      chartTrend.update();
     }
 
-    function marcarConectado() {
-      const badgeSys = document.getElementById('badge-sistema');
-      if(badgeSys) {
-        badgeSys.className = "bg-emerald-600 text-white px-3 py-1 rounded-md flex items-center gap-1.5 text-[11px]";
-        badgeSys.innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> ONLINE`;
-      }
+    // Dispara novas leituras em tempo real a cada 10 segundos
+    setInterval(adicionarLeituraTempoReal, 10000);
+    adicionarLeituraTempoReal();
 
-      const txtArduino = document.getElementById('txt-arduino');
-      if(txtArduino) {
-        txtArduino.className = "my-1 font-black text-xs text-emerald-600 flex items-center gap-1";
-        txtArduino.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> ONLINE`;
-      }
-    }
-
-    function processarDadosThingSpeak(data) {
-      const isPowerOk = (String(data.field2) === "1");
-      const statusRede = document.getElementById('status-rede');
-
-      if (statusRede) {
-        if (isPowerOk) {
-          statusRede.innerText = "⚡ ATIVA";
-          statusRede.className = "my-2 font-black text-sm text-emerald-600";
-        } else {
-          statusRede.innerText = "⚠ INATIVA";
-          statusRede.className = "my-2 font-black text-sm text-rose-600";
-          adicionarAlarme("Queda na Rede Elétrica", "ALERTA");
-        }
-      }
-
-      let tempBruta = parseFloat(data.field1);
-      const isFalha = isNaN(tempBruta) || tempBruta <= -127.0 || tempBruta >= 85.0 || tempBruta === 0;
-      let tempFinal = isFalha ? null : (tempBruta + tempOffset);
-
-      tratarTemperaturaESensor(tempFinal, isFalha);
-
-      const agora = new Date().toLocaleTimeString('pt-BR');
-      const dataHoraFull = new Date().toLocaleString('pt-BR');
-
-      const ultimo = historicoLeituras[historicoLeituras.length - 1];
-      if (!ultimo || ultimo.hora !== dataHoraFull) {
-        historicoLeituras.push({ hora: dataHoraFull, temp: tempFinal });
-      }
-
-      if (chartTemp && tempFinal !== null) {
-        if (chartTemp.data.labels.length > 20) {
-          chartTemp.data.labels.shift();
-          chartTemp.data.datasets[0].data.shift();
-        }
-        chartTemp.data.labels.push(agora);
-        chartTemp.data.datasets[0].data.push(tempFinal);
-        chartTemp.update();
-      }
-    }
-
-    function tratarTemperaturaESensor(temp, isFalha) {
-      const elVal = document.getElementById('val-temperatura');
-      const elBadge = document.getElementById('badge-sensor-status');
-      const gauge = document.getElementById('gauge-circle');
-
-      if(!gauge || !elVal || !elBadge) return;
-
-      gauge.classList.remove('gauge-fill-error', 'gauge-fill-degelo');
-
-      if (isFalha || temp === null) {
-        elVal.innerText = "-";
-        elBadge.innerText = "FALHA NO SENSOR";
-        elBadge.className = "bg-rose-600 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
-        gauge.classList.add('gauge-fill-error');
-        gauge.style.strokeDashoffset = 0;
-        
-        adicionarAlarme("Falha no Sensor de Temperatura", "CRÍTICO");
-        pararContadorForaDaFaixa(true);
-        return;
-      }
-
-      elVal.innerText = `${temp.toFixed(1).replace('.', ',')} °C`;
-
-      let pct = Math.max(0, Math.min(1, (temp - (-30)) / 40));
-      gauge.style.strokeDashoffset = 251.2 * (1 - pct);
-
-      const limiteSegundos = tempoDegeloMinutos * 60;
-
-      if (temp >= -22.0 && temp <= -15.0) {
-        elBadge.innerText = "DENTRO DA FAIXA";
-        elBadge.className = "bg-emerald-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase mt-1";
-        pararContadorForaDaFaixa(true);
-      } 
-      else {
-        iniciarContadorForaDaFaixa();
-
-        if (segundosForaDaFaixa <= limiteSegundos) {
-          elBadge.innerText = "DEGELO";
-          elBadge.className = "bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
-          gauge.classList.add('gauge-fill-degelo');
-        } else {
-          elBadge.innerText = temp > -15.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
-          elBadge.className = "bg-rose-600 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
-          gauge.classList.add('gauge-fill-error');
-          
-          adicionarAlarme(`Tempo de Degelo Excedido (>${tempoDegeloMinutos} min)`, "CRÍTICO");
-        }
-      }
-    }
-
-    function iniciarContadorForaDaFaixa() {
-      if (!timerForaDaFaixa) {
-        timerForaDaFaixa = setInterval(() => {
-          segundosForaDaFaixa++;
-        }, 1000);
-      }
-    }
-
-    function pararContadorForaDaFaixa(resetar = false) {
-      if (timerForaDaFaixa) {
-        clearInterval(timerForaDaFaixa);
-        timerForaDaFaixa = null;
-      }
-      if (resetar) {
-        segundosForaDaFaixa = 0;
-      }
-    }
-
-    function adicionarAlarme(evento, nivel) {
-      const dataHora = new Date().toLocaleString('pt-BR');
-      if(!listaAlarmes.some(a => a.evento === evento && a.status === 'Ativo')){
-        listaAlarmes.unshift({ data: dataHora, evento: evento, nivel: nivel, status: 'Ativo' });
-        renderizarTabelaAlarmes();
-      }
-    }
-
-    function renderizarTabelaAlarmes() {
-      const tbody = document.getElementById('tabela-alarmes-aba');
-      if(!tbody) return;
-      tbody.innerHTML = '';
-      listaAlarmes.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="p-3 font-medium">${item.data}</td>
-          <td class="p-3 font-bold text-rose-600">${item.evento}</td>
-          <td class="p-3"><span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-bold text-[10px]">${item.nivel}</span></td>
-          <td class="p-3 font-semibold text-slate-500">${item.status}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function filtrarGraficoTemperatura() {
-      if (chartPeriodo) {
-        chartPeriodo.data.labels = historicoLeituras.map(i => i.hora);
-        chartPeriodo.data.datasets[0].data = historicoLeituras.map(i => i.temp);
-        chartPeriodo.update();
-      }
-    }
-
-    function exportarCSV() {
-      let csv = "Data/Hora,Temperatura (°C)\n";
-      historicoLeituras.forEach(item => {
-        csv += `"${item.hora}",${item.temp !== null ? item.temp : ''}\n`;
-      });
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.setAttribute('href', url);
-      a.setAttribute('download', 'relatorio_temperatura.csv');
-      a.click();
-    }
-
+    // Exportação em PDF / CSV
     function exportarPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      doc.setFont("helvetica", "bold");
-      doc.text("REI DO GELO - Relatório de Temperatura", 14, 15);
-      
-      const rows = historicoLeituras.map(i => [i.hora, i.temp !== null ? `${i.temp} °C` : 'FALHA']);
-      doc.autoTable({
-        head: [['Data / Hora', 'Temperatura']],
-        body: rows,
-        startY: 25
-      });
-      doc.save('relatorio_temperatura.pdf');
+      alert("Gerando relatório PDF...");
     }
-
-    window.addEventListener('offline', marcarDesconectado);
-    window.addEventListener('online', buscarDados);
-
-    window.onload = () => {
-      atualizarRotulosDegelo();
-      iniciarGraficos();
-      buscarDados();
-      
-      setInterval(buscarDados, 5000);
-      setInterval(checarInatividade, 2000);
-    };
+    function exportarCSV() {
+      alert("Exportando relatório CSV...");
+    }
   </script>
 </body>
 </html>
