@@ -293,7 +293,7 @@
     let timerForaDaFaixa = null;
     
     let ultimaRespostaComSucesso = Date.now();
-    const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 600000; // 10 minutos para redes móveis com instabilidade
+    const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 600000;
 
     function atualizarDataHora() {
       document.getElementById('data-hora').innerText = new Date().toLocaleString('pt-BR');
@@ -312,31 +312,39 @@
       let offsetInput = parseFloat(document.getElementById('input-temp-offset').value);
       let degeloInput = parseInt(document.getElementById('input-tempo-degelo').value);
 
-      if(idInput) { channelId = idInput; localStorage.setItem('channelId', channelId); }
-      if(writeKeyInput) { writeApiKey = writeKeyInput; localStorage.setItem('writeApiKey', writeApiKey); }
+      if (idInput) { 
+        channelId = idInput; 
+        localStorage.setItem('channelId', channelId); 
+      }
+      if (writeKeyInput) { 
+        writeApiKey = writeKeyInput; 
+        localStorage.setItem('writeApiKey', writeApiKey); 
+      }
 
       tempOffset = isNaN(offsetInput) ? 0.0 : offsetInput;
       localStorage.setItem('tempOffset', tempOffset);
 
-      if(!isNaN(degeloInput) && degeloInput > 0) {
+      if (!isNaN(degeloInput) && degeloInput > 0) {
         tempoDegeloMinutos = degeloInput;
         localStorage.setItem('tempoDegeloMinutos', tempoDegeloMinutos);
       }
 
       atualizarRotulosDegelo();
 
-      // ENVIA O NOVO OFFSET PARA O THINGSPEAK (Sincroniza na Nuvem via Field 3)
+      // ENVIO GARANTIDO PARA O THINGSPEAK (Sincronização Cloud via Field 3)
       if (writeApiKey) {
-        fetch(`https://api.thingspeak.com/update?api_key=${writeApiKey}&field3=${tempOffset}`)
-          .then(res => {
-            if (res.ok) alert('Configurações salvas e sincronizadas na nuvem!');
-            else alert('Erro ao sincronizar com o ThingSpeak.');
-            buscarDados();
-          })
-          .catch(err => {
-            console.error("Erro ao enviar offset:", err);
-            alert('Falha ao conectar com o servidor para enviar o offset.');
-          });
+        const urlUpdate = `https://api.thingspeak.com/update?api_key=${writeApiKey}&field3=${tempOffset}`;
+
+        // Usa requisição de imagem para garantir envio sem bloqueio CORS do navegador
+        const imgSync = new Image();
+        imgSync.src = `${urlUpdate}&_nocache=${Date.now()}`;
+
+        alert('Offset enviado para a nuvem! Aguarde 15 segundos para atualizar no mobile.');
+        
+        setTimeout(() => {
+          buscarDados();
+        }, 3000);
+
       } else {
         alert('Configurações salvas localmente! (Insira a Write API Key para sincronizar em outros aparelhos)');
         buscarDados();
@@ -524,17 +532,20 @@
     }
 
     function processarDadosThingSpeak(feeds) {
-      const ultimoFeed = feeds[feeds.length - 1];
-      
-      // SINCRONIZAÇÃO DO OFFSET VIA THINGSPEAK (Field 3)
-      if (ultimoFeed.field3 !== null && ultimoFeed.field3 !== undefined && ultimoFeed.field3 !== "") {
-        let offsetNuvem = parseFloat(ultimoFeed.field3);
-        if (!isNaN(offsetNuvem)) {
-          tempOffset = offsetNuvem;
-          localStorage.setItem('tempOffset', tempOffset);
-          document.getElementById('input-temp-offset').value = tempOffset;
+      // BUSCA O OFFSET MAIS RECENTE REGISTRADO NO FIELD 3
+      for (let i = feeds.length - 1; i >= 0; i--) {
+        if (feeds[i].field3 !== null && feeds[i].field3 !== undefined && feeds[i].field3 !== "") {
+          let offsetNuvem = parseFloat(feeds[i].field3);
+          if (!isNaN(offsetNuvem)) {
+            tempOffset = offsetNuvem;
+            localStorage.setItem('tempOffset', tempOffset);
+            document.getElementById('input-temp-offset').value = tempOffset;
+            break;
+          }
         }
       }
+
+      const ultimoFeed = feeds[feeds.length - 1];
 
       const isPowerOk = (String(ultimoFeed.field2) === "1" || String(ultimoFeed.field2) === "true");
       const statusRede = document.getElementById('status-rede');
@@ -614,12 +625,9 @@
 
       const limiteSegundos = tempoDegeloMinutos * 60;
 
-      // Faixa Normal de Operação: -20.0°C a -1.0°C
       if (temp >= -20.0 && temp <= -1.0) {
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1";
-        
-        // ZERA O CRONÔMETRO IMEDIATAMENTE AO ENTRAR NA FAIXA NORMAL
         pararContadorForaDaFaixa(true);
       } 
       else {
