@@ -73,7 +73,7 @@
               </svg>
               <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-1">
                 <span id="val-temperatura" class="text-3xl font-black text-slate-800">-</span>
-                <span id="badge-sensor-status" class="bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse">FALHA NO SENSOR</span>
+                <span id="badge-sensor-status" class="bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse">SEM SINAL</span>
                 <span class="text-[9px] text-slate-400 font-medium mt-0.5">Setpoint: -18 °C</span>
               </div>
             </div>
@@ -100,7 +100,7 @@
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
               <span class="text-[9px] font-bold text-slate-400 uppercase">REDE ELÉTRICA</span>
-              <div id="status-rede" class="my-2 font-black text-xs text-slate-400">INATIVA</div>
+              <div id="status-rede" class="my-2 font-black text-xs text-slate-400">DESCONHECIDO</div>
               <span class="text-[8px] opacity-0">.</span>
             </div>
 
@@ -122,7 +122,7 @@
               <div id="txt-arduino" class="my-1 font-black text-xs text-rose-600 flex items-center justify-center gap-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> OFFLINE
               </div>
-              <span id="sub-arduino" class="text-[8px] text-rose-400 font-medium">Aguardando conexão</span>
+              <span id="sub-arduino" class="text-[8px] text-rose-400 font-medium">Sem Comunicação</span>
             </div>
           </div>
 
@@ -254,9 +254,9 @@
     let segundosForaDaFaixa = 0;
     let timerForaDaFaixa = null;
     
-    // VARIÁVEIS PARA DETECÇÃO DE CONEXÃO
+    // TEMPO LIMITE PARA CONSIDERAR DADO EXPIRADO (Ex: 2 minutos sem novos dados enviados pelo hardware)
     let ultimaRespostaComSucesso = 0;
-    const TEMPO_MAXIMO_SEM_RESPOSTA_MS = 15000; // 15 segundos sem receber dados
+    const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 120000; // 120 segundos
 
     function atualizarDataHora() {
       document.getElementById('data-hora').innerText = new Date().toLocaleString('pt-BR');
@@ -360,7 +360,6 @@
 
     // BUSCA OS DADOS NA API
     function buscarDados() {
-      // Se o navegador estiver sem rede local/internet
       if (!navigator.onLine) {
         marcarDesconectado();
         return;
@@ -372,14 +371,24 @@
           return res.json();
         })
         .then(data => {
-          if (!data || data === "-1" || Object.keys(data).length === 0) {
+          if (!data || data === "-1" || Object.keys(data).length === 0 || !data.created_at) {
             marcarDesconectado();
             return;
           }
           
-          // Registra o tempo do último dado recebido com sucesso
-          ultimaRespostaComSucesso = Date.now();
+          // CONVERTE O TIMESTAMP DO THINGSPEAK (UTC) PARA DATA LOCAL
+          const dataCriacaoDado = new Date(data.created_at).getTime();
+          const agora = Date.now();
+          const diferencaTempo = agora - dataCriacaoDado;
+
+          // SE O ÚLTIMO DADO ENVIADO FOR MAIS ANTIGO QUE O LIMITE PERMITIDO (Ex: 2 Minutos)
+          if (diferencaTempo > TEMPO_MAXIMO_DADO_EXPIRADO_MS) {
+            marcarDesconectado();
+            return;
+          }
           
+          // Dado é recente e válido
+          ultimaRespostaComSucesso = agora;
           marcarConectado();
           processarDadosThingSpeak(data);
         })
@@ -389,11 +398,9 @@
         });
     }
 
-    // VERIFICA SE OS DADOS ESTÃO CHEGANDO DENTRO DO TEMPO LIMITE
     function checarInatividade() {
       const tempoSemResposta = Date.now() - ultimaRespostaComSucesso;
-      
-      if (!navigator.onLine || tempoSemResposta > TEMPO_MAXIMO_SEM_RESPOSTA_MS) {
+      if (!navigator.onLine || tempoSemResposta > TEMPO_MAXIMO_DADO_EXPIRADO_MS) {
         marcarDesconectado();
       }
     }
@@ -415,7 +422,31 @@
 
       const subArduino = document.getElementById('sub-arduino');
       subArduino.className = "text-[8px] text-rose-400 font-medium";
-      subArduino.innerText = "Aguardando conexão";
+      subArduino.innerText = "Sem Comunicação";
+
+      // Limpa visualização do sensor e rede em falha
+      document.getElementById('val-temperatura').innerText = "-";
+      const elBadge = document.getElementById('badge-sensor-status');
+      elBadge.innerText = "SEM SINAL";
+      elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
+
+      const statusRede = document.getElementById('status-rede');
+      statusRede.innerText = "INATIVA";
+      statusRede.className = "my-2 font-black text-xs text-rose-600";
+
+      const valBateria = document.getElementById('val-bateria');
+      valBateria.innerText = "-- %";
+      valBateria.className = "my-1 font-black text-sm text-slate-400";
+
+      const subBateria = document.getElementById('sub-bateria');
+      subBateria.innerText = "Sem comunicação";
+      subBateria.className = "text-[8px] text-slate-400";
+
+      const gauge = document.getElementById('gauge-circle');
+      gauge.classList.add('gauge-fill-error');
+      gauge.style.strokeDashoffset = 0;
+
+      adicionarAlarme("Perda de Conexão com Servidor/Hardware", "CRÍTICO");
     }
 
     function marcarConectado() {
@@ -644,7 +675,7 @@
       // Tenta buscar dados a cada 5 segundos
       setInterval(buscarDados, 5000);
       
-      // Checa inatividade/queda a cada 2 segundos
+      // Checa se os dados expiraram a cada 2 segundos
       setInterval(checarInatividade, 2000);
     };
   </script>
