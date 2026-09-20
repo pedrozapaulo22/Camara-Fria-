@@ -291,8 +291,8 @@
     let historicoLeituras = [];
 
     let timerForaDaFaixa = null;
-    let ultimaRespostaComSucesso = Date.now();
-    const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 600000;
+    let ultimaRespostaComSucesso = 0;
+    const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 120000; // 2 minutos (120s) de tolerância
 
     function atualizarDataHora() {
       document.getElementById('data-hora').innerText = new Date().toLocaleString('pt-BR');
@@ -437,24 +437,42 @@
         return;
       }
 
-      fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=100&_nocache=${Date.now()}`)
+      fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=50&nocache=${Date.now()}`)
         .then(res => {
           if (!res.ok) throw new Error("Erro na conexão HTTP");
           return res.json();
         })
         .then(data => {
-          if (!data || !data.feeds || data.feeds.length === 0) return;
+          if (!data || !data.feeds || data.feeds.length === 0) {
+            marcarDesconectado();
+            return;
+          }
 
           const feeds = data.feeds;
           const ultimoFeed = feeds[feeds.length - 1];
-          if (!ultimoFeed || !ultimoFeed.created_at) return;
+          
+          if (!ultimoFeed || !ultimoFeed.created_at) {
+            marcarDesconectado();
+            return;
+          }
 
-          ultimaRespostaComSucesso = Date.now();
+          // VERIFICAÇÃO DE EXPIRAÇÃO DO DADO (2 MINUTOS)
+          const dataCriacaoDado = new Date(ultimoFeed.created_at).getTime();
+          const agora = Date.now();
+          const diferencaTempo = agora - dataCriacaoDado;
+
+          if (diferencaTempo > TEMPO_MAXIMO_DADO_EXPIRADO_MS) {
+            marcarDesconectado();
+            return;
+          }
+
+          ultimaRespostaComSucesso = agora;
           marcarConectado();
           processarDadosThingSpeak(feeds);
         })
         .catch(err => {
           console.error("Falha ao buscar ThingSpeak:", err);
+          marcarDesconectado();
         });
     }
 
@@ -484,9 +502,29 @@
       subArduino.className = "text-[8px] text-rose-400 font-medium";
       subArduino.innerText = "Sem Comunicação";
 
+      document.getElementById('val-temperatura').innerText = "-";
+      const elBadge = document.getElementById('badge-sensor-status');
+      elBadge.innerText = "SEM SINAL";
+      elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase mt-1 animate-pulse";
+
       const statusRede = document.getElementById('status-rede');
       statusRede.innerText = "INATIVA";
       statusRede.className = "my-2 font-black text-xs text-rose-600";
+
+      const valBateria = document.getElementById('val-bateria');
+      valBateria.innerText = "-- %";
+      valBateria.className = "my-1 font-black text-sm text-slate-400";
+
+      const subBateria = document.getElementById('sub-bateria');
+      subBateria.innerText = "Sem comunicação";
+      subBateria.className = "text-[8px] text-slate-400";
+
+      const gauge = document.getElementById('gauge-circle');
+      gauge.classList.add('gauge-fill-error');
+      gauge.style.strokeDashoffset = 0;
+
+      adicionarAlarme("Perda de Conexão com Servidor/Hardware", "CRÍTICO");
+      iniciarContadorForaDaFaixa();
     }
 
     function marcarConectado() {
@@ -510,10 +548,10 @@
     }
 
     function processarDadosThingSpeak(feeds) {
-      // BUSCA O ÚLTIMO OFFSET VÁLIDO NO HISTÓRICO (Ignora nulos)
+      // BUSCA O ÚLTIMO OFFSET VÁLIDO NO HISTÓRICO
       let offsetEncontrado = false;
       for (let i = feeds.length - 1; i >= 0; i--) {
-        if (feeds[i].field3 !== null && feeds[i].field3 !== undefined && feeds[i].field3.trim() !== "") {
+        if (feeds[i].field3 !== null && feeds[i].field3 !== undefined && String(feeds[i].field3).trim() !== "") {
           let val = parseFloat(feeds[i].field3);
           if (!isNaN(val)) {
             tempOffset = val;
@@ -524,7 +562,6 @@
         }
       }
 
-      // Se não houver registro no Field3, mantém o offset gravado no localStorage
       if (!offsetEncontrado) {
         tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
       }
@@ -752,8 +789,8 @@
       iniciarGraficos();
       buscarDados();
       
-      setInterval(buscarDados, 15000);
-      setInterval(checarInatividade, 10000);
+      setInterval(buscarDados, 5000);
+      setInterval(checarInatividade, 2000);
     };
   </script>
 </body>
