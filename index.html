@@ -152,6 +152,7 @@
         </div>
       </div>
 
+      <!-- TREND ENQUADRADA COM ESCALA DE -30 A 30 -->
       <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
         <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
           TREND DE TEMPERATURA 
@@ -161,7 +162,7 @@
           </span>
           <span class="text-[10px] text-emerald-600 font-semibold normal-case">(Tempo Real)</span>
         </h3>
-        <div class="h-64 w-full">
+        <div class="h-64 w-full relative">
           <canvas id="chartTemperatura"></canvas>
         </div>
       </div>
@@ -192,7 +193,7 @@
 
       <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
         <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">GRÁFICO DO PERÍODO SELECIONADO</h3>
-        <div class="h-72 w-full">
+        <div class="h-72 w-full relative">
           <canvas id="chartPeriodo"></canvas>
         </div>
       </div>
@@ -272,10 +273,7 @@
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
-    // RETENÇÃO 1: Recupera o tempo fora da faixa gravado
     let segundosForaDaFaixa = parseInt(localStorage.getItem('segundosForaDaFaixa')) || 0;
-    
-    // RETENÇÃO 2: Recupera histórico de alarmes
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes')) || [];
 
     document.getElementById('input-channel-id').value = channelId;
@@ -369,11 +367,15 @@
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            animation: { duration: 400 }, // Animação suave para Tempo Real
+            animation: { duration: 400 },
             plugins: { legend: { display: false } },
             scales: {
               x: { grid: { display: false } },
-              y: { grid: { color: '#f1f5f9' }, min: -30, max: 10 }
+              y: { 
+                grid: { color: '#f1f5f9' }, 
+                min: -30, 
+                max: 30 
+              }
             }
           }
         });
@@ -402,7 +404,11 @@
             maintainAspectRatio: false,
             scales: {
               x: { grid: { display: false } },
-              y: { grid: { color: '#f1f5f9' } }
+              y: { 
+                grid: { color: '#f1f5f9' },
+                min: -30,
+                max: 30
+              }
             }
           }
         });
@@ -571,11 +577,10 @@
         historicoLeituras.push({ hora: dataHoraFull, temp: tVal });
       });
 
-      // ATUALIZAÇÃO EM TEMPO REAL DO GRÁFICO TREND
       if (chartTemp) {
         chartTemp.data.labels = labels;
         chartTemp.data.datasets[0].data = dataValores;
-        chartTemp.update('none'); // Atualização sem trepidação
+        chartTemp.update('none');
       }
     }
 
@@ -600,7 +605,7 @@
 
       elVal.innerText = `${temp.toFixed(1)} °C`;
 
-      let pct = Math.max(0, Math.min(1, (temp - (-30)) / 40));
+      let pct = Math.max(0, Math.min(1, (temp - (-30)) / 60));
       gauge.style.strokeDashoffset = 251.2 * (1 - pct);
 
       const limiteSegundos = tempoDegeloMinutos * 60;
@@ -631,7 +636,7 @@
       if (!timerForaDaFaixa) {
         timerForaDaFaixa = setInterval(() => {
           segundosForaDaFaixa++;
-          localStorage.setItem('segundosForaDaFaixa', segundosForaDaFaixa); // PERSISTÊNCIA NO REFRESH
+          localStorage.setItem('segundosForaDaFaixa', segundosForaDaFaixa);
           atualizarDisplayForaDaFaixa();
         }, 1000);
       }
@@ -644,7 +649,7 @@
       }
       if (resetar) {
         segundosForaDaFaixa = 0;
-        localStorage.setItem('segundosForaDaFaixa', 0); // ZERA NO LOCALSTORAGE
+        localStorage.setItem('segundosForaDaFaixa', 0);
         atualizarDisplayForaDaFaixa();
       }
     }
@@ -670,7 +675,7 @@
       const dataHora = new Date().toLocaleString('pt-BR');
       if(!listaAlarmes.some(a => a.evento === evento && a.status === 'Ativo')){
         listaAlarmes.unshift({ data: dataHora, evento: evento, nivel: nivel, status: 'Ativo' });
-        localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes)); // GRAVA NO STORAGE
+        localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
         renderizarTabelaAlarmes();
       }
     }
@@ -743,8 +748,8 @@
 
     window.onload = () => {
       atualizarRotulosDegelo();
-      atualizarDisplayForaDaFaixa(); // CARREGA O TEMPO FORA DA FAIXA SALVO
-      renderizarTabelaAlarmes();    // CARREGA HISTÓRICO DE ALARMES SALVO
+      atualizarDisplayForaDaFaixa();
+      renderizarTabelaAlarmes();
       iniciarGraficos();
       buscarDados();
       
