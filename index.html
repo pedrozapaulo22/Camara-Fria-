@@ -153,7 +153,14 @@
       </div>
 
       <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">TREND DE TEMPERATURA</h3>
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+          TREND DE TEMPERATURA 
+          <span class="flex h-2 w-2 relative">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span class="text-[10px] text-emerald-600 font-semibold normal-case">(Tempo Real)</span>
+        </h3>
         <div class="h-64 w-full">
           <canvas id="chartTemperatura"></canvas>
         </div>
@@ -194,7 +201,10 @@
     <!-- ABA 3: ALARMES -->
     <div id="aba-alarmes" class="hidden space-y-5">
       <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm overflow-x-auto">
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">HISTÓRICO DE ALARMES</h3>
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">HISTÓRICO DE ALARMES</h3>
+          <button onclick="limparHistoricoAlarmes()" class="text-xs font-semibold text-rose-600 hover:text-rose-800 transition-colors">Limpar Histórico</button>
+        </div>
         <table class="w-full text-left text-xs">
           <thead class="bg-slate-50 text-slate-500 uppercase border-b">
             <tr>
@@ -262,6 +272,12 @@
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
+    // RETENÇÃO 1: Recupera o tempo fora da faixa gravado
+    let segundosForaDaFaixa = parseInt(localStorage.getItem('segundosForaDaFaixa')) || 0;
+    
+    // RETENÇÃO 2: Recupera histórico de alarmes
+    let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes')) || [];
+
     document.getElementById('input-channel-id').value = channelId;
     document.getElementById('input-temp-offset').value = tempOffset;
     document.getElementById('input-tempo-degelo').value = tempoDegeloMinutos;
@@ -269,9 +285,7 @@
     let chartTemp = null;
     let chartPeriodo = null;
     let historicoLeituras = [];
-    let listaAlarmes = [];
 
-    let segundosForaDaFaixa = 0;
     let timerForaDaFaixa = null;
     
     let ultimaRespostaComSucesso = 0;
@@ -313,23 +327,18 @@
       abas.forEach(a => {
         document.getElementById(`aba-${a}`).classList.add('hidden');
         
-        // Estilos Desktop
         const btnDt = document.getElementById(`btn-${a === 'dashboard' ? 'dash' : a === 'temperatura' ? 'temp' : a === 'alarmes' ? 'alarm' : 'config'}-dt`);
         if(btnDt) btnDt.className = "w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-left";
 
-        // Estilos Mobile
         const btnMb = document.getElementById(`btn-${a === 'dashboard' ? 'dash' : a === 'temperatura' ? 'temp' : a === 'alarmes' ? 'alarm' : 'config'}-mb`);
         if(btnMb) btnMb.className = "flex flex-col items-center gap-1 text-slate-400";
       });
 
-      // Exibe a aba ativa
       document.getElementById(`aba-${aba}`).classList.remove('hidden');
 
-      // Ativa botão no Desktop
       const activeDt = document.getElementById(`btn-${aba === 'dashboard' ? 'dash' : aba === 'temperatura' ? 'temp' : aba === 'alarmes' ? 'alarm' : 'config'}-dt`);
       if(activeDt) activeDt.className = "w-full flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-lg shadow-md transition-colors text-left";
 
-      // Ativa botão no Mobile
       const activeMb = document.getElementById(`btn-${aba === 'dashboard' ? 'dash' : aba === 'temperatura' ? 'temp' : aba === 'alarmes' ? 'alarm' : 'config'}-mb`);
       if(activeMb) activeMb.className = "flex flex-col items-center gap-1 text-blue-500";
 
@@ -352,12 +361,15 @@
               backgroundColor: 'rgba(37, 99, 235, 0.08)',
               borderWidth: 2,
               fill: true,
-              tension: 0.3
+              tension: 0.3,
+              pointRadius: 3,
+              pointHoverRadius: 6
             }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: { duration: 400 }, // Animação suave para Tempo Real
             plugins: { legend: { display: false } },
             scales: {
               x: { grid: { display: false } },
@@ -559,10 +571,11 @@
         historicoLeituras.push({ hora: dataHoraFull, temp: tVal });
       });
 
+      // ATUALIZAÇÃO EM TEMPO REAL DO GRÁFICO TREND
       if (chartTemp) {
         chartTemp.data.labels = labels;
         chartTemp.data.datasets[0].data = dataValores;
-        chartTemp.update();
+        chartTemp.update('none'); // Atualização sem trepidação
       }
     }
 
@@ -618,6 +631,7 @@
       if (!timerForaDaFaixa) {
         timerForaDaFaixa = setInterval(() => {
           segundosForaDaFaixa++;
+          localStorage.setItem('segundosForaDaFaixa', segundosForaDaFaixa); // PERSISTÊNCIA NO REFRESH
           atualizarDisplayForaDaFaixa();
         }, 1000);
       }
@@ -630,6 +644,7 @@
       }
       if (resetar) {
         segundosForaDaFaixa = 0;
+        localStorage.setItem('segundosForaDaFaixa', 0); // ZERA NO LOCALSTORAGE
         atualizarDisplayForaDaFaixa();
       }
     }
@@ -655,6 +670,15 @@
       const dataHora = new Date().toLocaleString('pt-BR');
       if(!listaAlarmes.some(a => a.evento === evento && a.status === 'Ativo')){
         listaAlarmes.unshift({ data: dataHora, evento: evento, nivel: nivel, status: 'Ativo' });
+        localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes)); // GRAVA NO STORAGE
+        renderizarTabelaAlarmes();
+      }
+    }
+
+    function limparHistoricoAlarmes() {
+      if (confirm("Deseja realmente apagar o histórico de alarmes?")) {
+        listaAlarmes = [];
+        localStorage.removeItem('historicoAlarmes');
         renderizarTabelaAlarmes();
       }
     }
@@ -662,6 +686,10 @@
     function renderizarTabelaAlarmes() {
       const tbody = document.getElementById('tabela-alarmes');
       tbody.innerHTML = '';
+      if(listaAlarmes.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">Nenhum alarme registrado</td></tr>`;
+        return;
+      }
       listaAlarmes.forEach(item => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -715,6 +743,8 @@
 
     window.onload = () => {
       atualizarRotulosDegelo();
+      atualizarDisplayForaDaFaixa(); // CARREGA O TEMPO FORA DA FAIXA SALVO
+      renderizarTabelaAlarmes();    // CARREGA HISTÓRICO DE ALARMES SALVO
       iniciarGraficos();
       buscarDados();
       
