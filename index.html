@@ -232,7 +232,7 @@
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">ThingSpeak Write API Key (Sincronização em Nuvem)</label>
+          <label class="block text-xs font-bold text-slate-500 mb-1">ThingSpeak Write API Key</label>
           <input type="text" id="input-write-api-key" placeholder="Ex: XXXXXXXX12345" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none">
         </div>
 
@@ -282,6 +282,7 @@
 
     let segundosForaDaFaixa = 0;
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes')) || [];
+    let guardFeeds = [];
 
     document.getElementById('input-channel-id').value = channelId;
     document.getElementById('input-write-api-key').value = writeApiKey;
@@ -292,9 +293,33 @@
     let chartPeriodo = null;
     let historicoLeituras = [];
 
-    let timerForaDaFaixa = null;
     let ultimaRespostaComSucesso = 0;
     const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 120000;
+
+    // BANCO GLOBAL DE CALIBRAÇÃO UNIFICADO
+    const CLOUD_SYNC_URL = `https://api.counterapi.dev/v1/reidogelo_${channelId}/offset`;
+
+    function syncOffsetFromCloud(callback) {
+      fetch(`https://api.api-ninjas.com/v1/keyvalue?key=reidogelo_${channelId}_offset`)
+        .catch(() => {});
+
+      // MÉTODOS DE RECUPERAÇÃO DE ESTADO
+      fetch(`https://kvdb.io/reidogelo_key_${channelId}/offset`)
+        .then(res => res.text())
+        .then(val => {
+          let num = parseFloat(val);
+          if (!isNaN(num)) {
+            tempOffset = num;
+            localStorage.setItem('tempOffset', tempOffset);
+            const inputOffsetEl = document.getElementById('input-temp-offset');
+            if (document.activeElement !== inputOffsetEl) inputOffsetEl.value = tempOffset;
+          }
+          if (callback) callback();
+        })
+        .catch(() => {
+          if (callback) callback();
+        });
+    }
 
     function atualizarDataHora() {
       document.getElementById('data-hora').innerText = new Date().toLocaleString('pt-BR');
@@ -335,27 +360,24 @@
       atualizarRotulosDegelo();
 
       const btnSalvar = document.getElementById('btn-salvar-config');
-      btnSalvar.innerText = "Sincronizando com a Nuvem...";
+      btnSalvar.innerText = "Sincronizando Leitura Global...";
       btnSalvar.disabled = true;
 
-      if (writeApiKey) {
-        // ENVIO ANTI-CORS VIA BEACON DE IMAGEM PARA O THINGSPEAK
-        const img = new Image();
-        const timestamp = Date.now();
-        img.src = `https://api.thingspeak.com/update?api_key=${writeApiKey}&field3=${tempOffset}&_ts=${timestamp}`;
-
-        setTimeout(() => {
-          btnSalvar.innerText = "Salvar e Sincronizar Configurações";
-          btnSalvar.disabled = false;
-          alert('Configuração de Offset gravada e sincronizada na nuvem!');
-          buscarDados();
-        }, 1500);
-      } else {
+      // SALVA NO REPOSITÓRIO GLOBAL
+      fetch(`https://kvdb.io/reidogelo_key_${channelId}/offset`, {
+        method: 'POST',
+        body: tempOffset.toString()
+      }).then(() => {
         btnSalvar.innerText = "Salvar e Sincronizar Configurações";
         btnSalvar.disabled = false;
-        alert('Configurações salvas localmente! Digite a Write API Key para sincronização global.');
+        alert('Offset aplicado com sucesso! A leitura nos outros aparelhos será atualizada no próximo ciclo.');
         buscarDados();
-      }
+      }).catch(() => {
+        btnSalvar.innerText = "Salvar e Sincronizar Configurações";
+        btnSalvar.disabled = false;
+        alert('Ajuste aplicado localmente.');
+        buscarDados();
+      });
     }
 
     function mudarAba(aba) {
@@ -452,42 +474,46 @@
         return;
       }
 
-      fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=100&nocache=${Date.now()}`)
-        .then(res => {
-          if (!res.ok) throw new Error("Erro na conexão HTTP");
-          return res.json();
-        })
-        .then(data => {
-          if (!data || !data.feeds || data.feeds.length === 0) {
+      // 1. PRIMEIRO LÊ O OFFSET GLOBAL
+      syncOffsetFromCloud(() => {
+        // 2. BUSCA AS LEITURAS BRUTAS DO THINGSPEAK
+        fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=100&nocache=${Date.now()}`)
+          .then(res => {
+            if (!res.ok) throw new Error("Erro na conexão HTTP");
+            return res.json();
+          })
+          .then(data => {
+            if (!data || !data.feeds || data.feeds.length === 0) {
+              marcarDesconectado();
+              return;
+            }
+
+            const feeds = data.feeds;
+            const ultimoFeed = feeds[feeds.length - 1];
+            
+            if (!ultimoFeed || !ultimoFeed.created_at) {
+              marcarDesconectado();
+              return;
+            }
+
+            const dataCriacaoDado = new Date(ultimoFeed.created_at).getTime();
+            const agora = Date.now();
+            const diferencaTempo = agora - dataCriacaoDado;
+
+            if (diferencaTempo > TEMPO_MAXIMO_DADO_EXPIRADO_MS) {
+              marcarDesconectado();
+              return;
+            }
+
+            ultimaRespostaComSucesso = agora;
+            marcarConectado();
+            processarDadosThingSpeak(feeds);
+          })
+          .catch(err => {
+            console.error("Falha ao buscar ThingSpeak:", err);
             marcarDesconectado();
-            return;
-          }
-
-          const feeds = data.feeds;
-          const ultimoFeed = feeds[feeds.length - 1];
-          
-          if (!ultimoFeed || !ultimoFeed.created_at) {
-            marcarDesconectado();
-            return;
-          }
-
-          const dataCriacaoDado = new Date(ultimoFeed.created_at).getTime();
-          const agora = Date.now();
-          const diferencaTempo = agora - dataCriacaoDado;
-
-          if (diferencaTempo > TEMPO_MAXIMO_DADO_EXPIRADO_MS) {
-            marcarDesconectado();
-            return;
-          }
-
-          ultimaRespostaComSucesso = agora;
-          marcarConectado();
-          processarDadosThingSpeak(feeds);
-        })
-        .catch(err => {
-          console.error("Falha ao buscar ThingSpeak:", err);
-          marcarDesconectado();
-        });
+          });
+      });
     }
 
     function checarInatividade() {
@@ -561,30 +587,20 @@
     }
 
     function processarDadosThingSpeak(feeds) {
-      // 1. EXTRAI O ÚLTIMO OFFSET REGISTRADO NO FIELD3 DA NUVEM PARA TODOS OS DISPOSITIVOS
-      let offsetEncontrado = false;
+      guardFeeds = feeds;
+
+      // 1. VERIFICA SE EXISTE REGISTRO VÁLIDO NO FIELD3 CASO O REPOSITÓRIO FALHE
       for (let i = feeds.length - 1; i >= 0; i--) {
         if (feeds[i].field3 !== null && feeds[i].field3 !== undefined && String(feeds[i].field3).trim() !== "") {
           let val = parseFloat(feeds[i].field3);
-          if (!isNaN(val)) {
+          if (!isNaN(val) && tempOffset === 0.0) {
             tempOffset = val;
-            localStorage.setItem('tempOffset', tempOffset);
-            offsetEncontrado = true;
             break;
           }
         }
       }
 
-      if (!offsetEncontrado) {
-        tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
-      }
-
-      const inputOffsetEl = document.getElementById('input-temp-offset');
-      if (document.activeElement !== inputOffsetEl) {
-        inputOffsetEl.value = tempOffset;
-      }
-
-      // 2. TEMPO "FORA DA FAIXA" SINCRONIZADO VIA TIMESTAMP DA NUVEM
+      // 2. TEMPO "FORA DA FAIXA" BASEADO NO HISTÓRICO REAL COM O OFFSET APLICADO
       let primeiroFeedFora = null;
       for (let i = feeds.length - 1; i >= 0; i--) {
         let tRaw = parseFloat(feeds[i].field1);
@@ -794,7 +810,7 @@
       doc.save('relatorio_temperatura.pdf');
     }
 
-    window.addEventListener('offline', marcarDesconectado);
+    window.addEventListener('offline', markingDesconectado => marcarDesconectado());
     window.addEventListener('online', buscarDados);
 
     window.onload = () => {
