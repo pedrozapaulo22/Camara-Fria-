@@ -71,9 +71,8 @@
                 <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
                 <circle id="gauge-circle" class="gauge-fill gauge-fill-error" cx="50" cy="50" r="40" style="stroke-dashoffset: 0;"></circle>
               </svg>
-              <!-- CONTEÚDO REENQUADRADO DENTRO DO GAUGE -->
               <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-2">
-                <span id="val-temperatura" class="text-2xl sm:text-2xl font-black text-slate-800 leading-none tracking-tight">-</span>
+                <span id="val-temperatura" class="text-2xl font-black text-slate-800 leading-none tracking-tight">-</span>
                 <span id="badge-sensor-status" class="bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase my-1 animate-pulse">SEM SINAL</span>
                 <span class="text-[8px] text-slate-400 font-medium leading-none">Setpoint: -18 °C</span>
               </div>
@@ -111,10 +110,11 @@
               <span id="sub-bateria" class="text-[8px] text-slate-400">Sem dados</span>
             </div>
 
+            <!-- CARD FORA DA FAIXA FORMATADO EM HORAS E MINUTOS -->
             <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
               <span class="text-[9px] font-bold text-slate-400 uppercase leading-tight">FORA DA FAIXA</span>
-              <div id="val-fora-faixa" class="my-1 font-black text-xs text-slate-800">00:00 min</div>
-              <span class="text-[8px] text-slate-400">Lim: <span id="lbl-lim-degelo">05:00</span> min</span>
+              <div id="val-fora-faixa" class="my-1 font-black text-xs text-slate-800">00h 00m 00s</div>
+              <span class="text-[8px] text-slate-400">Lim: <span id="lbl-lim-degelo">00h 05m</span></span>
             </div>
 
             <div id="card-arduino" class="bg-rose-50 border border-rose-200/80 p-3 rounded-xl text-center flex flex-col justify-between">
@@ -302,8 +302,10 @@
 
     function atualizarRotulosDegelo() {
       document.getElementById('lbl-tol-degelo').innerText = tempoDegeloMinutos;
-      const strMin = String(tempoDegeloMinutos).padStart(2, '0');
-      document.getElementById('lbl-lim-degelo').innerText = `${strMin}:00`;
+      
+      const hor = String(Math.floor(tempoDegeloMinutos / 60)).padStart(2, '0');
+      const min = String(tempoDegeloMinutos % 60).padStart(2, '0');
+      document.getElementById('lbl-lim-degelo').innerText = `${hor}h ${min}m`;
     }
 
     function salvarConfiguracao() {
@@ -332,12 +334,19 @@
       atualizarRotulosDegelo();
 
       if (writeApiKey) {
-        const urlUpdate = `https://api.thingspeak.com/update?api_key=${writeApiKey}&field3=${tempOffset}`;
-        const imgSync = new Image();
-        imgSync.src = `${urlUpdate}&_nocache=${Date.now()}`;
-
-        alert('Offset salvo e enviado para a nuvem!');
-        setTimeout(() => { buscarDados(); }, 2000);
+        // FETCH NATIVO NO MODO NO-CORS GARANTE ENVIO TANTO NO DESKTOP QUANTO NO MOBILE
+        const urlUpdate = `https://api.thingspeak.com/update?api_key=${writeApiKey}&field3=${tempOffset}&_nocache=${Date.now()}`;
+        
+        fetch(urlUpdate, { mode: 'no-cors' })
+          .then(() => {
+            alert('Offset enviado para a nuvem! Sincronização ativada.');
+            setTimeout(() => { buscarDados(); }, 2000);
+          })
+          .catch(err => {
+            console.error("Erro no envio:", err);
+            alert('Erro ao enviar para a nuvem. Dados salvos localmente.');
+            buscarDados();
+          });
       } else {
         alert('Configurações salvas localmente!');
         buscarDados();
@@ -548,7 +557,7 @@
     }
 
     function processarDadosThingSpeak(feeds) {
-      // BUSCA O ÚLTIMO OFFSET VÁLIDO NO HISTÓRICO
+      // BUSCA O ÚLTIMO OFFSET VÁLIDO NO HISTÓRICO DO THINGSPEAK
       let offsetEncontrado = false;
       for (let i = feeds.length - 1; i >= 0; i--) {
         if (feeds[i].field3 !== null && feeds[i].field3 !== undefined && String(feeds[i].field3).trim() !== "") {
@@ -566,7 +575,7 @@
         tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
       }
 
-      // IMPEDE A SOBRESCRIÇÃO CASO O USUÁRIO ESTEJA DIGITANDO NO CAMPO DE OFFSET
+      // IMPEDE SOBRESCREVER CASO O USUÁRIO ESTEJA COM O FOCO NO CAMPO DE TEXTO
       const inputOffsetEl = document.getElementById('input-temp-offset');
       if (document.activeElement !== inputOffsetEl) {
         inputOffsetEl.value = tempOffset;
@@ -694,12 +703,14 @@
       }
     }
 
+    // EXIBE O TEMPO FORMATADO EM HORAS, MINUTOS E SEGUNDOS (Ex: 01h 15m 04s)
     function atualizarDisplayForaDaFaixa() {
-      const mins = String(Math.floor(segundosForaDaFaixa / 60)).padStart(2, '0');
+      const horas = String(Math.floor(segundosForaDaFaixa / 3600)).padStart(2, '0');
+      const mins = String(Math.floor((segundosForaDaFaixa % 3600) / 60)).padStart(2, '0');
       const segs = String(segundosForaDaFaixa % 60).padStart(2, '0');
-      const elFora = document.getElementById('val-fora-faixa');
       
-      elFora.innerText = `${mins}:${segs} min`;
+      const elFora = document.getElementById('val-fora-faixa');
+      elFora.innerText = `${horas}h ${mins}m ${segs}s`;
       
       const limiteSegundos = tempoDegeloMinutos * 60;
       if (segundosForaDaFaixa > limiteSegundos) {
