@@ -278,7 +278,7 @@
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
-    let segundosForaDaFaixa = parseInt(localStorage.getItem('segundosForaDaFaixa')) || 0;
+    let segundosForaDaFaixa = 0;
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes')) || [];
 
     document.getElementById('input-channel-id').value = channelId;
@@ -333,7 +333,6 @@
       atualizarRotulosDegelo();
 
       if (writeApiKey) {
-        // REQUISIÇÃO DIRETA SUPORTADA EM SMARTPHONES E DESKTOPS
         const urlUpdate = `https://api.thingspeak.com/update?api_key=${writeApiKey}&field3=${tempOffset}`;
 
         fetch(urlUpdate)
@@ -352,7 +351,7 @@
             buscarDados();
           });
       } else {
-        alert('Configurações salvas localmente! Insira a Write API Key para sincronizar entre dispositivos.');
+        alert('Configurações salvas localmente!');
         buscarDados();
       }
     }
@@ -451,7 +450,7 @@
         return;
       }
 
-      fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=50&nocache=${Date.now()}`)
+      fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=100&nocache=${Date.now()}`)
         .then(res => {
           if (!res.ok) throw new Error("Erro na conexão HTTP");
           return res.json();
@@ -537,7 +536,6 @@
       gauge.style.strokeDashoffset = 0;
 
       adicionarAlarme("Perda de Conexão com Servidor/Hardware", "CRÍTICO");
-      iniciarContadorForaDaFaixa();
     }
 
     function marcarConectado() {
@@ -561,7 +559,7 @@
     }
 
     function processarDadosThingSpeak(feeds) {
-      // PROCURA O ÚLTIMO OFFSET VÁLIDO ENVIADO PARA A NUVEM
+      // 1. SINCRONIZAÇÃO UNIFICADA DE OFFSET
       let offsetEncontrado = false;
       for (let i = feeds.length - 1; i >= 0; i--) {
         if (feeds[i].field3 !== null && feeds[i].field3 !== undefined && String(feeds[i].field3).trim() !== "") {
@@ -584,6 +582,32 @@
         inputOffsetEl.value = tempOffset;
       }
 
+      // 2. SINCRONIZAÇÃO UNIFICADA DO TEMPO "FORA DA FAIXA" BASEADA NO HISTÓRICO REAL
+      let primeiroFeedFora = null;
+      
+      // Varre de trás para frente procurando quando a temperatura saiu da faixa (-20°C a -1°C)
+      for (let i = feeds.length - 1; i >= 0; i--) {
+        let tRaw = parseFloat(feeds[i].field1);
+        if (!isNaN(tRaw) && tRaw > -127.0 && tRaw < 85.0) {
+          let tVal = tRaw + tempOffset;
+          if (tVal < -20.0 || tVal > -1.0) {
+            primeiroFeedFora = feeds[i];
+          } else {
+            break; // Temperatura voltou ao normal neste ponto do histórico
+          }
+        }
+      }
+
+      if (primeiroFeedFora) {
+        let tempoInicioMs = new Date(primeiroFeedFora.created_at).getTime();
+        segundosForaDaFaixa = Math.max(0, Math.floor((Date.now() - tempoInicioMs) / 1000));
+      } else {
+        segundosForaDaFaixa = 0;
+      }
+
+      atualizarDisplayForaDaFaixa();
+
+      // STATUS DE REDE E BATERIA
       const ultimoFeed = feeds[feeds.length - 1];
       const isPowerOk = (String(ultimoFeed.field2) === "1" || String(ultimoFeed.field2) === "true");
       const statusRede = document.getElementById('status-rede');
@@ -652,7 +676,6 @@
         gauge.style.strokeDashoffset = 0;
         
         adicionarAlarme("Falha no Sensor de Temperatura", "CRÍTICO");
-        iniciarContadorForaDaFaixa();
         return;
       }
 
@@ -666,11 +689,8 @@
       if (temp >= -20.0 && temp <= -1.0) {
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase my-1";
-        pararContadorForaDaFaixa(true);
       } 
       else {
-        iniciarContadorForaDaFaixa();
-
         if (segundosForaDaFaixa <= limiteSegundos) {
           elBadge.innerText = "DEGELO";
           elBadge.className = "bg-amber-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase my-1 animate-pulse";
@@ -681,28 +701,6 @@
           gauge.classList.add('gauge-fill-error');
           adicionarAlarme(`Tempo de Degelo Excedido (>${tempoDegeloMinutos} min)`, "CRÍTICO");
         }
-      }
-    }
-
-    function iniciarContadorForaDaFaixa() {
-      if (!timerForaDaFaixa) {
-        timerForaDaFaixa = setInterval(() => {
-          segundosForaDaFaixa++;
-          localStorage.setItem('segundosForaDaFaixa', segundosForaDaFaixa);
-          atualizarDisplayForaDaFaixa();
-        }, 1000);
-      }
-    }
-
-    function pararContadorForaDaFaixa(resetar = false) {
-      if (timerForaDaFaixa) {
-        clearInterval(timerForaDaFaixa);
-        timerForaDaFaixa = null;
-      }
-      if (resetar) {
-        segundosForaDaFaixa = 0;
-        localStorage.setItem('segundosForaDaFaixa', 0);
-        atualizarDisplayForaDaFaixa();
       }
     }
 
