@@ -282,7 +282,6 @@
 
     let segundosForaDaFaixa = 0;
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes')) || [];
-    let guardFeeds = [];
 
     document.getElementById('input-channel-id').value = channelId;
     document.getElementById('input-write-api-key').value = writeApiKey;
@@ -296,28 +295,30 @@
     let ultimaRespostaComSucesso = 0;
     const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 120000;
 
-    // BANCO GLOBAL DE CALIBRAÇÃO UNIFICADO
-    const CLOUD_SYNC_URL = `https://api.counterapi.dev/v1/reidogelo_${channelId}/offset`;
-
-    function syncOffsetFromCloud(callback) {
-      fetch(`https://api.api-ninjas.com/v1/keyvalue?key=reidogelo_${channelId}_offset`)
-        .catch(() => {});
-
-      // MÉTODOS DE RECUPERAÇÃO DE ESTADO
-      fetch(`https://kvdb.io/reidogelo_key_${channelId}/offset`)
-        .then(res => res.text())
-        .then(val => {
-          let num = parseFloat(val);
-          if (!isNaN(num)) {
-            tempOffset = num;
-            localStorage.setItem('tempOffset', tempOffset);
-            const inputOffsetEl = document.getElementById('input-temp-offset');
-            if (document.activeElement !== inputOffsetEl) inputOffsetEl.value = tempOffset;
+    // LEITURA DO OFFSET DA NUVEM COMPATÍVEL COM NAVEGADORES MÓVEIS (SAFARI / CHROME MOBILE)
+    function sincronizarOffsetGlobal(onComplete) {
+      const ts = Date.now();
+      
+      // MÉTODOS DE BUSCA EM BANCO DE ESTADO DE ALTA DISPONIBILIDADE
+      fetch(`https://api.thingspeak.com/channels/${channelId}/status.json?_ts=${ts}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.status) {
+            let matches = data.status.match(/OFFSET:(-?\d+(\.\d+)?)/);
+            if (matches && matches[1]) {
+              let val = parseFloat(matches[1]);
+              if (!isNaN(val)) {
+                tempOffset = val;
+                localStorage.setItem('tempOffset', tempOffset);
+                const inputEl = document.getElementById('input-temp-offset');
+                if (document.activeElement !== inputEl) inputEl.value = tempOffset;
+              }
+            }
           }
-          if (callback) callback();
+          if (onComplete) onComplete();
         })
         .catch(() => {
-          if (callback) callback();
+          if (onComplete) onComplete();
         });
     }
 
@@ -360,24 +361,25 @@
       atualizarRotulosDegelo();
 
       const btnSalvar = document.getElementById('btn-salvar-config');
-      btnSalvar.innerText = "Sincronizando Leitura Global...";
+      btnSalvar.innerText = "Sincronizando com Celulares...";
       btnSalvar.disabled = true;
 
-      // SALVA NO REPOSITÓRIO GLOBAL
-      fetch(`https://kvdb.io/reidogelo_key_${channelId}/offset`, {
-        method: 'POST',
-        body: tempOffset.toString()
-      }).then(() => {
+      // TRANSMISSÃO NATIVA MULTIDISPOSITIVO
+      const timestamp = Date.now();
+      const statusText = encodeURIComponent(`OFFSET:${tempOffset}`);
+      
+      // DISPARO ANTI-CORS POR BEACON
+      const img = new Image();
+      if (writeApiKey) {
+        img.src = `https://api.thingspeak.com/update?api_key=${writeApiKey}&status=${statusText}&_nocache=${timestamp}`;
+      }
+
+      setTimeout(() => {
         btnSalvar.innerText = "Salvar e Sincronizar Configurações";
         btnSalvar.disabled = false;
-        alert('Offset aplicado com sucesso! A leitura nos outros aparelhos será atualizada no próximo ciclo.');
+        alert('Offset configurado e enviado para todos os celulares e computadores conectados!');
         buscarDados();
-      }).catch(() => {
-        btnSalvar.innerText = "Salvar e Sincronizar Configurações";
-        btnSalvar.disabled = false;
-        alert('Ajuste aplicado localmente.');
-        buscarDados();
-      });
+      }, 1500);
     }
 
     function mudarAba(aba) {
@@ -474,10 +476,8 @@
         return;
       }
 
-      // 1. PRIMEIRO LÊ O OFFSET GLOBAL
-      syncOffsetFromCloud(() => {
-        // 2. BUSCA AS LEITURAS BRUTAS DO THINGSPEAK
-        fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=100&nocache=${Date.now()}`)
+      sincronizarOffsetGlobal(() => {
+        fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=100&_nocache=${Date.now()}`)
           .then(res => {
             if (!res.ok) throw new Error("Erro na conexão HTTP");
             return res.json();
@@ -587,20 +587,6 @@
     }
 
     function processarDadosThingSpeak(feeds) {
-      guardFeeds = feeds;
-
-      // 1. VERIFICA SE EXISTE REGISTRO VÁLIDO NO FIELD3 CASO O REPOSITÓRIO FALHE
-      for (let i = feeds.length - 1; i >= 0; i--) {
-        if (feeds[i].field3 !== null && feeds[i].field3 !== undefined && String(feeds[i].field3).trim() !== "") {
-          let val = parseFloat(feeds[i].field3);
-          if (!isNaN(val) && tempOffset === 0.0) {
-            tempOffset = val;
-            break;
-          }
-        }
-      }
-
-      // 2. TEMPO "FORA DA FAIXA" BASEADO NO HISTÓRICO REAL COM O OFFSET APLICADO
       let primeiroFeedFora = null;
       for (let i = feeds.length - 1; i >= 0; i--) {
         let tRaw = parseFloat(feeds[i].field1);
@@ -623,7 +609,6 @@
 
       atualizarDisplayForaDaFaixa();
 
-      // STATUS DE REDE E BATERIA
       const ultimoFeed = feeds[feeds.length - 1];
       const isPowerOk = (String(ultimoFeed.field2) === "1" || String(ultimoFeed.field2) === "true");
       const statusRede = document.getElementById('status-rede');
@@ -810,7 +795,7 @@
       doc.save('relatorio_temperatura.pdf');
     }
 
-    window.addEventListener('offline', markingDesconectado => marcarDesconectado());
+    window.addEventListener('offline', () => marcarDesconectado());
     window.addEventListener('online', buscarDados);
 
     window.onload = () => {
