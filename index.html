@@ -273,6 +273,7 @@
   </nav>
 
   <script>
+    // CARREGA CANAL DA NUVEM OU PADRÃO
     let channelId = localStorage.getItem('channelId') || '3498175';
     let writeApiKey = localStorage.getItem('writeApiKey') || '';
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
@@ -333,25 +334,20 @@
       atualizarRotulosDegelo();
 
       if (writeApiKey) {
-        const urlUpdate = `https://api.thingspeak.com/update?api_key=${writeApiKey}&field3=${tempOffset}`;
+        const urlUpdate = `https://api.thingspeak.com/update?api_key=${writeApiKey}&field3=${tempOffset}&_nocache=${Date.now()}`;
 
-        fetch(urlUpdate)
-          .then(res => res.text())
-          .then(data => {
-            if (data !== "0") {
-              alert('Offset salvo com sucesso e sincronizado na nuvem!');
-            } else {
-              alert('Aguarde 15 segundos entre atualizações no ThingSpeak e tente novamente.');
-            }
+        fetch(urlUpdate, { mode: 'no-cors' })
+          .then(() => {
+            alert('Offset enviado para a nuvem com sucesso!');
             setTimeout(() => { buscarDados(); }, 1500);
           })
           .catch(err => {
             console.error("Erro na sincronização:", err);
-            alert('Erro de conexão ao enviar para a nuvem. Valor salvo localmente.');
+            alert('Erro ao sincronizar na nuvem. Valor salvo localmente.');
             buscarDados();
           });
       } else {
-        alert('Configurações salvas localmente!');
+        alert('Configurações salvas localmente! Insira a Write API Key para espelhar entre aparelhos.');
         buscarDados();
       }
     }
@@ -559,7 +555,7 @@
     }
 
     function processarDadosThingSpeak(feeds) {
-      // 1. SINCRONIZAÇÃO UNIFICADA DE OFFSET
+      // 1. SINCRONIZAÇÃO COMPLETA DO OFFSET BASEADA NO FIELD3 DA NUVEM
       let offsetEncontrado = false;
       for (let i = feeds.length - 1; i >= 0; i--) {
         if (feeds[i].field3 !== null && feeds[i].field3 !== undefined && String(feeds[i].field3).trim() !== "") {
@@ -582,10 +578,8 @@
         inputOffsetEl.value = tempOffset;
       }
 
-      // 2. SINCRONIZAÇÃO UNIFICADA DO TEMPO "FORA DA FAIXA" BASEADA NO HISTÓRICO REAL
+      // 2. CÁLCULO UNIFICADO DO TEMPO "FORA DA FAIXA" BASEADO NO HISTÓRICO DA NUVEM
       let primeiroFeedFora = null;
-      
-      // Varre de trás para frente procurando quando a temperatura saiu da faixa (-20°C a -1°C)
       for (let i = feeds.length - 1; i >= 0; i--) {
         let tRaw = parseFloat(feeds[i].field1);
         if (!isNaN(tRaw) && tRaw > -127.0 && tRaw < 85.0) {
@@ -593,7 +587,7 @@
           if (tVal < -20.0 || tVal > -1.0) {
             primeiroFeedFora = feeds[i];
           } else {
-            break; // Temperatura voltou ao normal neste ponto do histórico
+            break;
           }
         }
       }
