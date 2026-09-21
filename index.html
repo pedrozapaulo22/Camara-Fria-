@@ -296,27 +296,6 @@
     let ultimaRespostaComSucesso = 0;
     const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 120000;
 
-    // BANCO DE ESTADO EM NUVEM PARA GARANTIR SINCRONIZAÇÃO COMPLETA
-    const CLOUD_CONFIG_URL = `https://keyvalue.imsky.org/reidogelo_${channelId}_offset`;
-
-    function sincronizarOffsetComOutrosAparelhos() {
-      fetch(CLOUD_CONFIG_URL)
-        .then(res => res.text())
-        .then(val => {
-          let num = parseFloat(val);
-          if (!isNaN(num)) {
-            tempOffset = num;
-            localStorage.setItem('tempOffset', tempOffset);
-
-            const inputOffsetEl = document.getElementById('input-temp-offset');
-            if (document.activeElement !== inputOffsetEl) {
-              inputOffsetEl.value = tempOffset;
-            }
-          }
-        })
-        .catch(err => console.log("Lendo offset do storage local..."));
-    }
-
     function atualizarDataHora() {
       document.getElementById('data-hora').innerText = new Date().toLocaleString('pt-BR');
     }
@@ -356,23 +335,27 @@
       atualizarRotulosDegelo();
 
       const btnSalvar = document.getElementById('btn-salvar-config');
-      btnSalvar.innerText = "Sincronizando com Celular e Web...";
+      btnSalvar.innerText = "Sincronizando com a Nuvem...";
       btnSalvar.disabled = true;
 
-      // SALVA NO BANCO GLOBAL DE ESTADO
-      fetch(`${CLOUD_CONFIG_URL}/${tempOffset}`, { method: 'POST' })
-        .then(() => {
+      if (writeApiKey) {
+        // ENVIO ANTI-CORS VIA BEACON DE IMAGEM PARA O THINGSPEAK
+        const img = new Image();
+        const timestamp = Date.now();
+        img.src = `https://api.thingspeak.com/update?api_key=${writeApiKey}&field3=${tempOffset}&_ts=${timestamp}`;
+
+        setTimeout(() => {
           btnSalvar.innerText = "Salvar e Sincronizar Configurações";
           btnSalvar.disabled = false;
-          alert('Offset sincronizado com sucesso! Todos os aparelhos agora utilizam a mesma leitura.');
+          alert('Configuração de Offset gravada e sincronizada na nuvem!');
           buscarDados();
-        })
-        .catch(() => {
-          btnSalvar.innerText = "Salvar e Sincronizar Configurações";
-          btnSalvar.disabled = false;
-          alert('Salvo localmente!');
-          buscarDados();
-        });
+        }, 1500);
+      } else {
+        btnSalvar.innerText = "Salvar e Sincronizar Configurações";
+        btnSalvar.disabled = false;
+        alert('Configurações salvas localmente! Digite a Write API Key para sincronização global.');
+        buscarDados();
+      }
     }
 
     function mudarAba(aba) {
@@ -468,9 +451,6 @@
         marcarDesconectado();
         return;
       }
-
-      // SINCRONIZA PRIMEIRO O OFFSET PARA GARANTIR LEITURA IGUAL
-      sincronizarOffsetComOutrosAparelhos();
 
       fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=100&nocache=${Date.now()}`)
         .then(res => {
@@ -581,9 +561,30 @@
     }
 
     function processarDadosThingSpeak(feeds) {
-      const ultimoFeed = feeds[feeds.length - 1];
+      // 1. EXTRAI O ÚLTIMO OFFSET REGISTRADO NO FIELD3 DA NUVEM PARA TODOS OS DISPOSITIVOS
+      let offsetEncontrado = false;
+      for (let i = feeds.length - 1; i >= 0; i--) {
+        if (feeds[i].field3 !== null && feeds[i].field3 !== undefined && String(feeds[i].field3).trim() !== "") {
+          let val = parseFloat(feeds[i].field3);
+          if (!isNaN(val)) {
+            tempOffset = val;
+            localStorage.setItem('tempOffset', tempOffset);
+            offsetEncontrado = true;
+            break;
+          }
+        }
+      }
 
-      // TEMPO "FORA DA FAIXA" BASEADO NO HISTÓRICO REAL
+      if (!offsetEncontrado) {
+        tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
+      }
+
+      const inputOffsetEl = document.getElementById('input-temp-offset');
+      if (document.activeElement !== inputOffsetEl) {
+        inputOffsetEl.value = tempOffset;
+      }
+
+      // 2. TEMPO "FORA DA FAIXA" SINCRONIZADO VIA TIMESTAMP DA NUVEM
       let primeiroFeedFora = null;
       for (let i = feeds.length - 1; i >= 0; i--) {
         let tRaw = parseFloat(feeds[i].field1);
@@ -607,6 +608,7 @@
       atualizarDisplayForaDaFaixa();
 
       // STATUS DE REDE E BATERIA
+      const ultimoFeed = feeds[feeds.length - 1];
       const isPowerOk = (String(ultimoFeed.field2) === "1" || String(ultimoFeed.field2) === "true");
       const statusRede = document.getElementById('status-rede');
       const valBateria = document.getElementById('val-bateria');
