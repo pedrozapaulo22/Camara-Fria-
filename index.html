@@ -110,7 +110,6 @@
               <span id="sub-bateria" class="text-[8px] text-slate-400">Sem dados</span>
             </div>
 
-            <!-- CARD FORA DA FAIXA FORMATADO EM HORAS E MINUTOS -->
             <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
               <span class="text-[9px] font-bold text-slate-400 uppercase leading-tight">FORA DA FAIXA</span>
               <div id="val-fora-faixa" class="my-1 font-black text-xs text-slate-800">00h 00m 00s</div>
@@ -293,7 +292,7 @@
 
     let timerForaDaFaixa = null;
     let ultimaRespostaComSucesso = 0;
-    const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 120000; // 2 minutos de tolerância
+    const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 120000;
 
     function atualizarDataHora() {
       document.getElementById('data-hora').innerText = new Date().toLocaleString('pt-BR');
@@ -334,21 +333,26 @@
       atualizarRotulosDegelo();
 
       if (writeApiKey) {
-        // FETCH NATIVO NO MODO NO-CORS GARANTE ENVIO TANTO NO DESKTOP QUANTO NO MOBILE
-        const urlUpdate = `https://api.thingspeak.com/update?api_key=${writeApiKey}&field3=${tempOffset}&_nocache=${Date.now()}`;
-        
-        fetch(urlUpdate, { mode: 'no-cors' })
-          .then(() => {
-            alert('Offset enviado para a nuvem! Sincronização ativada.');
-            setTimeout(() => { buscarDados(); }, 2000);
+        // REQUISIÇÃO DIRETA SUPORTADA EM SMARTPHONES E DESKTOPS
+        const urlUpdate = `https://api.thingspeak.com/update?api_key=${writeApiKey}&field3=${tempOffset}`;
+
+        fetch(urlUpdate)
+          .then(res => res.text())
+          .then(data => {
+            if (data !== "0") {
+              alert('Offset salvo com sucesso e sincronizado na nuvem!');
+            } else {
+              alert('Aguarde 15 segundos entre atualizações no ThingSpeak e tente novamente.');
+            }
+            setTimeout(() => { buscarDados(); }, 1500);
           })
           .catch(err => {
-            console.error("Erro no envio:", err);
-            alert('Erro ao enviar para a nuvem. Dados salvos localmente.');
+            console.error("Erro na sincronização:", err);
+            alert('Erro de conexão ao enviar para a nuvem. Valor salvo localmente.');
             buscarDados();
           });
       } else {
-        alert('Configurações salvas localmente!');
+        alert('Configurações salvas localmente! Insira a Write API Key para sincronizar entre dispositivos.');
         buscarDados();
       }
     }
@@ -557,7 +561,7 @@
     }
 
     function processarDadosThingSpeak(feeds) {
-      // BUSCA O ÚLTIMO OFFSET VÁLIDO NO HISTÓRICO DO THINGSPEAK
+      // PROCURA O ÚLTIMO OFFSET VÁLIDO ENVIADO PARA A NUVEM
       let offsetEncontrado = false;
       for (let i = feeds.length - 1; i >= 0; i--) {
         if (feeds[i].field3 !== null && feeds[i].field3 !== undefined && String(feeds[i].field3).trim() !== "") {
@@ -575,7 +579,6 @@
         tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
       }
 
-      // IMPEDE SOBRESCREVER CASO O USUÁRIO ESTEJA COM O FOCO NO CAMPO DE TEXTO
       const inputOffsetEl = document.getElementById('input-temp-offset');
       if (document.activeElement !== inputOffsetEl) {
         inputOffsetEl.value = tempOffset;
@@ -703,7 +706,6 @@
       }
     }
 
-    // EXIBE O TEMPO FORMATADO EM HORAS, MINUTOS E SEGUNDOS (Ex: 01h 15m 04s)
     function atualizarDisplayForaDaFaixa() {
       const horas = String(Math.floor(segundosForaDaFaixa / 3600)).padStart(2, '0');
       const mins = String(Math.floor((segundosForaDaFaixa % 3600) / 60)).padStart(2, '0');
