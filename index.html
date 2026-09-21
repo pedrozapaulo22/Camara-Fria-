@@ -295,33 +295,6 @@
     let ultimaRespostaComSucesso = 0;
     const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 120000;
 
-    // LEITURA DO OFFSET DA NUVEM COMPATÍVEL COM NAVEGADORES MÓVEIS (SAFARI / CHROME MOBILE)
-    function sincronizarOffsetGlobal(onComplete) {
-      const ts = Date.now();
-      
-      // MÉTODOS DE BUSCA EM BANCO DE ESTADO DE ALTA DISPONIBILIDADE
-      fetch(`https://api.thingspeak.com/channels/${channelId}/status.json?_ts=${ts}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.status) {
-            let matches = data.status.match(/OFFSET:(-?\d+(\.\d+)?)/);
-            if (matches && matches[1]) {
-              let val = parseFloat(matches[1]);
-              if (!isNaN(val)) {
-                tempOffset = val;
-                localStorage.setItem('tempOffset', tempOffset);
-                const inputEl = document.getElementById('input-temp-offset');
-                if (document.activeElement !== inputEl) inputEl.value = tempOffset;
-              }
-            }
-          }
-          if (onComplete) onComplete();
-        })
-        .catch(() => {
-          if (onComplete) onComplete();
-        });
-    }
-
     function atualizarDataHora() {
       document.getElementById('data-hora').innerText = new Date().toLocaleString('pt-BR');
     }
@@ -333,6 +306,34 @@
       const hor = String(Math.floor(tempoDegeloMinutos / 60)).padStart(2, '0');
       const min = String(tempoDegeloMinutos % 60).padStart(2, '0');
       document.getElementById('lbl-lim-degelo').innerText = `${hor}h ${min}m`;
+    }
+
+    // SINCRONIZAÇÃO NATIVA JSONP SUPORTADA EM TODOS OS DISPOSITIVOS MÓVEIS (FURA BLOQUEIOS CORS)
+    function lerOffsetDaNuvemJSONP(callback) {
+      const scriptId = 'jsonp_read_offset';
+      const existingScript = document.getElementById(scriptId);
+      if (existingScript) existingScript.remove();
+
+      window.cb_read_offset = function(data) {
+        if (data && data.description) {
+          let match = data.description.match(/OFFSET:(-?\d+(\.\d+)?)/);
+          if (match && match[1]) {
+            let num = parseFloat(match[1]);
+            if (!isNaN(num)) {
+              tempOffset = num;
+              localStorage.setItem('tempOffset', tempOffset);
+              const inputEl = document.getElementById('input-temp-offset');
+              if (document.activeElement !== inputEl) inputEl.value = tempOffset;
+            }
+          }
+        }
+        if (callback) callback();
+      };
+
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.src = `https://api.thingspeak.com/channels/${channelId}/settings.json?callback=cb_read_offset&_ts=${Date.now()}`;
+      document.body.appendChild(script);
     }
 
     function salvarConfiguracao() {
@@ -364,22 +365,38 @@
       btnSalvar.innerText = "Sincronizando com Celulares...";
       btnSalvar.disabled = true;
 
-      // TRANSMISSÃO NATIVA MULTIDISPOSITIVO
-      const timestamp = Date.now();
-      const statusText = encodeURIComponent(`OFFSET:${tempOffset}`);
-      
-      // DISPARO ANTI-CORS POR BEACON
-      const img = new Image();
-      if (writeApiKey) {
-        img.src = `https://api.thingspeak.com/update?api_key=${writeApiKey}&status=${statusText}&_nocache=${timestamp}`;
-      }
-
-      setTimeout(() => {
+      if (!writeApiKey) {
         btnSalvar.innerText = "Salvar e Sincronizar Configurações";
         btnSalvar.disabled = false;
-        alert('Offset configurado e enviado para todos os celulares e computadores conectados!');
+        alert('Insira a Write API Key para permitir a sincronização entre dispositivos.');
+        return;
+      }
+
+      // GRAVAÇÃO NATIVA JSONP MULTI-PLATAFORMA
+      const scriptId = 'jsonp_write_offset';
+      const existingScript = document.getElementById(scriptId);
+      if (existingScript) existingScript.remove();
+
+      window.cb_write_offset = function(response) {
+        btnSalvar.innerText = "Salvar e Sincronizar Configurações";
+        btnSalvar.disabled = false;
+        alert('Offset sincronizado com sucesso! Todos os telemóveis e computadores exibirão a mesma leitura.');
         buscarDados();
-      }, 1500);
+      };
+
+      const descriptionMsg = encodeURIComponent(`OFFSET:${tempOffset}`);
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.src = `https://api.thingspeak.com/channels/${channelId}/settings.json?api_key=${writeApiKey}&description=${descriptionMsg}&callback=cb_write_offset&_ts=${Date.now()}`;
+      
+      script.onerror = function() {
+        btnSalvar.innerText = "Salvar e Sincronizar Configurações";
+        btnSalvar.disabled = false;
+        alert('Erro de comunicação. Verifique a API Key.');
+        buscarDados();
+      };
+
+      document.body.appendChild(script);
     }
 
     function mudarAba(aba) {
@@ -476,8 +493,8 @@
         return;
       }
 
-      sincronizarOffsetGlobal(() => {
-        fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=100&_nocache=${Date.now()}`)
+      lerOffsetDaNuvemJSONP(() => {
+        fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=100&_ts=${Date.now()}`)
           .then(res => {
             if (!res.ok) throw new Error("Erro na conexão HTTP");
             return res.json();
