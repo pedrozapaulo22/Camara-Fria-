@@ -246,7 +246,9 @@
           <input type="number" min="1" max="120" id="input-tempo-degelo" placeholder="Ex: 5" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none">
         </div>
 
-        <button onclick="salvarConfiguracao()" class="bg-blue-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar e Sincronizar Configurações</button>
+        <button onclick="salvarConfiguracao()" id="btn-salvar-config" class="bg-blue-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors shadow flex items-center justify-center gap-2">
+          <span>Salvar e Sincronizar Configurações</span>
+        </button>
       </div>
     </div>
 
@@ -273,7 +275,6 @@
   </nav>
 
   <script>
-    // CARREGA CANAL DA NUVEM OU PADRÃO
     let channelId = localStorage.getItem('channelId') || '3498175';
     let writeApiKey = localStorage.getItem('writeApiKey') || '';
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
@@ -281,6 +282,7 @@
 
     let segundosForaDaFaixa = 0;
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes')) || [];
+    let ultimoFeedValido = null;
 
     document.getElementById('input-channel-id').value = channelId;
     document.getElementById('input-write-api-key').value = writeApiKey;
@@ -308,6 +310,42 @@
       document.getElementById('lbl-lim-degelo').innerText = `${hor}h ${min}m`;
     }
 
+    // ENVIO MULTI-PLATAFORMA ROBUSTO PARA THINGSPEAK
+    function enviarNovoOffsetParaNuvem(novoOffset, callback) {
+      if (!writeApiKey) {
+        if (callback) callback(false, "Insira a Write API Key para sincronizar entre aparelhos.");
+        return;
+      }
+
+      // PRESERVA OS DADOS EXISTENTES (FIELD1 E FIELD2) PARA NÃO SOBRESCREVER A LEITURA DO SENSOR
+      let f1 = (ultimoFeedValido && ultimoFeedValido.field1 !== null) ? ultimoFeedValido.field1 : "";
+      let f2 = (ultimoFeedValido && ultimoFeedValido.field2 !== null) ? ultimoFeedValido.field2 : "1";
+
+      const callbackName = 'tsCallback_' + Math.round(Math.random() * 1000000);
+      const script = document.createElement('script');
+
+      window[callbackName] = function(response) {
+        delete window[callbackName];
+        document.body.removeChild(script);
+
+        if (response && response > 0) {
+          if (callback) callback(true, "Sucesso");
+        } else {
+          if (callback) callback(false, "RateLimit");
+        }
+      };
+
+      script.onerror = function() {
+        delete window[callbackName];
+        if (document.body.contains(script)) document.body.removeChild(script);
+        if (callback) callback(false, "ErroConexao");
+      };
+
+      const url = `https://api.thingspeak.com/update?api_key=${writeApiKey}&field1=${f1}&field2=${f2}&field3=${novoOffset}&callback=${callbackName}&_nocache=${Date.now()}`;
+      script.src = url;
+      document.body.appendChild(script);
+    }
+
     function salvarConfiguracao() {
       let idInput = document.getElementById('input-channel-id').value.trim();
       let writeKeyInput = document.getElementById('input-write-api-key').value.trim();
@@ -333,23 +371,25 @@
 
       atualizarRotulosDegelo();
 
-      if (writeApiKey) {
-        const urlUpdate = `https://api.thingspeak.com/update?api_key=${writeApiKey}&field3=${tempOffset}&_nocache=${Date.now()}`;
+      const btnSalvar = document.getElementById('btn-salvar-config');
+      btnSalvar.innerText = "Enviando para a Nuvem...";
+      btnSalvar.disabled = true;
 
-        fetch(urlUpdate, { mode: 'no-cors' })
-          .then(() => {
-            alert('Offset enviado para a nuvem com sucesso!');
-            setTimeout(() => { buscarDados(); }, 1500);
-          })
-          .catch(err => {
-            console.error("Erro na sincronização:", err);
-            alert('Erro ao sincronizar na nuvem. Valor salvo localmente.');
-            buscarDados();
-          });
-      } else {
-        alert('Configurações salvas localmente! Insira a Write API Key para espelhar entre aparelhos.');
-        buscarDados();
-      }
+      enviarNovoOffsetParaNuvem(tempOffset, function(sucesso, motivo) {
+        btnSalvar.innerText = "Salvar e Sincronizar Configurações";
+        btnSalvar.disabled = false;
+
+        if (sucesso) {
+          alert('Offset gravado na Nuvem! Todos os dispositivos serão atualizados.');
+          buscarDados();
+        } else if (motivo === "RateLimit") {
+          alert('O ThingSpeak requer um intervalo de 15s entre atualizações. Aguarde alguns segundos e tente novamente.');
+          buscarDados();
+        } else {
+          alert('Configurações salvas localmente! (Verifique a API Key e sua conexão)');
+          buscarDados();
+        }
+      });
     }
 
     function mudarAba(aba) {
@@ -555,7 +595,9 @@
     }
 
     function processarDadosThingSpeak(feeds) {
-      // 1. SINCRONIZAÇÃO COMPLETA DO OFFSET BASEADA NO FIELD3 DA NUVEM
+      ultimoFeedValido = feeds[feeds.length - 1];
+
+      // 1. OBTÉM O ÚLTIMO OFFSET VÁLIDO REGISTRADO NO THINGSPEAK (FIELD 3)
       let offsetEncontrado = false;
       for (let i = feeds.length - 1; i >= 0; i--) {
         if (feeds[i].field3 !== null && feeds[i].field3 !== undefined && String(feeds[i].field3).trim() !== "") {
@@ -578,7 +620,7 @@
         inputOffsetEl.value = tempOffset;
       }
 
-      // 2. CÁLCULO UNIFICADO DO TEMPO "FORA DA FAIXA" BASEADO NO HISTÓRICO DA NUVEM
+      // 2. TEMPO "FORA DA FAIXA" SINCRONIZADO VIA TIMESTAMP DA NUVEM
       let primeiroFeedFora = null;
       for (let i = feeds.length - 1; i >= 0; i--) {
         let tRaw = parseFloat(feeds[i].field1);
@@ -602,8 +644,7 @@
       atualizarDisplayForaDaFaixa();
 
       // STATUS DE REDE E BATERIA
-      const ultimoFeed = feeds[feeds.length - 1];
-      const isPowerOk = (String(ultimoFeed.field2) === "1" || String(ultimoFeed.field2) === "true");
+      const isPowerOk = (String(ultimoFeedValido.field2) === "1" || String(ultimoFeedValido.field2) === "true");
       const statusRede = document.getElementById('status-rede');
       const valBateria = document.getElementById('val-bateria');
       const subBateria = document.getElementById('sub-bateria');
@@ -625,7 +666,7 @@
         adicionarAlarme("Queda na Rede Elétrica", "ALERTA");
       }
 
-      let tempBruta = parseFloat(ultimoFeed.field1);
+      let tempBruta = parseFloat(ultimoFeedValido.field1);
       const isFalha = isNaN(tempBruta) || tempBruta <= -127.0 || tempBruta >= 85.0;
       let tempFinal = isFalha ? null : (tempBruta + tempOffset);
 
