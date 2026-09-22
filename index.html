@@ -626,35 +626,36 @@
     }
 
     function processarDadosThingSpeak(feeds) {
-      let ultimoFeedFora = null;
-      
-      for (let i = feeds.length - 1; i >= 0; i--) {
-        let tRaw = parseFloat(feeds[i].field1);
-        if (!isNaN(tRaw) && tRaw > -127.0 && tRaw < 85.0) {
-          let tVal = tRaw + tempOffset;
-          if (tVal < -20.0 || tVal > -1.0) {
-            ultimoFeedFora = feeds[i];
-          } else {
-            break;
-          }
-        }
-      }
-
       const ultimoFeed = feeds[feeds.length - 1];
       let tempBrutaAtual = parseFloat(ultimoFeed.field1);
       let tempAtualCalculada = (isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0) ? null : (tempBrutaAtual + tempOffset);
 
-      if (tempAtualCalculada !== null && tempAtualCalculada >= -20.0 && tempAtualCalculada <= -1.0) {
-        segundosForaDaFaixa = 0;
-      } else if (ultimoFeedFora) {
-        let tempoInicioMs = new Date(ultimoFeedFora.created_at).getTime();
-        segundosForaDaFaixa = Math.max(0, Math.floor((Date.now() - tempoInicioMs) / 1000));
+      // --- CORREÇÃO DO TEMPO FORA DA FAIXA ---
+      // Mapeia do dado mais antigo para o mais recente para encontrar a sequencia contínua fora do limite (-20.0 a -1.0)
+      let indiceInicioFora = -1;
+      
+      for (let i = feeds.length - 1; i >= 0; i--) {
+        let tRaw = parseFloat(feeds[i].field1);
+        let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
+
+        if (tVal !== null && (tVal < -20.0 || tVal > -1.0)) {
+          indiceInicioFora = i; // Guarda a posição
+        } else {
+          break; // Assim que encontrar uma temperatura dentro da faixa normal, para a busca
+        }
+      }
+
+      if (indiceInicioFora !== -1) {
+        let tempoInicioMs = new Date(feeds[indiceInicioFora].created_at).getTime();
+        let tempoUltimoMs = new Date(ultimoFeed.created_at).getTime();
+        segundosForaDaFaixa = Math.max(0, Math.floor((tempoUltimoMs - tempoInicioMs) / 1000));
       } else {
         segundosForaDaFaixa = 0;
       }
 
       atualizarDisplayForaDaFaixa();
 
+      // STATUS DA REDE ELÉTRICA
       const isPowerOk = (String(ultimoFeed.field2) === "1" || String(ultimoFeed.field2) === "true");
       const statusRede = document.getElementById('status-rede');
       const valBateria = document.getElementById('val-bateria');
@@ -668,7 +669,6 @@
         subBateria.innerText = "Carregada";
         subBateria.className = "text-[8px] text-emerald-600 font-bold truncate";
         
-        // RETORNO DA REDE ELÉTRICA AO NORMAL (OK)
         if (estadoAlarmeAtivo.redeEletrica) {
           adicionarAlarme("Rede Elétrica Normalizada", "OK", "Normalizado");
           estadoAlarmeAtivo.redeEletrica = false;
@@ -681,7 +681,6 @@
         subBateria.innerText = "Em uso";
         subBateria.className = "text-[8px] text-amber-600 font-bold truncate";
         
-        // QUEDA DE ENERGIA AGORA É CATEGORIZADA COMO CRÍTICO
         if (!estadoAlarmeAtivo.redeEletrica) {
           adicionarAlarme("Queda na Rede Elétrica", "CRÍTICO", "Ativo");
           estadoAlarmeAtivo.redeEletrica = true;
@@ -752,7 +751,6 @@
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-600 text-white text-[7px] sm:text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase my-1";
         
-        // TEMPERATURA RETORNOU AO NORMAL
         if (estadoAlarmeAtivo.degeloExcedido) {
           adicionarAlarme("Temperatura Normalizada", "OK", "Normalizado");
           estadoAlarmeAtivo.degeloExcedido = false;
