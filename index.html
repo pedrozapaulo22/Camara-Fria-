@@ -84,7 +84,7 @@
             <div class="space-y-2 w-full flex-1">
               <div class="bg-slate-50/80 p-2 sm:p-2.5 rounded-lg border border-slate-100 flex justify-between sm:block">
                 <p class="text-[10px] font-semibold text-slate-400">Temp. Mínima Normal</p>
-                <p class="text-xs font-extrabold text-slate-800">-20 °C</p>
+                <p class="text-xs font-extrabold text-slate-800">-30 °C</p>
               </div>
               <div class="bg-slate-50/80 p-2 sm:p-2.5 rounded-lg border border-slate-100 flex justify-between sm:block">
                 <p class="text-[10px] font-semibold text-slate-400">Temp. Máxima Normal</p>
@@ -465,7 +465,7 @@
             plugins: { legend: { display: false } },
             scales: {
               x: { grid: { display: false }, ticks: { font: { size: 9 } } },
-              y: { grid: { color: '#f1f5f9' }, min: -30, max: 30, ticks: { font: { size: 9 } } }
+              y: { grid: { color: '#f1f5f9' }, min: -35, max: 10, ticks: { font: { size: 9 } } }
             }
           }
         });
@@ -494,7 +494,7 @@
             maintainAspectRatio: false,
             scales: {
               x: { grid: { display: false }, ticks: { font: { size: 9 } } },
-              y: { grid: { color: '#f1f5f9' }, min: -30, max: 30, ticks: { font: { size: 9 } } }
+              y: { grid: { color: '#f1f5f9' }, min: -35, max: 10, ticks: { font: { size: 9 } } }
             }
           }
         });
@@ -630,14 +630,14 @@
       let tempBrutaAtual = parseFloat(ultimoFeed.field1);
       let tempAtualCalculada = (isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0) ? null : (tempBrutaAtual + tempOffset);
 
-      // CÁLCULO DO TEMPO FORA DA FAIXA
+      // CÁLCULO DO TEMPO FORA DA FAIXA (-30°C a -1°C)
       let indiceInicioFora = -1;
       
       for (let i = feeds.length - 1; i >= 0; i--) {
         let tRaw = parseFloat(feeds[i].field1);
         let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
 
-        if (tVal !== null && (tVal < -20.0 || tVal > -1.0)) {
+        if (tVal !== null && (tVal < -30.0 || tVal > -1.0)) {
           indiceInicioFora = i;
         } else {
           break;
@@ -741,12 +741,12 @@
 
       elVal.innerText = `${temp.toFixed(1)} °C`;
 
-      let pct = Math.max(0, Math.min(1, (temp - (-30)) / 60));
+      let pct = Math.max(0, Math.min(1, (temp - (-35)) / 45));
       gauge.style.strokeDashoffset = 251.2 * (1 - pct);
 
       const limiteSegundos = tempoDegeloMinutos * 60;
 
-      if (temp >= -20.0 && temp <= -1.0) {
+      if (temp >= -30.0 && temp <= -1.0) {
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-600 text-white text-[7px] sm:text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase my-1";
         
@@ -796,7 +796,6 @@
       }
     }
 
-    // REGISTRA NOVO ALARME COM STATUS 'Ativo'
     function adicionarAlarme(evento, nivel) {
       const dataHora = new Date().toLocaleString('pt-BR');
       listaAlarmes.unshift({ data: dataHora, evento: evento, nivel: nivel, status: 'Ativo' });
@@ -804,7 +803,6 @@
       renderizarTabelaAlarmes();
     }
 
-    // ALTERA O STATUS DO ALARME EXISTENTE PARA 'OK' QUANDO NORMALIZA
     function normalizarAlarme(nomeEvento) {
       let alterou = false;
       for (let item of listaAlarmes) {
