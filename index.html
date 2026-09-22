@@ -595,7 +595,7 @@
       gauge.style.strokeDashoffset = 0;
 
       if (!estadoAlarmeAtivo.conexao) {
-        adicionarAlarme("Perda de Conexão com Hardware", "CRÍTICO", "Ativo");
+        adicionarAlarme("Perda de Conexão com Hardware", "CRÍTICO");
         estadoAlarmeAtivo.conexao = true;
       }
     }
@@ -620,7 +620,7 @@
       subArduino.innerText = "Conectado";
 
       if (estadoAlarmeAtivo.conexao) {
-        adicionarAlarme("Conexão Restabelecida", "OK", "Normalizado");
+        normalizarAlarme("Perda de Conexão com Hardware");
         estadoAlarmeAtivo.conexao = false;
       }
     }
@@ -630,8 +630,7 @@
       let tempBrutaAtual = parseFloat(ultimoFeed.field1);
       let tempAtualCalculada = (isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0) ? null : (tempBrutaAtual + tempOffset);
 
-      // --- CORREÇÃO DO TEMPO FORA DA FAIXA ---
-      // Mapeia do dado mais antigo para o mais recente para encontrar a sequencia contínua fora do limite (-20.0 a -1.0)
+      // CÁLCULO DO TEMPO FORA DA FAIXA
       let indiceInicioFora = -1;
       
       for (let i = feeds.length - 1; i >= 0; i--) {
@@ -639,9 +638,9 @@
         let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
 
         if (tVal !== null && (tVal < -20.0 || tVal > -1.0)) {
-          indiceInicioFora = i; // Guarda a posição
+          indiceInicioFora = i;
         } else {
-          break; // Assim que encontrar uma temperatura dentro da faixa normal, para a busca
+          break;
         }
       }
 
@@ -670,7 +669,7 @@
         subBateria.className = "text-[8px] text-emerald-600 font-bold truncate";
         
         if (estadoAlarmeAtivo.redeEletrica) {
-          adicionarAlarme("Rede Elétrica Normalizada", "OK", "Normalizado");
+          normalizarAlarme("Queda na Rede Elétrica");
           estadoAlarmeAtivo.redeEletrica = false;
         }
       } else {
@@ -682,7 +681,7 @@
         subBateria.className = "text-[8px] text-amber-600 font-bold truncate";
         
         if (!estadoAlarmeAtivo.redeEletrica) {
-          adicionarAlarme("Queda na Rede Elétrica", "CRÍTICO", "Ativo");
+          adicionarAlarme("Queda na Rede Elétrica", "CRÍTICO");
           estadoAlarmeAtivo.redeEletrica = true;
         }
       }
@@ -729,14 +728,14 @@
         gauge.style.strokeDashoffset = 0;
         
         if (!estadoAlarmeAtivo.falhaSensor) {
-          adicionarAlarme("Falha no Sensor de Temp.", "CRÍTICO", "Ativo");
+          adicionarAlarme("Falha no Sensor de Temp.", "CRÍTICO");
           estadoAlarmeAtivo.falhaSensor = true;
         }
         return;
       }
 
       if (estadoAlarmeAtivo.falhaSensor) {
-        adicionarAlarme("Sensor de Temp. Normalizado", "OK", "Normalizado");
+        normalizarAlarme("Falha no Sensor de Temp.");
         estadoAlarmeAtivo.falhaSensor = false;
       }
 
@@ -752,7 +751,7 @@
         elBadge.className = "bg-blue-600 text-white text-[7px] sm:text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase my-1";
         
         if (estadoAlarmeAtivo.degeloExcedido) {
-          adicionarAlarme("Temperatura Normalizada", "OK", "Normalizado");
+          normalizarAlarme(`Degelo Excedido (>${tempoDegeloMinutos} min)`);
           estadoAlarmeAtivo.degeloExcedido = false;
         }
       } 
@@ -763,7 +762,7 @@
           gauge.classList.add('gauge-fill-degelo');
           
           if (estadoAlarmeAtivo.degeloExcedido) {
-            adicionarAlarme("Temperatura Normalizada", "OK", "Normalizado");
+            normalizarAlarme(`Degelo Excedido (>${tempoDegeloMinutos} min)`);
             estadoAlarmeAtivo.degeloExcedido = false;
           }
         } else {
@@ -772,7 +771,7 @@
           gauge.classList.add('gauge-fill-error');
           
           if (!estadoAlarmeAtivo.degeloExcedido) {
-            adicionarAlarme(`Degelo Excedido (>${tempoDegeloMinutos} min)`, "CRÍTICO", "Ativo");
+            adicionarAlarme(`Degelo Excedido (>${tempoDegeloMinutos} min)`, "CRÍTICO");
             estadoAlarmeAtivo.degeloExcedido = true;
           }
         }
@@ -797,11 +796,27 @@
       }
     }
 
-    function adicionarAlarme(evento, nivel, status = 'Ativo') {
+    // REGISTRA NOVO ALARME COM STATUS 'Ativo'
+    function adicionarAlarme(evento, nivel) {
       const dataHora = new Date().toLocaleString('pt-BR');
-      listaAlarmes.unshift({ data: dataHora, evento: evento, nivel: nivel, status: status });
+      listaAlarmes.unshift({ data: dataHora, evento: evento, nivel: nivel, status: 'Ativo' });
       localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
       renderizarTabelaAlarmes();
+    }
+
+    // ALTERA O STATUS DO ALARME EXISTENTE PARA 'OK' QUANDO NORMALIZA
+    function normalizarAlarme(nomeEvento) {
+      let alterou = false;
+      for (let item of listaAlarmes) {
+        if (item.evento === nomeEvento && item.status === 'Ativo') {
+          item.status = 'OK';
+          alterou = true;
+        }
+      }
+      if (alterou) {
+        localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
+        renderizarTabelaAlarmes();
+      }
     }
 
     function limparHistoricoAlarmes() {
@@ -825,7 +840,7 @@
         let nivelBadgeClass = "bg-rose-100 text-rose-700";
         let eventoColorClass = "text-rose-600";
         
-        if (item.nivel === 'OK') {
+        if (item.status === 'OK') {
           nivelBadgeClass = "bg-emerald-100 text-emerald-700";
           eventoColorClass = "text-emerald-600";
         } else if (item.nivel === 'ALERTA') {
@@ -833,11 +848,13 @@
           eventoColorClass = "text-amber-600";
         }
 
+        let statusClass = item.status === 'OK' ? 'text-emerald-600 font-bold' : 'text-slate-500 font-semibold';
+
         tr.innerHTML = `
           <td class="p-2.5 sm:p-3 font-medium text-[11px] sm:text-xs">${item.data}</td>
           <td class="p-2.5 sm:p-3 font-bold ${eventoColorClass} text-[11px] sm:text-xs">${item.evento}</td>
           <td class="p-2.5 sm:p-3"><span class="${nivelBadgeClass} px-2 py-0.5 rounded font-bold text-[9px] sm:text-[10px]">${item.nivel}</span></td>
-          <td class="p-2.5 sm:p-3 font-semibold text-slate-500 text-[11px] sm:text-xs">${item.status}</td>
+          <td class="p-2.5 sm:p-3 text-[11px] sm:text-xs ${statusClass}">${item.status}</td>
         `;
         tbody.appendChild(tr);
       });
