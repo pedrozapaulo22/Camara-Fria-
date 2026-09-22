@@ -465,7 +465,7 @@
             plugins: { legend: { display: false } },
             scales: {
               x: { grid: { display: false }, ticks: { font: { size: 9 } } },
-              y: { grid: { color: '#f1f5f9' }, min: -35, max: 10, ticks: { font: { size: 9 } } }
+              y: { grid: { color: '#f1f5f9' }, min: -35, max: 35, ticks: { font: { size: 9 } } }
             }
           }
         });
@@ -494,7 +494,7 @@
             maintainAspectRatio: false,
             scales: {
               x: { grid: { display: false }, ticks: { font: { size: 9 } } },
-              y: { grid: { color: '#f1f5f9' }, min: -35, max: 10, ticks: { font: { size: 9 } } }
+              y: { grid: { color: '#f1f5f9' }, min: -35, max: 35, ticks: { font: { size: 9 } } }
             }
           }
         });
@@ -741,7 +741,8 @@
 
       elVal.innerText = `${temp.toFixed(1)} °C`;
 
-      let pct = Math.max(0, Math.min(1, (temp - (-35)) / 45));
+      // AJUSTE DA PORCENTAGEM DO GAUGE PARA ESCALA -35 A 35 (DELTA DE 70)
+      let pct = Math.max(0, Math.min(1, (temp - (-35)) / 70));
       gauge.style.strokeDashoffset = 251.2 * (1 - pct);
 
       const limiteSegundos = tempoDegeloMinutos * 60;
