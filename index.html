@@ -283,6 +283,14 @@
     let segundosForaDaFaixa = 0;
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes')) || [];
 
+    // CONTROLADORES DE ESTADO PARA GERAÇÃO CONTEMPORÂNEA DE ALARMES
+    let estadoAlarmeAtivo = {
+      conexao: false,
+      redeEletrica: false,
+      falhaSensor: false,
+      degeloExcedido: false
+    };
+
     document.getElementById('input-channel-id').value = channelId;
     document.getElementById('input-write-api-key').value = writeApiKey;
     document.getElementById('input-temp-offset').value = tempOffset;
@@ -583,7 +591,10 @@
       gauge.classList.add('gauge-fill-error');
       gauge.style.strokeDashoffset = 0;
 
-      adicionarAlarme("Perda de Conexão com Servidor/Hardware", "CRÍTICO");
+      if (!estadoAlarmeAtivo.conexao) {
+        adicionarAlarme("Perda de Conexão com Servidor/Hardware", "CRÍTICO");
+        estadoAlarmeAtivo.conexao = true;
+      }
     }
 
     function marcarConectado() {
@@ -604,23 +615,20 @@
       const subArduino = document.getElementById('sub-arduino');
       subArduino.className = "text-[8px] text-emerald-600 font-bold";
       subArduino.innerText = "Conectado";
+
+      estadoAlarmeAtivo.conexao = false;
     }
 
     function processarDadosThingSpeak(feeds) {
-      // REGRA DE ZERAR / INICIAR O CONTADOR FORA DA FAIXA:
-      // Analisa o histórico do mais recente ao mais antigo até achar um ponto de ruptura
       let ultimoFeedFora = null;
       
       for (let i = feeds.length - 1; i >= 0; i--) {
         let tRaw = parseFloat(feeds[i].field1);
         if (!isNaN(tRaw) && tRaw > -127.0 && tRaw < 85.0) {
           let tVal = tRaw + tempOffset;
-          // Faixa ideal do processo: entre -20.0 °C e -1.0 °C
           if (tVal < -20.0 || tVal > -1.0) {
             ultimoFeedFora = feeds[i];
           } else {
-            // Se encontrou uma leitura DENTRO da faixa de processo, interrompe a busca
-            // garantindo o reset da contagem se a leitura atual for normal.
             break;
           }
         }
@@ -630,7 +638,6 @@
       let tempBrutaAtual = parseFloat(ultimoFeed.field1);
       let tempAtualCalculada = (isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0) ? null : (tempBrutaAtual + tempOffset);
 
-      // Se a temperatura atual estiver no processo (-20 a -1 °C), obriga o tempo fora da faixa a ser 0
       if (tempAtualCalculada !== null && tempAtualCalculada >= -20.0 && tempAtualCalculada <= -1.0) {
         segundosForaDaFaixa = 0;
       } else if (ultimoFeedFora) {
@@ -642,7 +649,7 @@
 
       atualizarDisplayForaDaFaixa();
 
-      // STATUS DE REDE E BATERIA
+      // REGISTRO CONTEMPORÂNEO DE REDE ELÉTRICA
       const isPowerOk = (String(ultimoFeed.field2) === "1" || String(ultimoFeed.field2) === "true");
       const statusRede = document.getElementById('status-rede');
       const valBateria = document.getElementById('val-bateria');
@@ -655,6 +662,7 @@
         valBateria.className = "my-1 font-black text-sm text-emerald-600";
         subBateria.innerText = "Carregada";
         subBateria.className = "text-[8px] text-emerald-600 font-bold";
+        estadoAlarmeAtivo.redeEletrica = false;
       } else {
         statusRede.innerText = "INATIVA";
         statusRede.className = "my-2 font-black text-xs text-rose-600";
@@ -662,7 +670,11 @@
         valBateria.className = "my-1 font-black text-xs text-amber-500 animate-pulse";
         subBateria.innerText = "Em uso";
         subBateria.className = "text-[8px] text-amber-600 font-bold";
-        adicionarAlarme("Queda na Rede Elétrica", "ALERTA");
+        
+        if (!estadoAlarmeAtivo.redeEletrica) {
+          adicionarAlarme("Queda na Rede Elétrica", "ALERTA");
+          estadoAlarmeAtivo.redeEletrica = true;
+        }
       }
 
       const isFalha = isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0;
@@ -706,10 +718,14 @@
         gauge.classList.add('gauge-fill-error');
         gauge.style.strokeDashoffset = 0;
         
-        adicionarAlarme("Falha no Sensor de Temperatura", "CRÍTICO");
+        if (!estadoAlarmeAtivo.falhaSensor) {
+          adicionarAlarme("Falha no Sensor de Temperatura", "CRÍTICO");
+          estadoAlarmeAtivo.falhaSensor = true;
+        }
         return;
       }
 
+      estadoAlarmeAtivo.falhaSensor = false;
       elVal.innerText = `${temp.toFixed(1)} °C`;
 
       let pct = Math.max(0, Math.min(1, (temp - (-30)) / 60));
@@ -720,17 +736,23 @@
       if (temp >= -20.0 && temp <= -1.0) {
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase my-1";
+        estadoAlarmeAtivo.degeloExcedido = false;
       } 
       else {
         if (segundosForaDaFaixa <= limiteSegundos) {
           elBadge.innerText = "DEGELO";
           elBadge.className = "bg-amber-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase my-1 animate-pulse";
           gauge.classList.add('gauge-fill-degelo');
+          estadoAlarmeAtivo.degeloExcedido = false;
         } else {
           elBadge.innerText = temp > -1.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
           elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase my-1 animate-pulse";
           gauge.classList.add('gauge-fill-error');
-          adicionarAlarme(`Tempo de Degelo Excedido (>${tempoDegeloMinutos} min)`, "CRÍTICO");
+          
+          if (!estadoAlarmeAtivo.degeloExcedido) {
+            adicionarAlarme(`Tempo de Degelo Excedido (>${tempoDegeloMinutos} min)`, "CRÍTICO");
+            estadoAlarmeAtivo.degeloExcedido = true;
+          }
         }
       }
     }
@@ -753,17 +775,16 @@
       }
     }
 
+    // REGISTRO CONTEMPORÂNEO DE ALARMES SEM PERMANÊNCIA OU EXCLUSÃO AUTOMÁTICA
     function adicionarAlarme(evento, nivel) {
       const dataHora = new Date().toLocaleString('pt-BR');
-      if(!listaAlarmes.some(a => a.evento === evento && a.status === 'Ativo')){
-        listaAlarmes.unshift({ data: dataHora, evento: evento, nivel: nivel, status: 'Ativo' });
-        localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
-        renderizarTabelaAlarmes();
-      }
+      listaAlarmes.unshift({ data: dataHora, evento: evento, nivel: nivel, status: 'Ativo' });
+      localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
+      renderizarTabelaAlarmes();
     }
 
     function limparHistoricoAlarmes() {
-      if (confirm("Deseja realmente apagar o histórico de alarmes?")) {
+      if (confirm("Deseja realmente apagar todo o histórico de alarmes?")) {
         listaAlarmes = [];
         localStorage.removeItem('historicoAlarmes');
         renderizarTabelaAlarmes();
