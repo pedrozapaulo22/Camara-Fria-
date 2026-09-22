@@ -20,7 +20,6 @@
     .gauge-fill-error { stroke: #e11d48 !important; }
     .gauge-fill-degelo { stroke: #f59e0b !important; }
     
-    /* Prevenção para Safe Area de telas como iPhone */
     .pb-safe { padding-bottom: env(safe-area-inset-bottom, 12px); }
   </style>
 </head>
@@ -42,7 +41,7 @@
     </div>
   </aside>
 
-  <!-- CONTEÚDO PRINCIPAL (COM PADDING INFERIOR AJUSTADO PARA MOBILE) -->
+  <!-- CONTEÚDO PRINCIPAL -->
   <main class="flex-1 overflow-y-auto p-3 sm:p-5 space-y-4 sm:space-y-5 pb-28 md:pb-6">
     
     <!-- CABEÇALHO SUPERIOR -->
@@ -201,7 +200,7 @@
       </div>
     </div>
 
-    <!-- ABA 3: ALARMES (TABELA COM SCROLL LATERAL PARA MOBILE) -->
+    <!-- ABA 3: ALARMES -->
     <div id="aba-alarmes" class="hidden space-y-5">
       <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-sm">
         <div class="flex justify-between items-center mb-4">
@@ -259,7 +258,7 @@
 
   </main>
 
-  <!-- BARRA DE NAVEGAÇÃO INFERIOR CORRIGIDA PARA MOBILE -->
+  <!-- BARRA DE NAVEGAÇÃO INFERIOR -->
   <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 flex justify-around items-center pt-2 pb-safe z-50 shadow-lg">
     <button onclick="mudarAba('dashboard')" id="btn-dash-mb" class="flex flex-col items-center gap-1 text-blue-500 py-1 px-3">
       <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
@@ -596,7 +595,7 @@
       gauge.style.strokeDashoffset = 0;
 
       if (!estadoAlarmeAtivo.conexao) {
-        adicionarAlarme("Perda de Conexão com Hardware", "CRÍTICO");
+        adicionarAlarme("Perda de Conexão com Hardware", "CRÍTICO", "Ativo");
         estadoAlarmeAtivo.conexao = true;
       }
     }
@@ -620,7 +619,10 @@
       subArduino.className = "text-[8px] text-emerald-600 font-bold truncate";
       subArduino.innerText = "Conectado";
 
-      estadoAlarmeAtivo.conexao = false;
+      if (estadoAlarmeAtivo.conexao) {
+        adicionarAlarme("Conexão Restabelecida", "OK", "Normalizado");
+        estadoAlarmeAtivo.conexao = false;
+      }
     }
 
     function processarDadosThingSpeak(feeds) {
@@ -665,7 +667,12 @@
         valBateria.className = "my-1 font-black text-xs sm:text-sm text-emerald-600";
         subBateria.innerText = "Carregada";
         subBateria.className = "text-[8px] text-emerald-600 font-bold truncate";
-        estadoAlarmeAtivo.redeEletrica = false;
+        
+        // RETORNO DA REDE ELÉTRICA AO NORMAL (OK)
+        if (estadoAlarmeAtivo.redeEletrica) {
+          adicionarAlarme("Rede Elétrica Normalizada", "OK", "Normalizado");
+          estadoAlarmeAtivo.redeEletrica = false;
+        }
       } else {
         statusRede.innerText = "INATIVA";
         statusRede.className = "my-1 sm:my-2 font-black text-xs text-rose-600";
@@ -674,8 +681,9 @@
         subBateria.innerText = "Em uso";
         subBateria.className = "text-[8px] text-amber-600 font-bold truncate";
         
+        // QUEDA DE ENERGIA AGORA É CATEGORIZADA COMO CRÍTICO
         if (!estadoAlarmeAtivo.redeEletrica) {
-          adicionarAlarme("Queda na Rede Elétrica", "ALERTA");
+          adicionarAlarme("Queda na Rede Elétrica", "CRÍTICO", "Ativo");
           estadoAlarmeAtivo.redeEletrica = true;
         }
       }
@@ -722,13 +730,17 @@
         gauge.style.strokeDashoffset = 0;
         
         if (!estadoAlarmeAtivo.falhaSensor) {
-          adicionarAlarme("Falha no Sensor de Temp.", "CRÍTICO");
+          adicionarAlarme("Falha no Sensor de Temp.", "CRÍTICO", "Ativo");
           estadoAlarmeAtivo.falhaSensor = true;
         }
         return;
       }
 
-      estadoAlarmeAtivo.falhaSensor = false;
+      if (estadoAlarmeAtivo.falhaSensor) {
+        adicionarAlarme("Sensor de Temp. Normalizado", "OK", "Normalizado");
+        estadoAlarmeAtivo.falhaSensor = false;
+      }
+
       elVal.innerText = `${temp.toFixed(1)} °C`;
 
       let pct = Math.max(0, Math.min(1, (temp - (-30)) / 60));
@@ -739,21 +751,30 @@
       if (temp >= -20.0 && temp <= -1.0) {
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-600 text-white text-[7px] sm:text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase my-1";
-        estadoAlarmeAtivo.degeloExcedido = false;
+        
+        // TEMPERATURA RETORNOU AO NORMAL
+        if (estadoAlarmeAtivo.degeloExcedido) {
+          adicionarAlarme("Temperatura Normalizada", "OK", "Normalizado");
+          estadoAlarmeAtivo.degeloExcedido = false;
+        }
       } 
       else {
         if (segundosForaDaFaixa <= limiteSegundos) {
           elBadge.innerText = "DEGELO";
           elBadge.className = "bg-amber-500 text-white text-[7px] sm:text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase my-1 animate-pulse";
           gauge.classList.add('gauge-fill-degelo');
-          estadoAlarmeAtivo.degeloExcedido = false;
+          
+          if (estadoAlarmeAtivo.degeloExcedido) {
+            adicionarAlarme("Temperatura Normalizada", "OK", "Normalizado");
+            estadoAlarmeAtivo.degeloExcedido = false;
+          }
         } else {
           elBadge.innerText = temp > -1.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
           elBadge.className = "bg-rose-600 text-white text-[7px] sm:text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase my-1 animate-pulse";
           gauge.classList.add('gauge-fill-error');
           
           if (!estadoAlarmeAtivo.degeloExcedido) {
-            adicionarAlarme(`Degelo Excedido (>${tempoDegeloMinutos} min)`, "CRÍTICO");
+            adicionarAlarme(`Degelo Excedido (>${tempoDegeloMinutos} min)`, "CRÍTICO", "Ativo");
             estadoAlarmeAtivo.degeloExcedido = true;
           }
         }
@@ -778,9 +799,9 @@
       }
     }
 
-    function adicionarAlarme(evento, nivel) {
+    function adicionarAlarme(evento, nivel, status = 'Ativo') {
       const dataHora = new Date().toLocaleString('pt-BR');
-      listaAlarmes.unshift({ data: dataHora, evento: evento, nivel: nivel, status: 'Ativo' });
+      listaAlarmes.unshift({ data: dataHora, evento: evento, nivel: nivel, status: status });
       localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
       renderizarTabelaAlarmes();
     }
@@ -802,10 +823,22 @@
       }
       listaAlarmes.forEach(item => {
         const tr = document.createElement('tr');
+        
+        let nivelBadgeClass = "bg-rose-100 text-rose-700";
+        let eventoColorClass = "text-rose-600";
+        
+        if (item.nivel === 'OK') {
+          nivelBadgeClass = "bg-emerald-100 text-emerald-700";
+          eventoColorClass = "text-emerald-600";
+        } else if (item.nivel === 'ALERTA') {
+          nivelBadgeClass = "bg-amber-100 text-amber-700";
+          eventoColorClass = "text-amber-600";
+        }
+
         tr.innerHTML = `
           <td class="p-2.5 sm:p-3 font-medium text-[11px] sm:text-xs">${item.data}</td>
-          <td class="p-2.5 sm:p-3 font-bold text-rose-600 text-[11px] sm:text-xs">${item.evento}</td>
-          <td class="p-2.5 sm:p-3"><span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-bold text-[9px] sm:text-[10px]">${item.nivel}</span></td>
+          <td class="p-2.5 sm:p-3 font-bold ${eventoColorClass} text-[11px] sm:text-xs">${item.evento}</td>
+          <td class="p-2.5 sm:p-3"><span class="${nivelBadgeClass} px-2 py-0.5 rounded font-bold text-[9px] sm:text-[10px]">${item.nivel}</span></td>
           <td class="p-2.5 sm:p-3 font-semibold text-slate-500 text-[11px] sm:text-xs">${item.status}</td>
         `;
         tbody.appendChild(tr);
