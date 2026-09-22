@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>REI DO GELO - Monitoramento da Câmara Fria</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -10,14 +10,18 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-    body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+    body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; -webkit-tap-highlight-color: transparent; }
     .sidebar { background-color: #0b192c; }
-    .gauge-wrapper { width: 140px; height: 140px; position: relative; display: flex; align-items: center; justify-content: center; }
-    .gauge-svg { width: 140px; height: 140px; transform: rotate(-90deg); }
+    .gauge-wrapper { width: 120px; height: 120px; position: relative; display: flex; align-items: center; justify-content: center; }
+    @media (min-width: 640px) { .gauge-wrapper { width: 140px; height: 140px; } }
+    .gauge-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
     .gauge-bg { fill: none; stroke: #e2e8f0; stroke-width: 8; }
     .gauge-fill { fill: none; stroke: #2563eb; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 251.2; stroke-dashoffset: 251.2; transition: all 0.5s ease; }
     .gauge-fill-error { stroke: #e11d48 !important; }
     .gauge-fill-degelo { stroke: #f59e0b !important; }
+    
+    /* Prevenção para Safe Area de telas como iPhone */
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 12px); }
   </style>
 </head>
 <body class="flex flex-col md:flex-row h-screen overflow-hidden text-slate-700">
@@ -38,58 +42,58 @@
     </div>
   </aside>
 
-  <!-- CONTEÚDO PRINCIPAL -->
-  <main class="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 pb-24 md:pb-6">
+  <!-- CONTEÚDO PRINCIPAL (COM PADDING INFERIOR AJUSTADO PARA MOBILE) -->
+  <main class="flex-1 overflow-y-auto p-3 sm:p-5 space-y-4 sm:space-y-5 pb-28 md:pb-6">
     
     <!-- CABEÇALHO SUPERIOR -->
-    <header class="flex flex-wrap justify-between items-center bg-white px-4 md:px-6 py-3.5 rounded-xl border border-slate-200/80 shadow-sm gap-2">
-      <div class="flex items-center gap-3">
-        <h1 class="font-extrabold text-slate-800 text-base">REI DO GELO</h1>
-        <span class="text-slate-300">|</span>
-        <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">MONITORAMENTO DA CÂMARA FRIA</span>
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between bg-white px-4 py-3 rounded-xl border border-slate-200/80 shadow-sm gap-2">
+      <div class="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
+        <h1 class="font-black text-slate-800 text-sm sm:text-base">REI DO GELO</h1>
+        <span class="text-slate-300 hidden sm:inline">|</span>
+        <span class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wide">CÂMARA FRIA</span>
       </div>
-      <div class="flex items-center gap-3 text-xs font-bold">
-        <span id="badge-sistema" class="bg-rose-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5">
+      <div class="flex items-center justify-between sm:justify-end gap-2 text-xs font-bold w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-0 border-slate-100">
+        <span id="badge-sistema" class="bg-rose-600 text-white px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-lg flex items-center gap-1.5 text-[10px] sm:text-xs">
           <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> DESCONECTADO
         </span>
-        <span id="data-hora" class="text-slate-400 font-medium hidden sm:inline ml-2">--/--/---- --:--:--</span>
+        <span id="data-hora" class="text-slate-400 font-medium text-[10px] sm:text-xs">--/--/---- --:--:--</span>
       </div>
     </header>
 
     <!-- ABA 1: DASHBOARD -->
-    <div id="aba-dashboard" class="space-y-5">
-      <div class="grid grid-cols-12 gap-5">
+    <div id="aba-dashboard" class="space-y-4 sm:space-y-5">
+      <div class="grid grid-cols-12 gap-4 sm:gap-5">
         
         <!-- TEMPERATURA ATUAL -->
-        <div class="col-span-12 lg:col-span-6 bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-          <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-1">
+        <div class="col-span-12 lg:col-span-6 bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-sm">
+          <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 sm:mb-4 flex items-center gap-1">
             <span class="text-blue-600 font-black">:</span> TEMPERATURA ATUAL
           </h3>
-          <div class="flex flex-col sm:flex-row items-center gap-6">
+          <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
             <div class="gauge-wrapper shrink-0">
               <svg class="gauge-svg" viewBox="0 0 100 100">
                 <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
                 <circle id="gauge-circle" class="gauge-fill gauge-fill-error" cx="50" cy="50" r="40" style="stroke-dashoffset: 0;"></circle>
               </svg>
-              <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-2">
-                <span id="val-temperatura" class="text-2xl font-black text-slate-800 leading-none tracking-tight">-</span>
-                <span id="badge-sensor-status" class="bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase my-1 animate-pulse">SEM SINAL</span>
+              <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-1">
+                <span id="val-temperatura" class="text-xl sm:text-2xl font-black text-slate-800 leading-none tracking-tight">-</span>
+                <span id="badge-sensor-status" class="bg-rose-600 text-white text-[7px] sm:text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase my-1 animate-pulse">SEM SINAL</span>
                 <span class="text-[8px] text-slate-400 font-medium leading-none">Setpoint: -18 °C</span>
               </div>
             </div>
 
-            <div class="space-y-2.5 w-full flex-1">
-              <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
-                <p class="text-[10px] font-semibold text-slate-400">Temperatura Mínima Normal</p>
+            <div class="space-y-2 w-full flex-1">
+              <div class="bg-slate-50/80 p-2 sm:p-2.5 rounded-lg border border-slate-100 flex justify-between sm:block">
+                <p class="text-[10px] font-semibold text-slate-400">Temp. Mínima Normal</p>
                 <p class="text-xs font-extrabold text-slate-800">-20 °C</p>
               </div>
-              <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
-                <p class="text-[10px] font-semibold text-slate-400">Temperatura Máxima Normal</p>
+              <div class="bg-slate-50/80 p-2 sm:p-2.5 rounded-lg border border-slate-100 flex justify-between sm:block">
+                <p class="text-[10px] font-semibold text-slate-400">Temp. Máxima Normal</p>
                 <p class="text-xs font-extrabold text-slate-800">-1 °C</p>
               </div>
-              <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
-                <p class="text-[10px] font-semibold text-slate-400">Tempo Limite Fora da Faixa</p>
-                <p class="text-xs font-extrabold text-slate-800">Até <span id="lbl-tol-degelo">5</span> minutos</p>
+              <div class="bg-slate-50/80 p-2 sm:p-2.5 rounded-lg border border-slate-100 flex justify-between sm:block">
+                <p class="text-[10px] font-semibold text-slate-400">Limite Fora da Faixa</p>
+                <p class="text-xs font-extrabold text-slate-800">Até <span id="lbl-tol-degelo">5</span> min</p>
               </div>
             </div>
           </div>
@@ -97,31 +101,31 @@
 
         <!-- CARDS DE STATUS -->
         <div class="col-span-12 lg:col-span-6 space-y-4">
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+            <div class="bg-white p-2.5 sm:p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
               <span class="text-[9px] font-bold text-slate-400 uppercase">REDE ELÉTRICA</span>
-              <div id="status-rede" class="my-2 font-black text-xs text-slate-400">DESCONHECIDO</div>
-              <span class="text-[8px] opacity-0">.</span>
+              <div id="status-rede" class="my-1 sm:my-2 font-black text-xs text-slate-400">DESCONHECIDO</div>
+              <span class="text-[8px] opacity-0 hidden sm:inline">.</span>
             </div>
 
-            <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
+            <div class="bg-white p-2.5 sm:p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
               <span class="text-[9px] font-bold text-slate-400 uppercase">BATERIA</span>
-              <div id="val-bateria" class="my-1 font-black text-sm text-slate-700">-- %</div>
-              <span id="sub-bateria" class="text-[8px] text-slate-400">Sem dados</span>
+              <div id="val-bateria" class="my-1 font-black text-xs sm:text-sm text-slate-700">-- %</div>
+              <span id="sub-bateria" class="text-[8px] text-slate-400 truncate">Sem dados</span>
             </div>
 
-            <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
+            <div class="bg-white p-2.5 sm:p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
               <span class="text-[9px] font-bold text-slate-400 uppercase leading-tight">FORA DA FAIXA</span>
-              <div id="val-fora-faixa" class="my-1 font-black text-xs text-slate-800">00h 00m 00s</div>
-              <span class="text-[8px] text-slate-400">Lim: <span id="lbl-lim-degelo">00h 05m</span></span>
+              <div id="val-fora-faixa" class="my-1 font-black text-[11px] sm:text-xs text-slate-800">00h 00m 00s</div>
+              <span class="text-[8px] text-slate-400 truncate">Lim: <span id="lbl-lim-degelo">00h 05m</span></span>
             </div>
 
-            <div id="card-arduino" class="bg-rose-50 border border-rose-200/80 p-3 rounded-xl text-center flex flex-col justify-between">
+            <div id="card-arduino" class="bg-rose-50 border border-rose-200/80 p-2.5 sm:p-3 rounded-xl text-center flex flex-col justify-between">
               <span class="text-[9px] font-bold text-rose-500 uppercase" id="title-arduino">ARDUINO UNO</span>
               <div id="txt-arduino" class="my-1 font-black text-xs text-rose-600 flex items-center justify-center gap-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> OFFLINE
               </div>
-              <span id="sub-arduino" class="text-[8px] text-rose-400 font-medium">Sem Comunicação</span>
+              <span id="sub-arduino" class="text-[8px] text-rose-400 font-medium truncate">Sem Comunicação</span>
             </div>
           </div>
 
@@ -129,21 +133,21 @@
             <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1">
               <span class="text-blue-600 font-black">:</span> STATUS DOS EQUIPAMENTOS
             </h3>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-              <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                <span class="text-[9px] font-bold text-slate-400 uppercase block mb-1">COMPRESSOR</span>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
+              <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                <span class="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">COMPRESSOR</span>
                 <span id="st-compressor" class="text-xs font-bold text-slate-400">--</span>
               </div>
-              <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                <span class="text-[9px] font-bold text-slate-400 uppercase block mb-1">PORTA</span>
+              <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                <span class="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">PORTA</span>
                 <span id="st-porta" class="text-xs font-bold text-slate-400">--</span>
               </div>
-              <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                <span class="text-[9px] font-bold text-slate-400 uppercase block mb-1">VENTILAÇÃO</span>
+              <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                <span class="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">VENTILAÇÃO</span>
                 <span id="st-ventilacao" class="text-xs font-bold text-slate-400">--</span>
               </div>
-              <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                <span class="text-[9px] font-bold text-slate-400 uppercase block mb-1">ALARME</span>
+              <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                <span class="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">ALARME</span>
                 <span id="st-alarme" class="text-xs font-bold text-slate-400">--</span>
               </div>
             </div>
@@ -152,26 +156,25 @@
       </div>
 
       <!-- TREND ENQUADRADA -->
-      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+      <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-sm">
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 sm:mb-4 flex items-center gap-2">
           TREND DE TEMPERATURA 
           <span class="flex h-2 w-2 relative">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
-          <span class="text-[10px] text-emerald-600 font-semibold normal-case">(Tempo Real)</span>
         </h3>
-        <div class="h-64 w-full relative">
+        <div class="h-48 sm:h-64 w-full relative">
           <canvas id="chartTemperatura"></canvas>
         </div>
       </div>
     </div>
 
     <!-- ABA 2: TEMPERATURA -->
-    <div id="aba-temperatura" class="hidden space-y-5">
-      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">FILTRO DE PERÍODO E EXPORTAÇÃO DE RELATÓRIOS</h3>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+    <div id="aba-temperatura" class="hidden space-y-4 sm:space-y-5">
+      <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-sm">
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">FILTRO DE PERÍODO E RELATÓRIOS</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-end">
           <div>
             <label class="block text-xs font-bold text-slate-500 mb-1">Data/Hora Início</label>
             <input type="datetime-local" id="temp-inicio" class="w-full border border-slate-300 rounded-lg p-2 text-xs">
@@ -184,48 +187,50 @@
             <button onclick="filtrarGraficoTemperatura()" class="bg-blue-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors w-full">Filtrar Período</button>
           </div>
           <div class="flex gap-2">
-            <button onclick="exportarCSV()" class="bg-emerald-600 text-white font-bold text-xs px-3 py-2.5 rounded-lg hover:bg-emerald-700 transition-colors w-1/2">Gerar CSV</button>
-            <button onclick="exportarPDF()" class="bg-rose-600 text-white font-bold text-xs px-3 py-2.5 rounded-lg hover:bg-rose-700 transition-colors w-1/2">Gerar PDF</button>
+            <button onclick="exportarCSV()" class="bg-emerald-600 text-white font-bold text-xs px-3 py-2.5 rounded-lg hover:bg-emerald-700 transition-colors w-1/2">CSV</button>
+            <button onclick="exportarPDF()" class="bg-rose-600 text-white font-bold text-xs px-3 py-2.5 rounded-lg hover:bg-rose-700 transition-colors w-1/2">PDF</button>
           </div>
         </div>
       </div>
 
-      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">GRÁFICO DO PERÍODO SELECIONADO</h3>
-        <div class="h-72 w-full relative">
+      <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-sm">
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">GRÁFICO HISTÓRICO</h3>
+        <div class="h-56 sm:h-72 w-full relative">
           <canvas id="chartPeriodo"></canvas>
         </div>
       </div>
     </div>
 
-    <!-- ABA 3: ALARMES -->
+    <!-- ABA 3: ALARMES (TABELA COM SCROLL LATERAL PARA MOBILE) -->
     <div id="aba-alarmes" class="hidden space-y-5">
-      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm overflow-x-auto">
+      <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-sm">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">HISTÓRICO DE ALARMES</h3>
-          <button onclick="limparHistoricoAlarmes()" class="text-xs font-semibold text-rose-600 hover:text-rose-800 transition-colors">Limpar Histórico</button>
+          <button onclick="limparHistoricoAlarmes()" class="text-xs font-bold text-rose-600 hover:text-rose-800 transition-colors bg-rose-50 px-2.5 py-1 rounded-md">Limpar</button>
         </div>
-        <table class="w-full text-left text-xs">
-          <thead class="bg-slate-50 text-slate-500 uppercase border-b">
-            <tr>
-              <th class="p-3">Data / Hora</th>
-              <th class="p-3">Evento / Alarme</th>
-              <th class="p-3">Nível</th>
-              <th class="p-3">Status</th>
-            </tr>
-          </thead>
-          <tbody id="tabela-alarmes" class="divide-y">
-          </tbody>
-        </table>
+        <div class="overflow-x-auto w-full -mx-2 px-2">
+          <table class="w-full text-left text-xs min-w-[500px]">
+            <thead class="bg-slate-50 text-slate-500 uppercase border-b">
+              <tr>
+                <th class="p-2.5 sm:p-3">Data / Hora</th>
+                <th class="p-2.5 sm:p-3">Evento / Alarme</th>
+                <th class="p-2.5 sm:p-3">Nível</th>
+                <th class="p-2.5 sm:p-3">Status</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-alarmes" class="divide-y whitespace-nowrap">
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
     <!-- ABA 4: CONFIGURAÇÕES -->
-    <div id="aba-configuracoes" class="hidden bg-white p-6 rounded-xl border border-slate-200/80 shadow-sm space-y-4">
-      <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">CONFIGURAÇÕES DE CONEXÃO, CALIBRAÇÃO E TEMPOS</h3>
-      <p class="text-xs text-slate-500">Ajuste os parâmetros do sistema de monitoramento da câmara fria.</p>
+    <div id="aba-configuracoes" class="hidden bg-white p-4 sm:p-6 rounded-xl border border-slate-200/80 shadow-sm space-y-4">
+      <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">CONFIGURAÇÕES DO SISTEMA</h3>
+      <p class="text-xs text-slate-500">Ajuste os parâmetros do monitoramento da câmara fria.</p>
       
-      <div class="max-w-md space-y-4">
+      <div class="max-w-md space-y-3.5">
         <div>
           <label class="block text-xs font-bold text-slate-500 mb-1">ID do Canal ThingSpeak</label>
           <input type="text" id="input-channel-id" placeholder="Ex: 3498175" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none">
@@ -242,35 +247,35 @@
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">Ajuste Tempo de Degelo (Minutos)</label>
+          <label class="block text-xs font-bold text-slate-500 mb-1">Tempo de Degelo (Minutos)</label>
           <input type="number" min="1" max="120" id="input-tempo-degelo" placeholder="Ex: 5" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none">
         </div>
 
-        <button onclick="salvarConfiguracao()" id="btn-salvar-config" class="bg-blue-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors shadow flex items-center justify-center gap-2 w-full">
-          <span>Salvar e Sincronizar Configurações</span>
+        <button onclick="salvarConfiguracao()" id="btn-salvar-config" class="bg-blue-600 text-white font-bold text-xs px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors shadow flex items-center justify-center gap-2 w-full mt-2">
+          <span>Salvar e Sincronizar</span>
         </button>
       </div>
     </div>
 
   </main>
 
-  <!-- BARRA DE NAVEGAÇÃO INFERIOR (MÓVEL) -->
-  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 flex justify-around items-center py-2 z-50 shadow-lg">
-    <button onclick="mudarAba('dashboard')" id="btn-dash-mb" class="flex flex-col items-center gap-1 text-blue-500">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
-      <span class="text-[10px] font-bold">Dashboard</span>
+  <!-- BARRA DE NAVEGAÇÃO INFERIOR CORRIGIDA PARA MOBILE -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 flex justify-around items-center pt-2 pb-safe z-50 shadow-lg">
+    <button onclick="mudarAba('dashboard')" id="btn-dash-mb" class="flex flex-col items-center gap-1 text-blue-500 py-1 px-3">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+      <span class="text-[9px] font-bold">Dashboard</span>
     </button>
-    <button onclick="mudarAba('temperatura')" id="btn-temp-mb" class="flex flex-col items-center gap-1 text-slate-400">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-      <span class="text-[10px] font-bold">Temperatura</span>
+    <button onclick="mudarAba('temperatura')" id="btn-temp-mb" class="flex flex-col items-center gap-1 text-slate-400 py-1 px-3">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      <span class="text-[9px] font-bold">Temperatura</span>
     </button>
-    <button onclick="mudarAba('alarmes')" id="btn-alarm-mb" class="flex flex-col items-center gap-1 text-slate-400">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 01-6 0v-1m6 0H9"/></svg>
-      <span class="text-[10px] font-bold">Alarmes</span>
+    <button onclick="mudarAba('alarmes')" id="btn-alarm-mb" class="flex flex-col items-center gap-1 text-slate-400 py-1 px-3">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 01-6 0v-1m6 0H9"/></svg>
+      <span class="text-[9px] font-bold">Alarmes</span>
     </button>
-    <button onclick="mudarAba('configuracoes')" id="btn-config-mb" class="flex flex-col items-center gap-1 text-slate-400">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-      <span class="text-[10px] font-bold">Configuração</span>
+    <button onclick="mudarAba('configuracoes')" id="btn-config-mb" class="flex flex-col items-center gap-1 text-slate-400 py-1 px-3">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      <span class="text-[9px] font-bold">Configuração</span>
     </button>
   </nav>
 
@@ -283,7 +288,6 @@
     let segundosForaDaFaixa = 0;
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes')) || [];
 
-    // CONTROLADORES DE ESTADO PARA GERAÇÃO CONTEMPORÂNEA DE ALARMES
     let estadoAlarmeAtivo = {
       conexao: false,
       redeEletrica: false,
@@ -374,13 +378,13 @@
       atualizarRotulosDegelo();
 
       const btnSalvar = document.getElementById('btn-salvar-config');
-      btnSalvar.innerText = "Sincronizando com Celulares...";
+      btnSalvar.innerText = "Sincronizando...";
       btnSalvar.disabled = true;
 
       if (!writeApiKey) {
-        btnSalvar.innerText = "Salvar e Sincronizar Configurações";
+        btnSalvar.innerText = "Salvar e Sincronizar";
         btnSalvar.disabled = false;
-        alert('Insira a Write API Key para sincronizar entre dispositivos.');
+        alert('Insira a Write API Key para sincronizar.');
         return;
       }
 
@@ -389,7 +393,7 @@
       if (existingScript) existingScript.remove();
 
       window.cb_write_offset = function(response) {
-        btnSalvar.innerText = "Salvar e Sincronizar Configurações";
+        btnSalvar.innerText = "Salvar e Sincronizar";
         btnSalvar.disabled = false;
         alert('Offset sincronizado com sucesso!');
         buscarDados();
@@ -401,7 +405,7 @@
       script.src = `https://api.thingspeak.com/channels/${channelId}/settings.json?api_key=${writeApiKey}&description=${descriptionMsg}&callback=cb_write_offset&_ts=${Date.now()}`;
       
       script.onerror = function() {
-        btnSalvar.innerText = "Salvar e Sincronizar Configurações";
+        btnSalvar.innerText = "Salvar e Sincronizar";
         btnSalvar.disabled = false;
         alert('Erro ao comunicar com a API ThingSpeak.');
         buscarDados();
@@ -420,7 +424,7 @@
         if(btnDt) btnDt.className = "w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-left";
 
         const btnMb = document.getElementById(`btn-${a === 'dashboard' ? 'dash' : a === 'temperatura' ? 'temp' : a === 'alarmes' ? 'alarm' : 'config'}-mb`);
-        if(btnMb) btnMb.className = "flex flex-col items-center gap-1 text-slate-400";
+        if(btnMb) btnMb.className = "flex flex-col items-center gap-1 text-slate-400 py-1 px-3";
       });
 
       document.getElementById(`aba-${aba}`).classList.remove('hidden');
@@ -429,7 +433,7 @@
       if(activeDt) activeDt.className = "w-full flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-lg shadow-md transition-colors text-left";
 
       const activeMb = document.getElementById(`btn-${aba === 'dashboard' ? 'dash' : aba === 'temperatura' ? 'temp' : aba === 'alarmes' ? 'alarm' : 'config'}-mb`);
-      if(activeMb) activeMb.className = "flex flex-col items-center gap-1 text-blue-500";
+      if(activeMb) activeMb.className = "flex flex-col items-center gap-1 text-blue-500 py-1 px-3";
 
       if (aba === 'temperatura' && !chartPeriodo) {
         iniciarGraficoPeriodo();
@@ -451,8 +455,8 @@
               borderWidth: 2,
               fill: true,
               tension: 0.3,
-              pointRadius: 3,
-              pointHoverRadius: 6
+              pointRadius: 2,
+              pointHoverRadius: 5
             }]
           },
           options: {
@@ -461,8 +465,8 @@
             animation: { duration: 400 },
             plugins: { legend: { display: false } },
             scales: {
-              x: { grid: { display: false } },
-              y: { grid: { color: '#f1f5f9' }, min: -30, max: 30 }
+              x: { grid: { display: false }, ticks: { font: { size: 9 } } },
+              y: { grid: { color: '#f1f5f9' }, min: -30, max: 30, ticks: { font: { size: 9 } } }
             }
           }
         });
@@ -490,8 +494,8 @@
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-              x: { grid: { display: false } },
-              y: { grid: { color: '#f1f5f9' }, min: -30, max: 30 }
+              x: { grid: { display: false }, ticks: { font: { size: 9 } } },
+              y: { grid: { color: '#f1f5f9' }, min: -30, max: 30, ticks: { font: { size: 9 } } }
             }
           }
         });
@@ -507,7 +511,7 @@
       sincronizarOffsetGlobal(() => {
         fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=100&_ts=${Date.now()}`)
           .then(res => {
-            if (!res.ok) throw new Error("Erro na conexão HTTP");
+            if (!res.ok) throw new Error("Erro HTTP");
             return res.json();
           })
           .then(data => {
@@ -538,7 +542,7 @@
             processarDadosThingSpeak(feeds);
           })
           .catch(err => {
-            console.error("Falha ao buscar ThingSpeak:", err);
+            console.error(err);
             marcarDesconectado();
           });
       });
@@ -553,11 +557,11 @@
 
     function marcarDesconectado() {
       const badgeSys = document.getElementById('badge-sistema');
-      badgeSys.className = "bg-rose-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5";
+      badgeSys.className = "bg-rose-600 text-white px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-lg flex items-center gap-1.5 text-[10px] sm:text-xs";
       badgeSys.innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> DESCONECTADO`;
 
       const cardArduino = document.getElementById('card-arduino');
-      cardArduino.className = "bg-rose-50 border border-rose-200/80 p-3 rounded-xl text-center flex flex-col justify-between";
+      cardArduino.className = "bg-rose-50 border border-rose-200/80 p-2.5 sm:p-3 rounded-xl text-center flex flex-col justify-between";
 
       const titleArduino = document.getElementById('title-arduino');
       titleArduino.className = "text-[9px] font-bold text-rose-500 uppercase";
@@ -567,43 +571,43 @@
       txtArduino.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> OFFLINE`;
 
       const subArduino = document.getElementById('sub-arduino');
-      subArduino.className = "text-[8px] text-rose-400 font-medium";
+      subArduino.className = "text-[8px] text-rose-400 font-medium truncate";
       subArduino.innerText = "Sem Comunicação";
 
       document.getElementById('val-temperatura').innerText = "-";
       const elBadge = document.getElementById('badge-sensor-status');
       elBadge.innerText = "SEM SINAL";
-      elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase my-1 animate-pulse";
+      elBadge.className = "bg-rose-600 text-white text-[7px] sm:text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase my-1 animate-pulse";
 
       const statusRede = document.getElementById('status-rede');
       statusRede.innerText = "INATIVA";
-      statusRede.className = "my-2 font-black text-xs text-rose-600";
+      statusRede.className = "my-1 sm:my-2 font-black text-xs text-rose-600";
 
       const valBateria = document.getElementById('val-bateria');
       valBateria.innerText = "-- %";
-      valBateria.className = "my-1 font-black text-sm text-slate-400";
+      valBateria.className = "my-1 font-black text-xs sm:text-sm text-slate-400";
 
       const subBateria = document.getElementById('sub-bateria');
-      subBateria.innerText = "Sem comunicação";
-      subBateria.className = "text-[8px] text-slate-400";
+      subBateria.innerText = "Sem dados";
+      subBateria.className = "text-[8px] text-slate-400 truncate";
 
       const gauge = document.getElementById('gauge-circle');
       gauge.classList.add('gauge-fill-error');
       gauge.style.strokeDashoffset = 0;
 
       if (!estadoAlarmeAtivo.conexao) {
-        adicionarAlarme("Perda de Conexão com Servidor/Hardware", "CRÍTICO");
+        adicionarAlarme("Perda de Conexão com Hardware", "CRÍTICO");
         estadoAlarmeAtivo.conexao = true;
       }
     }
 
     function marcarConectado() {
       const badgeSys = document.getElementById('badge-sistema');
-      badgeSys.className = "bg-emerald-600 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5";
+      badgeSys.className = "bg-emerald-600 text-white px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-lg flex items-center gap-1.5 text-[10px] sm:text-xs";
       badgeSys.innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> CONECTADO`;
 
       const cardArduino = document.getElementById('card-arduino');
-      cardArduino.className = "bg-emerald-50 border border-emerald-200/80 p-3 rounded-xl text-center flex flex-col justify-between";
+      cardArduino.className = "bg-emerald-50 border border-emerald-200/80 p-2.5 sm:p-3 rounded-xl text-center flex flex-col justify-between";
 
       const titleArduino = document.getElementById('title-arduino');
       titleArduino.className = "text-[9px] font-bold text-emerald-600 uppercase";
@@ -613,7 +617,7 @@
       txtArduino.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> ONLINE`;
 
       const subArduino = document.getElementById('sub-arduino');
-      subArduino.className = "text-[8px] text-emerald-600 font-bold";
+      subArduino.className = "text-[8px] text-emerald-600 font-bold truncate";
       subArduino.innerText = "Conectado";
 
       estadoAlarmeAtivo.conexao = false;
@@ -649,7 +653,6 @@
 
       atualizarDisplayForaDaFaixa();
 
-      // REGISTRO CONTEMPORÂNEO DE REDE ELÉTRICA
       const isPowerOk = (String(ultimoFeed.field2) === "1" || String(ultimoFeed.field2) === "true");
       const statusRede = document.getElementById('status-rede');
       const valBateria = document.getElementById('val-bateria');
@@ -657,19 +660,19 @@
 
       if (isPowerOk) {
         statusRede.innerText = "ATIVA";
-        statusRede.className = "my-2 font-black text-xs text-emerald-600";
+        statusRede.className = "my-1 sm:my-2 font-black text-xs text-emerald-600";
         valBateria.innerText = "100 %";
-        valBateria.className = "my-1 font-black text-sm text-emerald-600";
+        valBateria.className = "my-1 font-black text-xs sm:text-sm text-emerald-600";
         subBateria.innerText = "Carregada";
-        subBateria.className = "text-[8px] text-emerald-600 font-bold";
+        subBateria.className = "text-[8px] text-emerald-600 font-bold truncate";
         estadoAlarmeAtivo.redeEletrica = false;
       } else {
         statusRede.innerText = "INATIVA";
-        statusRede.className = "my-2 font-black text-xs text-rose-600";
+        statusRede.className = "my-1 sm:my-2 font-black text-xs text-rose-600";
         valBateria.innerText = "OPERANDO";
-        valBateria.className = "my-1 font-black text-xs text-amber-500 animate-pulse";
+        valBateria.className = "my-1 font-black text-[10px] sm:text-xs text-amber-500 animate-pulse";
         subBateria.innerText = "Em uso";
-        subBateria.className = "text-[8px] text-amber-600 font-bold";
+        subBateria.className = "text-[8px] text-amber-600 font-bold truncate";
         
         if (!estadoAlarmeAtivo.redeEletrica) {
           adicionarAlarme("Queda na Rede Elétrica", "ALERTA");
@@ -689,7 +692,7 @@
       feedsRecentes.forEach(f => {
         let tRaw = parseFloat(f.field1);
         let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
-        let horaFormatada = new Date(f.created_at).toLocaleTimeString('pt-BR');
+        let horaFormatada = new Date(f.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         let dataHoraFull = new Date(f.created_at).toLocaleString('pt-BR');
 
         labels.push(horaFormatada);
@@ -713,13 +716,13 @@
 
       if (isFalha || temp === null) {
         elVal.innerText = "-";
-        elBadge.innerText = "FALHA NO SENSOR";
-        elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase my-1 animate-pulse";
+        elBadge.innerText = "FALHA SENSOR";
+        elBadge.className = "bg-rose-600 text-white text-[7px] sm:text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase my-1 animate-pulse";
         gauge.classList.add('gauge-fill-error');
         gauge.style.strokeDashoffset = 0;
         
         if (!estadoAlarmeAtivo.falhaSensor) {
-          adicionarAlarme("Falha no Sensor de Temperatura", "CRÍTICO");
+          adicionarAlarme("Falha no Sensor de Temp.", "CRÍTICO");
           estadoAlarmeAtivo.falhaSensor = true;
         }
         return;
@@ -735,22 +738,22 @@
 
       if (temp >= -20.0 && temp <= -1.0) {
         elBadge.innerText = "NORMAL";
-        elBadge.className = "bg-blue-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase my-1";
+        elBadge.className = "bg-blue-600 text-white text-[7px] sm:text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase my-1";
         estadoAlarmeAtivo.degeloExcedido = false;
       } 
       else {
         if (segundosForaDaFaixa <= limiteSegundos) {
           elBadge.innerText = "DEGELO";
-          elBadge.className = "bg-amber-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase my-1 animate-pulse";
+          elBadge.className = "bg-amber-500 text-white text-[7px] sm:text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase my-1 animate-pulse";
           gauge.classList.add('gauge-fill-degelo');
           estadoAlarmeAtivo.degeloExcedido = false;
         } else {
           elBadge.innerText = temp > -1.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
-          elBadge.className = "bg-rose-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase my-1 animate-pulse";
+          elBadge.className = "bg-rose-600 text-white text-[7px] sm:text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase my-1 animate-pulse";
           gauge.classList.add('gauge-fill-error');
           
           if (!estadoAlarmeAtivo.degeloExcedido) {
-            adicionarAlarme(`Tempo de Degelo Excedido (>${tempoDegeloMinutos} min)`, "CRÍTICO");
+            adicionarAlarme(`Degelo Excedido (>${tempoDegeloMinutos} min)`, "CRÍTICO");
             estadoAlarmeAtivo.degeloExcedido = true;
           }
         }
@@ -767,15 +770,14 @@
       
       const limiteSegundos = tempoDegeloMinutos * 60;
       if (segundosForaDaFaixa > limiteSegundos) {
-        elFora.className = "my-1 font-black text-xs text-rose-600 animate-pulse";
+        elFora.className = "my-1 font-black text-[11px] sm:text-xs text-rose-600 animate-pulse";
       } else if (segundosForaDaFaixa > 0) {
-        elFora.className = "my-1 font-black text-xs text-amber-500";
+        elFora.className = "my-1 font-black text-[11px] sm:text-xs text-amber-500";
       } else {
-        elFora.className = "my-1 font-black text-xs text-slate-800";
+        elFora.className = "my-1 font-black text-[11px] sm:text-xs text-slate-800";
       }
     }
 
-    // REGISTRO CONTEMPORÂNEO DE ALARMES SEM PERMANÊNCIA OU EXCLUSÃO AUTOMÁTICA
     function adicionarAlarme(evento, nivel) {
       const dataHora = new Date().toLocaleString('pt-BR');
       listaAlarmes.unshift({ data: dataHora, evento: evento, nivel: nivel, status: 'Ativo' });
@@ -784,7 +786,7 @@
     }
 
     function limparHistoricoAlarmes() {
-      if (confirm("Deseja realmente apagar todo o histórico de alarmes?")) {
+      if (confirm("Deseja apagar todo o histórico de alarmes?")) {
         listaAlarmes = [];
         localStorage.removeItem('historicoAlarmes');
         renderizarTabelaAlarmes();
@@ -801,10 +803,10 @@
       listaAlarmes.forEach(item => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td class="p-3 font-medium">${item.data}</td>
-          <td class="p-3 font-bold text-rose-600">${item.evento}</td>
-          <td class="p-3"><span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-bold text-[10px]">${item.nivel}</span></td>
-          <td class="p-3 font-semibold text-slate-500">${item.status}</td>
+          <td class="p-2.5 sm:p-3 font-medium text-[11px] sm:text-xs">${item.data}</td>
+          <td class="p-2.5 sm:p-3 font-bold text-rose-600 text-[11px] sm:text-xs">${item.evento}</td>
+          <td class="p-2.5 sm:p-3"><span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-bold text-[9px] sm:text-[10px]">${item.nivel}</span></td>
+          <td class="p-2.5 sm:p-3 font-semibold text-slate-500 text-[11px] sm:text-xs">${item.status}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -823,7 +825,7 @@
       historicoLeituras.forEach(item => {
         csv += `"${item.hora}",${item.temp !== null ? item.temp : ''}\n`;
       });
-      const blob = new Blob([csv], { type: 'type: text/csv;charset=utf-8;' });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.setAttribute('href', url);
