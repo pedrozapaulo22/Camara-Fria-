@@ -276,9 +276,10 @@
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
-    // TIMESTAMP SINCRONIZADO GLOBALMENTE VIA FIELD4 DO THINGSPEAK
+    // CONTROLE DE TEMPO BASEADO EM TIMESTAMP
     let timestampInicioForaFaixa = null;
     let segundosForaDaFaixa = 0;
+    let ultimaEscritaField4 = 0; // THROTTLE DE ESCRITA DE 15s
 
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes')) || [];
 
@@ -306,7 +307,7 @@
     }
     setInterval(atualizarDataHora, 1000);
 
-    // CONTADOR EM TEMPO REAL BASEADO NO FIELD4 SINCRONIZADO
+    // CONTADOR LOCAL DE TEMPO REAL
     function calcularTempoContemporaneo() {
       if (timestampInicioForaFaixa !== null && timestampInicioForaFaixa > 0) {
         let agora = Date.now();
@@ -358,16 +359,21 @@
       document.body.appendChild(script);
     }
 
-    // ENVIA O STATUS DO FIELD4 PARA O THINGSPEAK PARA SINCRONIZAR TODAS AS TELAS
+    // ENVIA O STATUS PARA O THINGSPEAK RESPEITANDO O LIMITE DE 15 SEGUNDOS
     function atualizarField4ThingSpeak(valTimestamp) {
       if (!writeApiKey) return;
+      
+      let agora = Date.now();
+      if (agora - ultimaEscritaField4 < 15000) return; // TRAVA DE 15 SEGUNDOS
+      ultimaEscritaField4 = agora;
+
       const scriptId = 'jsonp_update_f4';
       const existingScript = document.getElementById(scriptId);
       if (existingScript) existingScript.remove();
 
       const script = document.createElement('script');
       script.id = scriptId;
-      script.src = `https://api.thingspeak.com/update?api_key=${writeApiKey}&field4=${valTimestamp}&_ts=${Date.now()}`;
+      script.src = `https://api.thingspeak.com/update?api_key=${writeApiKey}&field4=${valTimestamp}&_ts=${agora}`;
       document.body.appendChild(script);
     }
 
@@ -622,21 +628,27 @@
       let tempBrutaAtual = parseFloat(ultimoFeed.field1);
       let tempAtualCalculada = (isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0) ? null : (tempBrutaAtual + tempOffset);
 
-      // LEITURA DO FIELD4 SINCRONIZADO DO THINGSPEAK
-      let tsField4 = parseFloat(ultimoFeed.field4);
-      
-      if (!isNaN(tsField4) && tsField4 > 0) {
-        timestampInicioForaFaixa = tsField4;
-      } else {
-        timestampInicioForaFaixa = null;
+      // CÁLCULO BASEADO NOS FEEDS PARA GARANTIR QUE NÃO FICA RESETANDO EM NENHUM DISPOSITIVO
+      let indiceInicioFora = -1;
+      for (let i = feeds.length - 1; i >= 0; i--) {
+        let tRaw = parseFloat(feeds[i].field1);
+        let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
+
+        if (tVal !== null && (tVal < -30.0 || tVal > -1.0)) {
+          indiceInicioFora = i;
+        } else {
+          break;
+        }
       }
 
-      // TRATAMENTO DO ESTADO FORA DA FAIXA EM TODAS AS TELAS
-      if (tempAtualCalculada !== null && (tempAtualCalculada < -30.0 || tempAtualCalculada > -1.0)) {
-        if (timestampInicioForaFaixa === null) {
-          let agora = Date.now();
-          timestampInicioForaFaixa = agora;
-          atualizarField4ThingSpeak(agora);
+      // TRATAMENTO DA SINCRONIZAÇÃO
+      if (indiceInicioFora !== -1) {
+        let tsHistorico = new Date(feeds[indiceInicioFora].created_at).getTime();
+        
+        // Mantém a sincronização sem alterar o estado se já estiver contando
+        if (timestampInicioForaFaixa === null || Math.abs(timestampInicioForaFaixa - tsHistorico) > 60000) {
+          timestampInicioForaFaixa = tsHistorico;
+          atualizarField4ThingSpeak(tsHistorico);
         }
       } else if (tempAtualCalculada !== null && tempAtualCalculada >= -30.0 && tempAtualCalculada <= -1.0) {
         if (timestampInicioForaFaixa !== null) {
