@@ -276,14 +276,13 @@
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
-    // RECUPERA TIMESTAMP SALVO PARA GARANTIR CONTINUIDADE APÓS REFRESH
+    // PERSISTÊNCIA INQUEBRÁVEL DO TIMESTAMP
     let timestampInicioForaFaixa = localStorage.getItem('ts_inicio_fora') ? parseInt(localStorage.getItem('ts_inicio_fora')) : null;
     let segundosForaDaFaixa = 0;
     let ultimaEscritaField4 = 0;
 
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes')) || [];
 
-    // RESTAURA O ESTADO DOS ALARMES ATIVOS DO ARMAZENAMENTO LOCAL
     let estadoAlarmeAtivo = {
       conexao: false,
       redeEletrica: listaAlarmes.some(a => a.evento === "Queda na Rede Elétrica" && a.status === 'Ativo'),
@@ -533,7 +532,8 @@
       }
 
       sincronizarOffsetGlobal(() => {
-        fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=100&_ts=${Date.now()}`)
+        // AUMENTADO DE 100 PARA 800 RESULTADOS (COBRE MAIS DE 3 HORAS DE EVENTO CONTÍNUO)
+        fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=800&_ts=${Date.now()}`)
           .then(res => {
             if (!res.ok) throw new Error("Erro HTTP");
             return res.json();
@@ -627,28 +627,39 @@
       let tempBrutaAtual = parseFloat(ultimoFeed.field1);
       let tempAtualCalculada = (isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0) ? null : (tempBrutaAtual + tempOffset);
 
-      // BUSCA O HISTÓRICO PARA VERIFICAR SE O EVENTO JÁ HAVIA COMEÇADO
-      let indiceInicioFora = -1;
-      for (let i = feeds.length - 1; i >= 0; i--) {
-        let tRaw = parseFloat(feeds[i].field1);
-        let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
+      // PRIORIDADE 1: LEITURA DIRETA DO FIELD4 SINCRONIZADO
+      let tsField4 = parseFloat(ultimoFeed.field4);
 
-        if (tVal !== null && (tVal < -30.0 || tVal > -1.0)) {
-          indiceInicioFora = i;
-        } else {
-          break;
-        }
-      }
-
-      if (indiceInicioFora !== -1) {
-        let tsHistorico = new Date(feeds[indiceInicioFora].created_at).getTime();
-        
-        if (timestampInicioForaFaixa === null || Math.abs(timestampInicioForaFaixa - tsHistorico) > 60000) {
-          timestampInicioForaFaixa = tsHistorico;
+      if (tempAtualCalculada !== null && (tempAtualCalculada < -30.0 || tempAtualCalculada > -1.0)) {
+        if (!isNaN(tsField4) && tsField4 > 0) {
+          timestampInicioForaFaixa = tsField4;
           localStorage.setItem('ts_inicio_fora', timestampInicioForaFaixa);
-          atualizarField4ThingSpeak(tsHistorico);
+        } else if (timestampInicioForaFaixa === null) {
+          // PRIORIDADE 2: VARREDURA NO HISTÓRICO EXPANDIDO
+          let indiceInicioFora = -1;
+          for (let i = feeds.length - 1; i >= 0; i--) {
+            let tRaw = parseFloat(feeds[i].field1);
+            let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
+
+            if (tVal !== null && (tVal < -30.0 || tVal > -1.0)) {
+              indiceInicioFora = i;
+            } else {
+              break;
+            }
+          }
+
+          if (indiceInicioFora !== -1) {
+            timestampInicioForaFaixa = new Date(feeds[indiceInicioFora].created_at).getTime();
+          } else {
+            timestampInicioForaFaixa = Date.now();
+          }
+
+          localStorage.setItem('ts_inicio_fora', timestampInicioForaFaixa);
+          atualizarField4ThingSpeak(timestampInicioForaFaixa);
         }
-      } else if (tempAtualCalculada !== null && tempAtualCalculada >= -30.0 && tempAtualCalculada <= -1.0) {
+      } 
+      // ZERA SOMENTE SE A TEMPERATURA VOLTAR AO NORMAL DO PROCESSO (-30 °C A -1 °C)
+      else if (tempAtualCalculada !== null && tempAtualCalculada >= -30.0 && tempAtualCalculada <= -1.0) {
         if (timestampInicioForaFaixa !== null) {
           timestampInicioForaFaixa = null;
           localStorage.removeItem('ts_inicio_fora');
@@ -801,7 +812,6 @@
       }
     }
 
-    // REGISTRA NOVO ALARME APENAS SE ELE AINDA NÃO EXISTIR COMO ATIVO
     function adicionarAlarme(evento, nivel) {
       const existeAtivo = listaAlarmes.some(a => a.evento === evento && a.status === 'Ativo');
       if (existeAtivo) return;
