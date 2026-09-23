@@ -98,7 +98,7 @@
           </div>
         </div>
 
-        <!-- CARDS DE STATUS (REMOVIDO CARD DO ARDUINO UNO) -->
+        <!-- CARDS DE STATUS -->
         <div class="col-span-12 lg:col-span-6 space-y-4">
           <div class="grid grid-cols-3 gap-2.5 sm:gap-3">
             <div class="bg-white p-2.5 sm:p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
@@ -276,8 +276,8 @@
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
-    // PERSISTÊNCIA DO TEMPO FORA DA FAIXA EM TEMPO REAL
-    let timestampInicioForaFaixa = localStorage.getItem('timestampInicioForaFaixa') ? parseInt(localStorage.getItem('timestampInicioForaFaixa')) : null;
+    // TIMESTAMP SINCRONIZADO GLOBALMENTE VIA FIELD4 DO THINGSPEAK
+    let timestampInicioForaFaixa = null;
     let segundosForaDaFaixa = 0;
 
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes')) || [];
@@ -306,9 +306,9 @@
     }
     setInterval(atualizarDataHora, 1000);
 
-    // CONTADOR CONTEMPORÂNEO EM TEMPO REAL
+    // CONTADOR EM TEMPO REAL BASEADO NO FIELD4 SINCRONIZADO
     function calcularTempoContemporaneo() {
-      if (timestampInicioForaFaixa !== null) {
+      if (timestampInicioForaFaixa !== null && timestampInicioForaFaixa > 0) {
         let agora = Date.now();
         segundosForaDaFaixa = Math.max(0, Math.floor((agora - timestampInicioForaFaixa) / 1000));
       } else {
@@ -355,6 +355,19 @@
         if (onComplete) onComplete();
       };
 
+      document.body.appendChild(script);
+    }
+
+    // ENVIA O STATUS DO FIELD4 PARA O THINGSPEAK PARA SINCRONIZAR TODAS AS TELAS
+    function atualizarField4ThingSpeak(valTimestamp) {
+      if (!writeApiKey) return;
+      const scriptId = 'jsonp_update_f4';
+      const existingScript = document.getElementById(scriptId);
+      if (existingScript) existingScript.remove();
+
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.src = `https://api.thingspeak.com/update?api_key=${writeApiKey}&field4=${valTimestamp}&_ts=${Date.now()}`;
       document.body.appendChild(script);
     }
 
@@ -609,17 +622,28 @@
       let tempBrutaAtual = parseFloat(ultimoFeed.field1);
       let tempAtualCalculada = (isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0) ? null : (tempBrutaAtual + tempOffset);
 
-      // GERENCIAMENTO DO INÍCIO DO EVENTO FORA DA FAIXA
+      // LEITURA DO FIELD4 SINCRONIZADO DO THINGSPEAK
+      let tsField4 = parseFloat(ultimoFeed.field4);
+      
+      if (!isNaN(tsField4) && tsField4 > 0) {
+        timestampInicioForaFaixa = tsField4;
+      } else {
+        timestampInicioForaFaixa = null;
+      }
+
+      // TRATAMENTO DO ESTADO FORA DA FAIXA EM TODAS AS TELAS
       if (tempAtualCalculada !== null && (tempAtualCalculada < -30.0 || tempAtualCalculada > -1.0)) {
         if (timestampInicioForaFaixa === null) {
-          timestampInicioForaFaixa = Date.now();
-          localStorage.setItem('timestampInicioForaFaixa', timestampInicioForaFaixa);
+          let agora = Date.now();
+          timestampInicioForaFaixa = agora;
+          atualizarField4ThingSpeak(agora);
         }
       } else if (tempAtualCalculada !== null && tempAtualCalculada >= -30.0 && tempAtualCalculada <= -1.0) {
-        // ZERA A CONTAGEM QUANDO REGRESSA À FAIXA DE PROCESSO
-        timestampInicioForaFaixa = null;
-        localStorage.removeItem('timestampInicioForaFaixa');
-        segundosForaDaFaixa = 0;
+        if (timestampInicioForaFaixa !== null) {
+          timestampInicioForaFaixa = null;
+          segundosForaDaFaixa = 0;
+          atualizarField4ThingSpeak(0);
+        }
       }
 
       calcularTempoContemporaneo();
