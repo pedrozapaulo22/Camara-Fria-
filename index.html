@@ -98,9 +98,9 @@
           </div>
         </div>
 
-        <!-- CARDS DE STATUS -->
+        <!-- CARDS DE STATUS (REMOVIDO CARD DO ARDUINO UNO) -->
         <div class="col-span-12 lg:col-span-6 space-y-4">
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+          <div class="grid grid-cols-3 gap-2.5 sm:gap-3">
             <div class="bg-white p-2.5 sm:p-3 rounded-xl border border-slate-200/80 shadow-sm text-center flex flex-col justify-between">
               <span class="text-[9px] font-bold text-slate-400 uppercase">REDE ELÉTRICA</span>
               <div id="status-rede" class="my-1 sm:my-2 font-black text-xs text-slate-400">DESCONHECIDO</div>
@@ -117,14 +117,6 @@
               <span class="text-[9px] font-bold text-slate-400 uppercase leading-tight">FORA DA FAIXA</span>
               <div id="val-fora-faixa" class="my-1 font-black text-[11px] sm:text-xs text-slate-800">00h 00m 00s</div>
               <span class="text-[8px] text-slate-400 truncate">Lim: <span id="lbl-lim-degelo">00h 05m</span></span>
-            </div>
-
-            <div id="card-arduino" class="bg-rose-50 border border-rose-200/80 p-2.5 sm:p-3 rounded-xl text-center flex flex-col justify-between">
-              <span class="text-[9px] font-bold text-rose-500 uppercase" id="title-arduino">ARDUINO UNO</span>
-              <div id="txt-arduino" class="my-1 font-black text-xs text-rose-600 flex items-center justify-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> OFFLINE
-              </div>
-              <span id="sub-arduino" class="text-[8px] text-rose-400 font-medium truncate">Sem Comunicação</span>
             </div>
           </div>
 
@@ -284,7 +276,10 @@
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
+    // PERSISTÊNCIA DO TEMPO FORA DA FAIXA EM TEMPO REAL
+    let timestampInicioForaFaixa = localStorage.getItem('timestampInicioForaFaixa') ? parseInt(localStorage.getItem('timestampInicioForaFaixa')) : null;
     let segundosForaDaFaixa = 0;
+
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes')) || [];
 
     let estadoAlarmeAtivo = {
@@ -310,6 +305,18 @@
       document.getElementById('data-hora').innerText = new Date().toLocaleString('pt-BR');
     }
     setInterval(atualizarDataHora, 1000);
+
+    // CONTADOR CONTEMPORÂNEO EM TEMPO REAL
+    function calcularTempoContemporaneo() {
+      if (timestampInicioForaFaixa !== null) {
+        let agora = Date.now();
+        segundosForaDaFaixa = Math.max(0, Math.floor((agora - timestampInicioForaFaixa) / 1000));
+      } else {
+        segundosForaDaFaixa = 0;
+      }
+      atualizarDisplayForaDaFaixa();
+    }
+    setInterval(calcularTempoContemporaneo, 1000);
 
     function atualizarRotulosDegelo() {
       document.getElementById('lbl-tol-degelo').innerText = tempoDegeloMinutos;
@@ -559,20 +566,6 @@
       badgeSys.className = "bg-rose-600 text-white px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-lg flex items-center gap-1.5 text-[10px] sm:text-xs";
       badgeSys.innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> DESCONECTADO`;
 
-      const cardArduino = document.getElementById('card-arduino');
-      cardArduino.className = "bg-rose-50 border border-rose-200/80 p-2.5 sm:p-3 rounded-xl text-center flex flex-col justify-between";
-
-      const titleArduino = document.getElementById('title-arduino');
-      titleArduino.className = "text-[9px] font-bold text-rose-500 uppercase";
-
-      const txtArduino = document.getElementById('txt-arduino');
-      txtArduino.className = "my-1 font-black text-xs text-rose-600 flex items-center justify-center gap-1";
-      txtArduino.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> OFFLINE`;
-
-      const subArduino = document.getElementById('sub-arduino');
-      subArduino.className = "text-[8px] text-rose-400 font-medium truncate";
-      subArduino.innerText = "Sem Comunicação";
-
       document.getElementById('val-temperatura').innerText = "-";
       const elBadge = document.getElementById('badge-sensor-status');
       elBadge.innerText = "SEM SINAL";
@@ -605,20 +598,6 @@
       badgeSys.className = "bg-emerald-600 text-white px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-lg flex items-center gap-1.5 text-[10px] sm:text-xs";
       badgeSys.innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> CONECTADO`;
 
-      const cardArduino = document.getElementById('card-arduino');
-      cardArduino.className = "bg-emerald-50 border border-emerald-200/80 p-2.5 sm:p-3 rounded-xl text-center flex flex-col justify-between";
-
-      const titleArduino = document.getElementById('title-arduino');
-      titleArduino.className = "text-[9px] font-bold text-emerald-600 uppercase";
-
-      const txtArduino = document.getElementById('txt-arduino');
-      txtArduino.className = "my-1 font-black text-xs text-emerald-600 flex items-center justify-center gap-1";
-      txtArduino.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> ONLINE`;
-
-      const subArduino = document.getElementById('sub-arduino');
-      subArduino.className = "text-[8px] text-emerald-600 font-bold truncate";
-      subArduino.innerText = "Conectado";
-
       if (estadoAlarmeAtivo.conexao) {
         normalizarAlarme("Perda de Conexão com Hardware");
         estadoAlarmeAtivo.conexao = false;
@@ -630,29 +609,20 @@
       let tempBrutaAtual = parseFloat(ultimoFeed.field1);
       let tempAtualCalculada = (isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0) ? null : (tempBrutaAtual + tempOffset);
 
-      // CÁLCULO DO TEMPO FORA DA FAIXA (-30°C a -1°C)
-      let indiceInicioFora = -1;
-      
-      for (let i = feeds.length - 1; i >= 0; i--) {
-        let tRaw = parseFloat(feeds[i].field1);
-        let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
-
-        if (tVal !== null && (tVal < -30.0 || tVal > -1.0)) {
-          indiceInicioFora = i;
-        } else {
-          break;
+      // GERENCIAMENTO DO INÍCIO DO EVENTO FORA DA FAIXA
+      if (tempAtualCalculada !== null && (tempAtualCalculada < -30.0 || tempAtualCalculada > -1.0)) {
+        if (timestampInicioForaFaixa === null) {
+          timestampInicioForaFaixa = Date.now();
+          localStorage.setItem('timestampInicioForaFaixa', timestampInicioForaFaixa);
         }
-      }
-
-      if (indiceInicioFora !== -1) {
-        let tempoInicioMs = new Date(feeds[indiceInicioFora].created_at).getTime();
-        let tempoUltimoMs = new Date(ultimoFeed.created_at).getTime();
-        segundosForaDaFaixa = Math.max(0, Math.floor((tempoUltimoMs - tempoInicioMs) / 1000));
-      } else {
+      } else if (tempAtualCalculada !== null && tempAtualCalculada >= -30.0 && tempAtualCalculada <= -1.0) {
+        // ZERA A CONTAGEM QUANDO REGRESSA À FAIXA DE PROCESSO
+        timestampInicioForaFaixa = null;
+        localStorage.removeItem('timestampInicioForaFaixa');
         segundosForaDaFaixa = 0;
       }
 
-      atualizarDisplayForaDaFaixa();
+      calcularTempoContemporaneo();
 
       // STATUS DA REDE ELÉTRICA
       const isPowerOk = (String(ultimoFeed.field2) === "1" || String(ultimoFeed.field2) === "true");
@@ -741,7 +711,6 @@
 
       elVal.innerText = `${temp.toFixed(1)} °C`;
 
-      // AJUSTE DA PORCENTAGEM DO GAUGE PARA ESCALA -35 A 35 (DELTA DE 70)
       let pct = Math.max(0, Math.min(1, (temp - (-35)) / 70));
       gauge.style.strokeDashoffset = 251.2 * (1 - pct);
 
@@ -900,7 +869,7 @@
 
     window.onload = () => {
       atualizarRotulosDegelo();
-      atualizarDisplayForaDaFaixa();
+      calcularTempoContemporaneo();
       renderizarTabelaAlarmes();
       iniciarGraficos();
       buscarDados();
