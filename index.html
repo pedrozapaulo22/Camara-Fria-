@@ -276,18 +276,19 @@
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
-    // CONTROLE DE TEMPO BASEADO EM TIMESTAMP
-    let timestampInicioForaFaixa = null;
+    // RECUPERA TIMESTAMP SALVO PARA GARANTIR CONTINUIDADE APÓS REFRESH
+    let timestampInicioForaFaixa = localStorage.getItem('ts_inicio_fora') ? parseInt(localStorage.getItem('ts_inicio_fora')) : null;
     let segundosForaDaFaixa = 0;
-    let ultimaEscritaField4 = 0; // THROTTLE DE ESCRITA DE 15s
+    let ultimaEscritaField4 = 0;
 
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes')) || [];
 
+    // RESTAURA O ESTADO DOS ALARMES ATIVOS DO ARMAZENAMENTO LOCAL
     let estadoAlarmeAtivo = {
       conexao: false,
-      redeEletrica: false,
-      falhaSensor: false,
-      degeloExcedido: false
+      redeEletrica: listaAlarmes.some(a => a.evento === "Queda na Rede Elétrica" && a.status === 'Ativo'),
+      falhaSensor: listaAlarmes.some(a => a.evento === "Falha no Sensor de Temp." && a.status === 'Ativo'),
+      degeloExcedido: listaAlarmes.some(a => a.evento.includes("Degelo Excedido") && a.status === 'Ativo')
     };
 
     document.getElementById('input-channel-id').value = channelId;
@@ -307,7 +308,6 @@
     }
     setInterval(atualizarDataHora, 1000);
 
-    // CONTADOR LOCAL DE TEMPO REAL
     function calcularTempoContemporaneo() {
       if (timestampInicioForaFaixa !== null && timestampInicioForaFaixa > 0) {
         let agora = Date.now();
@@ -359,12 +359,11 @@
       document.body.appendChild(script);
     }
 
-    // ENVIA O STATUS PARA O THINGSPEAK RESPEITANDO O LIMITE DE 15 SEGUNDOS
     function atualizarField4ThingSpeak(valTimestamp) {
       if (!writeApiKey) return;
       
       let agora = Date.now();
-      if (agora - ultimaEscritaField4 < 15000) return; // TRAVA DE 15 SEGUNDOS
+      if (agora - ultimaEscritaField4 < 15000) return;
       ultimaEscritaField4 = agora;
 
       const scriptId = 'jsonp_update_f4';
@@ -628,7 +627,7 @@
       let tempBrutaAtual = parseFloat(ultimoFeed.field1);
       let tempAtualCalculada = (isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0) ? null : (tempBrutaAtual + tempOffset);
 
-      // CÁLCULO BASEADO NOS FEEDS PARA GARANTIR QUE NÃO FICA RESETANDO EM NENHUM DISPOSITIVO
+      // BUSCA O HISTÓRICO PARA VERIFICAR SE O EVENTO JÁ HAVIA COMEÇADO
       let indiceInicioFora = -1;
       for (let i = feeds.length - 1; i >= 0; i--) {
         let tRaw = parseFloat(feeds[i].field1);
@@ -641,18 +640,18 @@
         }
       }
 
-      // TRATAMENTO DA SINCRONIZAÇÃO
       if (indiceInicioFora !== -1) {
         let tsHistorico = new Date(feeds[indiceInicioFora].created_at).getTime();
         
-        // Mantém a sincronização sem alterar o estado se já estiver contando
         if (timestampInicioForaFaixa === null || Math.abs(timestampInicioForaFaixa - tsHistorico) > 60000) {
           timestampInicioForaFaixa = tsHistorico;
+          localStorage.setItem('ts_inicio_fora', timestampInicioForaFaixa);
           atualizarField4ThingSpeak(tsHistorico);
         }
       } else if (tempAtualCalculada !== null && tempAtualCalculada >= -30.0 && tempAtualCalculada <= -1.0) {
         if (timestampInicioForaFaixa !== null) {
           timestampInicioForaFaixa = null;
+          localStorage.removeItem('ts_inicio_fora');
           segundosForaDaFaixa = 0;
           atualizarField4ThingSpeak(0);
         }
@@ -802,7 +801,11 @@
       }
     }
 
+    // REGISTRA NOVO ALARME APENAS SE ELE AINDA NÃO EXISTIR COMO ATIVO
     function adicionarAlarme(evento, nivel) {
+      const existeAtivo = listaAlarmes.some(a => a.evento === evento && a.status === 'Ativo');
+      if (existeAtivo) return;
+
       const dataHora = new Date().toLocaleString('pt-BR');
       listaAlarmes.unshift({ data: dataHora, evento: evento, nivel: nivel, status: 'Ativo' });
       localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
@@ -812,9 +815,11 @@
     function normalizarAlarme(nomeEvento) {
       let alterou = false;
       for (let item of listaAlarmes) {
-        if (item.evento === nomeEvento && item.status === 'Ativo') {
-          item.status = 'OK';
-          alterou = true;
+        if (item.evento.includes(nomeEvento) || nomeEvento.includes(item.evento)) {
+          if (item.status === 'Ativo') {
+            item.status = 'OK';
+            alterou = true;
+          }
         }
       }
       if (alterou) {
