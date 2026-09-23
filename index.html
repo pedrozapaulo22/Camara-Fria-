@@ -276,7 +276,7 @@
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
-    // PERSISTÊNCIA INQUEBRÁVEL DO TIMESTAMP
+    // MARCADOR PERSISTENTE DO INÍCIO DO EVENTO
     let timestampInicioForaFaixa = localStorage.getItem('ts_inicio_fora') ? parseInt(localStorage.getItem('ts_inicio_fora')) : null;
     let segundosForaDaFaixa = 0;
     let ultimaEscritaField4 = 0;
@@ -307,6 +307,7 @@
     }
     setInterval(atualizarDataHora, 1000);
 
+    // CÁLCULO DIRETO E CONTÍNUO DE TEMPO DECORRIDO
     function calcularTempoContemporaneo() {
       if (timestampInicioForaFaixa !== null && timestampInicioForaFaixa > 0) {
         let agora = Date.now();
@@ -532,8 +533,7 @@
       }
 
       sincronizarOffsetGlobal(() => {
-        // AUMENTADO DE 100 PARA 800 RESULTADOS (COBRE MAIS DE 3 HORAS DE EVENTO CONTÍNUO)
-        fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=800&_ts=${Date.now()}`)
+        fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=50&_ts=${Date.now()}`)
           .then(res => {
             if (!res.ok) throw new Error("Erro HTTP");
             return res.json();
@@ -627,45 +627,25 @@
       let tempBrutaAtual = parseFloat(ultimoFeed.field1);
       let tempAtualCalculada = (isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0) ? null : (tempBrutaAtual + tempOffset);
 
-      // PRIORIDADE 1: LEITURA DIRETA DO FIELD4 SINCRONIZADO
       let tsField4 = parseFloat(ultimoFeed.field4);
 
+      // CASO A TEMPERATURA ESTEJA FORA DA FAIXA (-30°C A -1°C)
       if (tempAtualCalculada !== null && (tempAtualCalculada < -30.0 || tempAtualCalculada > -1.0)) {
         if (!isNaN(tsField4) && tsField4 > 0) {
           timestampInicioForaFaixa = tsField4;
           localStorage.setItem('ts_inicio_fora', timestampInicioForaFaixa);
         } else if (timestampInicioForaFaixa === null) {
-          // PRIORIDADE 2: VARREDURA NO HISTÓRICO EXPANDIDO
-          let indiceInicioFora = -1;
-          for (let i = feeds.length - 1; i >= 0; i--) {
-            let tRaw = parseFloat(feeds[i].field1);
-            let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
-
-            if (tVal !== null && (tVal < -30.0 || tVal > -1.0)) {
-              indiceInicioFora = i;
-            } else {
-              break;
-            }
-          }
-
-          if (indiceInicioFora !== -1) {
-            timestampInicioForaFaixa = new Date(feeds[indiceInicioFora].created_at).getTime();
-          } else {
-            timestampInicioForaFaixa = Date.now();
-          }
-
+          timestampInicioForaFaixa = Date.now();
           localStorage.setItem('ts_inicio_fora', timestampInicioForaFaixa);
           atualizarField4ThingSpeak(timestampInicioForaFaixa);
         }
       } 
-      // ZERA SOMENTE SE A TEMPERATURA VOLTAR AO NORMAL DO PROCESSO (-30 °C A -1 °C)
+      // SÓ ZERA QUANDO O PROCESSO FOR NORMALIZADO
       else if (tempAtualCalculada !== null && tempAtualCalculada >= -30.0 && tempAtualCalculada <= -1.0) {
-        if (timestampInicioForaFaixa !== null) {
-          timestampInicioForaFaixa = null;
-          localStorage.removeItem('ts_inicio_fora');
-          segundosForaDaFaixa = 0;
-          atualizarField4ThingSpeak(0);
-        }
+        timestampInicioForaFaixa = null;
+        localStorage.removeItem('ts_inicio_fora');
+        segundosForaDaFaixa = 0;
+        atualizarField4ThingSpeak(0);
       }
 
       calcularTempoContemporaneo();
