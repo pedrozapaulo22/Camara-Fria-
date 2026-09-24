@@ -276,8 +276,8 @@
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
-    // MARCADOR PERSISTENTE DO INÍCIO DO EVENTO
-    let timestampInicioForaFaixa = localStorage.getItem('ts_inicio_fora') ? parseInt(localStorage.getItem('ts_inicio_fora')) : null;
+    // VARIÁVEIS DE CONTROLE GLOBAL
+    let timestampInicioForaFaixa = null;
     let segundosForaDaFaixa = 0;
     let ultimaEscritaField4 = 0;
 
@@ -307,7 +307,7 @@
     }
     setInterval(atualizarDataHora, 1000);
 
-    // CÁLCULO DIRETO E CONTÍNUO DE TEMPO DECORRIDO
+    // CÁLCULO DE TEMPO EM SEGUNDOS
     function calcularTempoContemporaneo() {
       if (timestampInicioForaFaixa !== null && timestampInicioForaFaixa > 0) {
         let agora = Date.now();
@@ -359,6 +359,7 @@
       document.body.appendChild(script);
     }
 
+    // ATUALIZA O FIELD4 NO THINGSPEAK COM TRAVA DE 15 SEGUNDOS
     function atualizarField4ThingSpeak(valTimestamp) {
       if (!writeApiKey) return;
       
@@ -631,21 +632,23 @@
 
       // CASO A TEMPERATURA ESTEJA FORA DA FAIXA (-30°C A -1°C)
       if (tempAtualCalculada !== null && (tempAtualCalculada < -30.0 || tempAtualCalculada > -1.0)) {
+        // Se já existe um timestamp gravado no Field4, adota ele imediatamente
         if (!isNaN(tsField4) && tsField4 > 0) {
           timestampInicioForaFaixa = tsField4;
-          localStorage.setItem('ts_inicio_fora', timestampInicioForaFaixa);
-        } else if (timestampInicioForaFaixa === null) {
+        } 
+        // Se nem no Field4 nem localmente existir um timestamp, gera o primeiro e envia
+        else if (timestampInicioForaFaixa === null) {
           timestampInicioForaFaixa = Date.now();
-          localStorage.setItem('ts_inicio_fora', timestampInicioForaFaixa);
           atualizarField4ThingSpeak(timestampInicioForaFaixa);
         }
       } 
-      // SÓ ZERA QUANDO O PROCESSO FOR NORMALIZADO
+      // SÓ ZERA QUANDO RETORNAR TOTALMENTE À FAIXA DE PROCESSO
       else if (tempAtualCalculada !== null && tempAtualCalculada >= -30.0 && tempAtualCalculada <= -1.0) {
-        timestampInicioForaFaixa = null;
-        localStorage.removeItem('ts_inicio_fora');
-        segundosForaDaFaixa = 0;
-        atualizarField4ThingSpeak(0);
+        if (timestampInicioForaFaixa !== null || (tsField4 && tsField4 > 0)) {
+          timestampInicioForaFaixa = null;
+          segundosForaDaFaixa = 0;
+          atualizarField4ThingSpeak(0);
+        }
       }
 
       calcularTempoContemporaneo();
