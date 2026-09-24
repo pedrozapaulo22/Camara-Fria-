@@ -276,8 +276,8 @@
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
-    // VARIÁVEIS DE CONTROLE GLOBAL
-    let timestampInicioForaFaixa = null;
+    // INICIA DIRETO DO LOCALSTORAGE PARA EVITAR ZERAMENTO NO REFRESH
+    let timestampInicioForaFaixa = localStorage.getItem('ts_inicio_fora') ? parseInt(localStorage.getItem('ts_inicio_fora')) : null;
     let segundosForaDaFaixa = 0;
     let ultimaEscritaField4 = 0;
 
@@ -307,7 +307,6 @@
     }
     setInterval(atualizarDataHora, 1000);
 
-    // CÁLCULO DE TEMPO EM SEGUNDOS
     function calcularTempoContemporaneo() {
       if (timestampInicioForaFaixa !== null && timestampInicioForaFaixa > 0) {
         let agora = Date.now();
@@ -359,7 +358,6 @@
       document.body.appendChild(script);
     }
 
-    // ATUALIZA O FIELD4 NO THINGSPEAK COM TRAVA DE 15 SEGUNDOS
     function atualizarField4ThingSpeak(valTimestamp) {
       if (!writeApiKey) return;
       
@@ -630,22 +628,25 @@
 
       let tsField4 = parseFloat(ultimoFeed.field4);
 
-      // CASO A TEMPERATURA ESTEJA FORA DA FAIXA (-30°C A -1°C)
+      // 1. SE TEMPERATURA FORA DA FAIXA (-30°C a -1°C)
       if (tempAtualCalculada !== null && (tempAtualCalculada < -30.0 || tempAtualCalculada > -1.0)) {
-        // Se já existe um timestamp gravado no Field4, adota ele imediatamente
+        // Se o Thingspeak já possui um Timestamp gravado no Field4, adota esse valor e atualiza localmente
         if (!isNaN(tsField4) && tsField4 > 0) {
           timestampInicioForaFaixa = tsField4;
+          localStorage.setItem('ts_inicio_fora', timestampInicioForaFaixa);
         } 
-        // Se nem no Field4 nem localmente existir um timestamp, gera o primeiro e envia
+        // Se localmente ou no servidor não existe timestamp ativo, cria um novo e grava no Field4
         else if (timestampInicioForaFaixa === null) {
           timestampInicioForaFaixa = Date.now();
+          localStorage.setItem('ts_inicio_fora', timestampInicioForaFaixa);
           atualizarField4ThingSpeak(timestampInicioForaFaixa);
         }
       } 
-      // SÓ ZERA QUANDO RETORNAR TOTALMENTE À FAIXA DE PROCESSO
+      // 2. SE TEMPERATURA REESTABELECIDA NA FAIXA DE PROCESSO (-30°C a -1°C)
       else if (tempAtualCalculada !== null && tempAtualCalculada >= -30.0 && tempAtualCalculada <= -1.0) {
-        if (timestampInicioForaFaixa !== null || (tsField4 && tsField4 > 0)) {
+        if (timestampInicioForaFaixa !== null || (!isNaN(tsField4) && tsField4 > 0)) {
           timestampInicioForaFaixa = null;
+          localStorage.removeItem('ts_inicio_fora');
           segundosForaDaFaixa = 0;
           atualizarField4ThingSpeak(0);
         }
