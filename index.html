@@ -276,8 +276,7 @@
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
-    // INICIA DIRETO DO LOCALSTORAGE PARA EVITAR ZERAMENTO NO REFRESH
-    let timestampInicioForaFaixa = localStorage.getItem('ts_inicio_fora') ? parseInt(localStorage.getItem('ts_inicio_fora')) : null;
+    let timestampInicioForaFaixa = null;
     let segundosForaDaFaixa = 0;
     let ultimaEscritaField4 = 0;
 
@@ -532,7 +531,8 @@
       }
 
       sincronizarOffsetGlobal(() => {
-        fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=50&_ts=${Date.now()}`)
+        // BUSCA 800 RESULTADOS PARA COBRIR O INÍCIO DE OCORRÊNCIAS ANTIGAS
+        fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=800&_ts=${Date.now()}`)
           .then(res => {
             if (!res.ok) throw new Error("Erro HTTP");
             return res.json();
@@ -628,25 +628,41 @@
 
       let tsField4 = parseFloat(ultimoFeed.field4);
 
-      // 1. SE TEMPERATURA FORA DA FAIXA (-30°C a -1°C)
+      // CASO 1: TEMPERATURA FORA DA FAIXA PROCESSO (-30°C a -1°C)
       if (tempAtualCalculada !== null && (tempAtualCalculada < -30.0 || tempAtualCalculada > -1.0)) {
-        // Se o Thingspeak já possui um Timestamp gravado no Field4, adota esse valor e atualiza localmente
+        
+        // 1. Se o Field4 do ThingSpeak possui um Timestamp válido (>0), usa ele como Verdade Única
         if (!isNaN(tsField4) && tsField4 > 0) {
           timestampInicioForaFaixa = tsField4;
-          localStorage.setItem('ts_inicio_fora', timestampInicioForaFaixa);
         } 
-        // Se localmente ou no servidor não existe timestamp ativo, cria um novo e grava no Field4
-        else if (timestampInicioForaFaixa === null) {
-          timestampInicioForaFaixa = Date.now();
-          localStorage.setItem('ts_inicio_fora', timestampInicioForaFaixa);
+        // 2. Se o Field4 ainda não foi atualizado, descobre o exato instante no histórico de dados
+        else {
+          let idxPrimeiraQueda = -1;
+          for (let i = feeds.length - 1; i >= 0; i--) {
+            let tRaw = parseFloat(feeds[i].field1);
+            let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
+
+            if (tVal !== null && (tVal < -30.0 || tVal > -1.0)) {
+              idxPrimeiraQueda = i;
+            } else {
+              break;
+            }
+          }
+
+          if (idxPrimeiraQueda !== -1) {
+            timestampInicioForaFaixa = new Date(feeds[idxPrimeiraQueda].created_at).getTime();
+          } else {
+            timestampInicioForaFaixa = new Date(ultimoFeed.created_at).getTime();
+          }
+
+          // Envia a data exata da subida para o ThingSpeak para sincronizar com todos os aparelhos
           atualizarField4ThingSpeak(timestampInicioForaFaixa);
         }
       } 
-      // 2. SE TEMPERATURA REESTABELECIDA NA FAIXA DE PROCESSO (-30°C a -1°C)
+      // CASO 2: TEMPERATURA REESTABELECIDA (-30°C a -1°C)
       else if (tempAtualCalculada !== null && tempAtualCalculada >= -30.0 && tempAtualCalculada <= -1.0) {
         if (timestampInicioForaFaixa !== null || (!isNaN(tsField4) && tsField4 > 0)) {
           timestampInicioForaFaixa = null;
-          localStorage.removeItem('ts_inicio_fora');
           segundosForaDaFaixa = 0;
           atualizarField4ThingSpeak(0);
         }
