@@ -228,8 +228,8 @@
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">ThingSpeak Write API Key</label>
-          <input type="text" id="input-write-api-key" placeholder="Ex: XXXXXXXX12345" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none">
+          <label class="block text-xs font-bold text-slate-500 mb-1">ThingSpeak Read API Key (Opcional)</label>
+          <input type="text" id="input-write-api-key" placeholder="Apenas Read Key se o canal for privado" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-500 outline-none">
         </div>
 
         <div>
@@ -243,7 +243,7 @@
         </div>
 
         <button onclick="salvarConfiguracao()" id="btn-salvar-config" class="bg-blue-600 text-white font-bold text-xs px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors shadow flex items-center justify-center gap-2 w-full mt-2">
-          <span>Salvar e Sincronizar</span>
+          <span>Salvar Parâmetros</span>
         </button>
       </div>
     </div>
@@ -278,7 +278,6 @@
 
     let timestampInicioForaFaixa = null;
     let segundosForaDaFaixa = 0;
-    let ultimaEscritaField4 = 0;
 
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes')) || [];
 
@@ -325,55 +324,6 @@
       document.getElementById('lbl-lim-degelo').innerText = `${hor}h ${min}m`;
     }
 
-    function sincronizarOffsetGlobal(onComplete) {
-      const scriptId = 'jsonp_read_offset';
-      const existingScript = document.getElementById(scriptId);
-      if (existingScript) existingScript.remove();
-
-      window.cb_read_offset = function(data) {
-        if (data && data.description) {
-          let match = data.description.match(/OFFSET:(-?\d+(\.\d+)?)/);
-          if (match && match[1]) {
-            let num = parseFloat(match[1]);
-            if (!isNaN(num)) {
-              tempOffset = num;
-              localStorage.setItem('tempOffset', tempOffset);
-              const inputEl = document.getElementById('input-temp-offset');
-              if (document.activeElement !== inputEl) inputEl.value = tempOffset;
-            }
-          }
-        }
-        if (onComplete) onComplete();
-      };
-
-      const script = document.createElement('script');
-      script.id = scriptId;
-      script.src = `https://api.thingspeak.com/channels/${channelId}/settings.json?callback=cb_read_offset&_ts=${Date.now()}`;
-      
-      script.onerror = function() {
-        if (onComplete) onComplete();
-      };
-
-      document.body.appendChild(script);
-    }
-
-    function atualizarField4ThingSpeak(valTimestamp) {
-      if (!writeApiKey) return;
-      
-      let agora = Date.now();
-      if (agora - ultimaEscritaField4 < 15000) return;
-      ultimaEscritaField4 = agora;
-
-      const scriptId = 'jsonp_update_f4';
-      const existingScript = document.getElementById(scriptId);
-      if (existingScript) existingScript.remove();
-
-      const script = document.createElement('script');
-      script.id = scriptId;
-      script.src = `https://api.thingspeak.com/update?api_key=${writeApiKey}&field4=${valTimestamp}&_ts=${agora}`;
-      document.body.appendChild(script);
-    }
-
     function salvarConfiguracao() {
       let idInput = document.getElementById('input-channel-id').value.trim();
       let writeKeyInput = document.getElementById('input-write-api-key').value.trim();
@@ -398,42 +348,8 @@
       }
 
       atualizarRotulosDegelo();
-
-      const btnSalvar = document.getElementById('btn-salvar-config');
-      btnSalvar.innerText = "Sincronizando...";
-      btnSalvar.disabled = true;
-
-      if (!writeApiKey) {
-        btnSalvar.innerText = "Salvar e Sincronizar";
-        btnSalvar.disabled = false;
-        alert('Insira a Write API Key para sincronizar.');
-        return;
-      }
-
-      const scriptId = 'jsonp_write_offset';
-      const existingScript = document.getElementById(scriptId);
-      if (existingScript) existingScript.remove();
-
-      window.cb_write_offset = function(response) {
-        btnSalvar.innerText = "Salvar e Sincronizar";
-        btnSalvar.disabled = false;
-        alert('Offset sincronizado com sucesso!');
-        buscarDados();
-      };
-
-      const descriptionMsg = encodeURIComponent(`OFFSET:${tempOffset}`);
-      const script = document.createElement('script');
-      script.id = scriptId;
-      script.src = `https://api.thingspeak.com/channels/${channelId}/settings.json?api_key=${writeApiKey}&description=${descriptionMsg}&callback=cb_write_offset&_ts=${Date.now()}`;
-      
-      script.onerror = function() {
-        btnSalvar.innerText = "Salvar e Sincronizar";
-        btnSalvar.disabled = false;
-        alert('Erro ao comunicar com a API ThingSpeak.');
-        buscarDados();
-      };
-
-      document.body.appendChild(script);
+      alert('Configurações salvas localmente com sucesso!');
+      buscarDados();
     }
 
     function mudarAba(aba) {
@@ -530,45 +446,45 @@
         return;
       }
 
-      sincronizarOffsetGlobal(() => {
-        // BUSCA 800 RESULTADOS PARA COBRIR O INÍCIO DE OCORRÊNCIAS ANTIGAS
-        fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=800&_ts=${Date.now()}`)
-          .then(res => {
-            if (!res.ok) throw new Error("Erro HTTP");
-            return res.json();
-          })
-          .then(data => {
-            if (!data || !data.feeds || data.feeds.length === 0) {
-              marcarDesconectado();
-              return;
-            }
-
-            const feeds = data.feeds;
-            const ultimoFeed = feeds[feeds.length - 1];
-            
-            if (!ultimoFeed || !ultimoFeed.created_at) {
-              marcarDesconectado();
-              return;
-            }
-
-            const dataCriacaoDado = new Date(ultimoFeed.created_at).getTime();
-            const agora = Date.now();
-            const diferencaTempo = agora - dataCriacaoDado;
-
-            if (diferencaTempo > TEMPO_MAXIMO_DADO_EXPIRADO_MS) {
-              marcarDesconectado();
-              return;
-            }
-
-            ultimaRespostaComSucesso = agora;
-            marcarConectado();
-            processarDadosThingSpeak(feeds);
-          })
-          .catch(err => {
-            console.error(err);
+      let readKeyParam = writeApiKey ? `&api_key=${writeApiKey}` : '';
+      
+      // APENAS LEITURA DOS FEEDS (NENHUMA ESCRITA É FEITA PELA PÁGINA)
+      fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=800${readKeyParam}&_ts=${Date.now()}`)
+        .then(res => {
+          if (!res.ok) throw new Error("Erro HTTP");
+          return res.json();
+        })
+        .then(data => {
+          if (!data || !data.feeds || data.feeds.length === 0) {
             marcarDesconectado();
-          });
-      });
+            return;
+          }
+
+          const feeds = data.feeds;
+          const ultimoFeed = feeds[feeds.length - 1];
+          
+          if (!ultimoFeed || !ultimoFeed.created_at) {
+            marcarDesconectado();
+            return;
+          }
+
+          const dataCriacaoDado = new Date(ultimoFeed.created_at).getTime();
+          const agora = Date.now();
+          const diferencaTempo = agora - dataCriacaoDado;
+
+          if (diferencaTempo > TEMPO_MAXIMO_DADO_EXPIRADO_MS) {
+            marcarDesconectado();
+            return;
+          }
+
+          ultimaRespostaComSucesso = agora;
+          marcarConectado();
+          processarDadosThingSpeak(feeds);
+        })
+        .catch(err => {
+          console.error(err);
+          marcarDesconectado();
+        });
     }
 
     function checarInatividade() {
@@ -626,46 +542,29 @@
       let tempBrutaAtual = parseFloat(ultimoFeed.field1);
       let tempAtualCalculada = (isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0) ? null : (tempBrutaAtual + tempOffset);
 
-      let tsField4 = parseFloat(ultimoFeed.field4);
-
-      // CASO 1: TEMPERATURA FORA DA FAIXA PROCESSO (-30°C a -1°C)
+      // CÁLCULO DE TEMPO FORA DA FAIXA 100% BASEADO NO HISTÓRICO DO THINGSPEAK
       if (tempAtualCalculada !== null && (tempAtualCalculada < -30.0 || tempAtualCalculada > -1.0)) {
-        
-        // 1. Se o Field4 do ThingSpeak possui um Timestamp válido (>0), usa ele como Verdade Única
-        if (!isNaN(tsField4) && tsField4 > 0) {
-          timestampInicioForaFaixa = tsField4;
-        } 
-        // 2. Se o Field4 ainda não foi atualizado, descobre o exato instante no histórico de dados
-        else {
-          let idxPrimeiraQueda = -1;
-          for (let i = feeds.length - 1; i >= 0; i--) {
-            let tRaw = parseFloat(feeds[i].field1);
-            let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
+        let idxPrimeiraQueda = -1;
+        for (let i = feeds.length - 1; i >= 0; i--) {
+          let tRaw = parseFloat(feeds[i].field1);
+          let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
 
-            if (tVal !== null && (tVal < -30.0 || tVal > -1.0)) {
-              idxPrimeiraQueda = i;
-            } else {
-              break;
-            }
-          }
-
-          if (idxPrimeiraQueda !== -1) {
-            timestampInicioForaFaixa = new Date(feeds[idxPrimeiraQueda].created_at).getTime();
+          if (tVal !== null && (tVal < -30.0 || tVal > -1.0)) {
+            idxPrimeiraQueda = i;
           } else {
-            timestampInicioForaFaixa = new Date(ultimoFeed.created_at).getTime();
+            break;
           }
+        }
 
-          // Envia a data exata da subida para o ThingSpeak para sincronizar com todos os aparelhos
-          atualizarField4ThingSpeak(timestampInicioForaFaixa);
+        if (idxPrimeiraQueda !== -1) {
+          timestampInicioForaFaixa = new Date(feeds[idxPrimeiraQueda].created_at).getTime();
+        } else {
+          timestampInicioForaFaixa = new Date(ultimoFeed.created_at).getTime();
         }
       } 
-      // CASO 2: TEMPERATURA REESTABELECIDA (-30°C a -1°C)
       else if (tempAtualCalculada !== null && tempAtualCalculada >= -30.0 && tempAtualCalculada <= -1.0) {
-        if (timestampInicioForaFaixa !== null || (!isNaN(tsField4) && tsField4 > 0)) {
-          timestampInicioForaFaixa = null;
-          segundosForaDaFaixa = 0;
-          atualizarField4ThingSpeak(0);
-        }
+        timestampInicioForaFaixa = null;
+        segundosForaDaFaixa = 0;
       }
 
       calcularTempoContemporaneo();
