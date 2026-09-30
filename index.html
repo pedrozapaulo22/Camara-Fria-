@@ -17,8 +17,9 @@
     .gauge-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
     .gauge-bg { fill: none; stroke: #e2e8f0; stroke-width: 10; }
     .gauge-fill { fill: none; stroke: #0284c7; stroke-width: 10; stroke-linecap: round; stroke-dasharray: 251.2; stroke-dashoffset: 251.2; transition: all 0.5s ease; }
-    .gauge-fill-error { stroke: #1e3a8a !important; }
-    .gauge-fill-degelo { stroke: #0284c7 !important; }
+    .gauge-fill-normal { stroke: #0284c7 !important; }
+    .gauge-fill-degelo { stroke: #f59e0b !important; }
+    .gauge-fill-error { stroke: #dc2626 !important; }
     .pb-safe { padding-bottom: env(safe-area-inset-bottom, 12px); }
   </style>
 </head>
@@ -83,7 +84,7 @@
             <div class="gauge-wrapper my-2">
               <svg class="gauge-svg" viewBox="0 0 100 100">
                 <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
-                <circle id="gauge-circle" class="gauge-fill gauge-fill-error" cx="50" cy="50" r="40" style="stroke-dashoffset: 0;"></circle>
+                <circle id="gauge-circle" class="gauge-fill gauge-fill-normal" cx="50" cy="50" r="40" style="stroke-dashoffset: 0;"></circle>
               </svg>
               <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-1">
                 <span id="val-temperatura" class="text-2xl sm:text-3xl font-black text-slate-900 leading-none tracking-tight">-</span>
@@ -565,7 +566,7 @@
       subBateria.className = "text-[9px] text-slate-400 font-medium mt-1 truncate";
 
       const gauge = document.getElementById('gauge-circle');
-      gauge.classList.add('gauge-fill-error');
+      gauge.className = "gauge-fill gauge-fill-error";
       gauge.style.strokeDashoffset = 0;
 
       if (!estadoAlarmeAtivo.conexao) {
@@ -679,7 +680,7 @@
       const elBadge = document.getElementById('badge-sensor-status');
       const gauge = document.getElementById('gauge-circle');
 
-      gauge.classList.remove('gauge-fill-error', 'gauge-fill-degelo');
+      gauge.className = "gauge-fill";
 
       if (isFalha || temp === null) {
         elVal.innerText = "-";
@@ -710,6 +711,7 @@
       if (temp >= -30.0 && temp <= -1.0) {
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-800 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5";
+        gauge.classList.add('gauge-fill-normal');
         
         if (estadoAlarmeAtivo.degeloExcedido) {
           normalizarAlarme(`Degelo Excedido (>${tempoDegeloMinutos} min)`);
