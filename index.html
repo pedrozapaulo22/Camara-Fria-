@@ -247,7 +247,7 @@
       <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">HISTÓRICO DE ALARMES</h3>
-          <button onclick="limparHistoricoAlarmes()" class="text-xs font-bold text-blue-700 hover:text-blue-900 transition-colors bg-blue-50 px-2.5 py-1 rounded-md">Limpar</button>
+          <button onclick="limparHistoricoAlarmes()" class="text-xs font-bold text-blue-700 hover:text-blue-900 transition-colors bg-blue-50 px-2.5 py-1 rounded-md shadow-sm">Limpar</button>
         </div>
         <div class="overflow-x-auto w-full -mx-2 px-2">
           <table class="w-full text-left text-xs min-w-[500px]">
@@ -326,18 +326,21 @@
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
-    // Força a lista de alarmes unificada padrão idêntica à referência web oficial (Imagem 1)
-    let listaAlarmes = [
-      { data: "30/09/2026, 14:29:06", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-      { data: "30/09/2026, 13:55:44", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-      { data: "30/09/2026, 13:37:46", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-      { data: "30/09/2026, 13:29:03", evento: "Degelo Excedido (>5 min)", nivel: "CRÍTICO", status: "Ativo" }
-    ];
-    localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
+    // Recupera a lista unificada ou inicializa com a referência padrão
+    let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes'));
+    if (!listaAlarmes) {
+      listaAlarmes = [
+        { data: "30/09/2026, 14:29:06", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "30/09/2026, 13:55:44", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "30/09/2026, 13:37:46", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "30/09/2026, 13:29:03", evento: "Degelo Excedido (>5 min)", nivel: "CRÍTICO", status: "Ativo" }
+      ];
+      localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
+    }
 
-    // Fixa o timestamp de início exatamente no evento de referência: 30/09/2026 às 13:29:03
     let timestampInicioForaFaixa = new Date("2026-09-30T13:29:03").getTime();
     let segundosForaDaFaixa = 0;
+    let ultimaTemperaturaCalculada = null;
 
     let estadoAlarmeAtivo = {
       conexao: false,
@@ -545,6 +548,12 @@
     }
 
     function checarInatividade() {
+      let alarmesStorage = JSON.parse(localStorage.getItem('historicoAlarmes'));
+      if (alarmesStorage && alarmesStorage.length !== listaAlarmes.length) {
+        listaAlarmes = alarmesStorage;
+        renderizarTabelaAlarmes();
+      }
+
       const tempoSemResposta = Date.now() - ultimaRespostaComSucesso;
       if (!navigator.onLine || tempoSemResposta > TEMPO_MAXIMO_DADO_EXPIRADO_MS) {
         marcarDesconectado();
@@ -587,7 +596,7 @@
     function processarDadosThingSpeak(feeds) {
       const ultimoFeed = feeds[feeds.length - 1];
       let tempBrutaAtual = parseFloat(ultimoFeed.field1);
-      let tempAtualCalculada = (isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0) ? null : (tempBrutaAtual + tempOffset);
+      ultimaTemperaturaCalculada = (isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0) ? null : (tempBrutaAtual + tempOffset);
 
       calcularTempoContemporaneo();
 
@@ -613,7 +622,7 @@
       }
 
       const isFalha = isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0;
-      tratarTemperaturaESensor(tempAtualCalculada, isFalha);
+      tratarTemperaturaESensor(ultimaTemperaturaCalculada, isFalha);
 
       let labels = [];
       let dataValores = [];
@@ -731,8 +740,17 @@
       });
     }
 
+    // TRAVA DE SEGURANÇA E LIMPEZA SINCRONIZADA MOBILE/WEB
     function limparHistoricoAlarmes() {
-      if (confirm("Deseja apagar todo o histórico de alarmes?")) {
+      let temAlarmeAtivo = listaAlarmes.some(a => a.status === 'Ativo');
+      let temperaturaForaDaFaixa = (ultimaTemperaturaCalculada !== null && (ultimaTemperaturaCalculada < -30.0 || ultimaTemperaturaCalculada > -1.0));
+
+      if (temAlarmeAtivo || temperaturaForaDaFaixa) {
+        alert("⚠️ Ação não permitida! O histórico só pode ser limpo quando a câmara estiver em condição normal de processo e sem alarmes ativos.");
+        return;
+      }
+
+      if (confirm("Deseja apagar todo o histórico de alarmes em todos os dispositivos?")) {
         listaAlarmes = [];
         localStorage.removeItem('historicoAlarmes');
         renderizarTabelaAlarmes();
