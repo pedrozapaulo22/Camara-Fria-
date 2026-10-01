@@ -333,7 +333,6 @@
   </nav>
 
   <script>
-    // Carrega variáveis iniciais do localStorage
     let channelId = localStorage.getItem('channelId') || '3498175';
     let writeApiKey = localStorage.getItem('writeApiKey') || '';
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
@@ -341,7 +340,6 @@
     let telegramToken = localStorage.getItem('telegramToken') || '';
     let telegramChatId = localStorage.getItem('telegramChatId') || '';
 
-    // Sincronização automática de configurações entre Web e Mobile em tempo real
     window.addEventListener('storage', (event) => {
       if (event.key === 'channelId' && event.newValue) { channelId = event.newValue; document.getElementById('input-channel-id').value = channelId; }
       if (event.key === 'writeApiKey') { writeApiKey = event.newValue || ''; document.getElementById('input-write-api-key').value = writeApiKey; }
@@ -392,22 +390,26 @@
       let chatidAtual = localStorage.getItem('telegramChatId') || telegramChatId;
 
       if (!tokenAtual || !chatidAtual) {
-        console.warn("Telegram não enviado: Token ou Chat ID não configurados.");
+        console.warn("Telegram não enviado: Token ou Chat ID em falta.");
         return;
       }
 
       const url = `https://api.telegram.org/bot${tokenAtual}/sendMessage`;
       const dados = {
-        chat_id: chatidAtual,
-        text: `❄️ [REI DO GELO - ALERTA]\n\n${mensagem}`,
-        parse_mode: 'Markdown'
+        chat_id: chatidAtual.trim(),
+        text: `❄️ [REI DO GELO - ALERTA]\n\n${mensagem}`
       };
 
       fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dados)
-      }).catch(err => console.error("Erro ao enviar Telegram:", err));
+      })
+      .then(res => res.json())
+      .then(resp => {
+        if (!resp.ok) console.error("Erro Telegram API:", resp.description);
+      })
+      .catch(err => console.error("Erro de rede ao enviar Telegram:", err));
     }
 
     function atualizarDataHora() {
@@ -459,7 +461,10 @@
       localStorage.setItem('telegramChatId', telegramChatId);
 
       atualizarRotulosDegelo();
-      alert('Configurações e credenciais do Telegram salvas e sincronizadas!');
+      alert('Configurações salvas e sincronizadas com sucesso!');
+      
+      // Teste imediato de envio ao salvar para confirmar se o bot está respondendo
+      dispararTelegram("✅ Configurações salvas com sucesso no sistema Rei do Gelo!");
       buscarDados();
     }
 
@@ -635,7 +640,7 @@
 
       if (!estadoAlarmeAtivo.conexao) {
         adicionarAlarme("Perda de Conexão com Hardware", "CRÍTICO");
-        dispararTelegram("🚨 *Alerta Crítico!*\nPerda de Conexão com o Hardware da Câmara Fria.");
+        dispararTelegram("🚨 Alerta Crítico: Perda de Conexão com o Hardware da Câmara Fria.");
         estadoAlarmeAtivo.conexao = true;
       }
     }
@@ -647,7 +652,7 @@
 
       if (estadoAlarmeAtivo.conexao) {
         normalizarAlarme("Perda de Conexão com Hardware");
-        dispararTelegram("✅ *Sistema Normalizado*\nConexão com o Hardware restabelecida.");
+        dispararTelegram("✅ Sistema Normalizado: Conexão com o Hardware restabelecida.");
         estadoAlarmeAtivo.conexao = false;
       }
     }
@@ -674,7 +679,7 @@
 
         if (estadoAlarmeAtivo.redeEletrica) {
           normalizarAlarme("Queda na Rede Elétrica");
-          dispararTelegram("⚡ *Rede Elétrica Normalizada*\nA energia da câmara fria foi restabelecida.");
+          dispararTelegram("⚡ Rede Elétrica Normalizada: A energia da câmara fria foi restabelecida.");
           estadoAlarmeAtivo.redeEletrica = false;
         }
       } else {
@@ -687,7 +692,7 @@
 
         if (!estadoAlarmeAtivo.redeEletrica) {
           adicionarAlarme("Queda na Rede Elétrica", "CRÍTICO");
-          dispararTelegram("⚡ *Alerta de Energia!*\nQueda detectada na Rede Elétrica da câmara fria.");
+          dispararTelegram("⚡ Alerta de Energia: Queda detectada na Rede Elétrica da câmara fria.");
           estadoAlarmeAtivo.redeEletrica = true;
         }
       }
@@ -735,7 +740,7 @@
 
         if (!estadoAlarmeAtivo.falhaSensor) {
           adicionarAlarme("Falha no Sensor de Temp.", "CRÍTICO");
-          dispararTelegram("🌡️ *Falha no Sensor!* Erro de leitura ou sensor desconectado na câmara fria.");
+          dispararTelegram("🌡️ Falha no Sensor: Erro de leitura ou sensor desconectado na câmara fria.");
           estadoAlarmeAtivo.falhaSensor = true;
         }
         return;
@@ -743,7 +748,7 @@
 
       if (estadoAlarmeAtivo.falhaSensor) {
         normalizarAlarme("Falha no Sensor de Temp.");
-        dispararTelegram("✅ *Sensor Normalizado* Leitura de temperatura restabelecida.");
+        dispararTelegram("✅ Sensor Normalizado: Leitura de temperatura restabelecida.");
         estadoAlarmeAtivo.falhaSensor = false;
       }
 
@@ -761,7 +766,7 @@
 
         if (estadoAlarmeAtivo.degeloExcedido) {
           normalizarAlarme("Degelo Excedido");
-          dispararTelegram("✅ *Temperatura Normalizada*\nA câmara retornou à faixa segura de operação.");
+          dispararTelegram("✅ Temperatura Normalizada: A câmara retornou à faixa segura de operação.");
           estadoAlarmeAtivo.degeloExcedido = false;
         }
       } 
@@ -777,7 +782,7 @@
 
           if (!estadoAlarmeAtivo.degeloExcedido) {
             adicionarAlarme(`Degelo Excedido (>${tempoDegeloMinutos} min)`, "CRÍTICO");
-            dispararTelegram(`⚠️️ *Degelo Excedido!*\nTemperatura atual em *${temp.toFixed(1)} °C* (Ultrapassou o limite de ${tempoDegeloMinutos} min).`);
+            dispararTelegram(`⚠️ Degelo Excedido: Temperatura atual em ${temp.toFixed(1)} °C (Ultrapassou o limite de ${tempoDegeloMinutos} min).`);
             estadoAlarmeAtivo.degeloExcedido = true;
           }
         }
@@ -865,7 +870,7 @@
       let temperaturaForaDaFaixa = (ultimaTemperaturaCalculada !== null && (ultimaTemperaturaCalculada < -30.0 || ultimaTemperaturaCalculada > -1.0));
 
       if (temAlarmeAtivo || temperaturaForaDaFaixa) {
-        alert("⚠️️ Ação não permitida! O histórico só pode ser limpo quando a câmara estiver em condição normal de processo e sem alarmes ativos.");
+        alert("⚠️ Ação não permitida! O histórico só pode ser limpo quando a câmara estiver em condição normal de processo e sem alarmes ativos.");
         return;
       }
 
