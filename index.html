@@ -333,15 +333,24 @@
   </nav>
 
   <script>
+    // Carrega variáveis iniciais do localStorage
     let channelId = localStorage.getItem('channelId') || '3498175';
     let writeApiKey = localStorage.getItem('writeApiKey') || '';
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
-
     let telegramToken = localStorage.getItem('telegramToken') || '';
     let telegramChatId = localStorage.getItem('telegramChatId') || '';
 
-    // Recupera a lista unificada de alarmes
+    // Sincronização automática de configurações entre Web e Mobile em tempo real
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'channelId' && event.newValue) { channelId = event.newValue; document.getElementById('input-channel-id').value = channelId; }
+      if (event.key === 'writeApiKey') { writeApiKey = event.newValue || ''; document.getElementById('input-write-api-key').value = writeApiKey; }
+      if (event.key === 'tempOffset') { tempOffset = parseFloat(event.newValue) || 0.0; document.getElementById('input-temp-offset').value = tempOffset; }
+      if (event.key === 'tempoDegeloMinutos') { tempoDegeloMinutos = parseInt(event.newValue) || 5; document.getElementById('input-tempo-degelo').value = tempoDegeloMinutos; atualizarRotulosDegelo(); }
+      if (event.key === 'telegramToken') { telegramToken = event.newValue || ''; document.getElementById('input-telegram-token').value = telegramToken; }
+      if (event.key === 'telegramChatId') { telegramChatId = event.newValue || ''; document.getElementById('input-telegram-chatid').value = telegramChatId; }
+    });
+
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes'));
     if (!listaAlarmes) {
       listaAlarmes = [
@@ -379,10 +388,17 @@
     const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 120000;
 
     function dispararTelegram(mensagem) {
-      if (!telegramToken || !telegramChatId) return;
-      const url = `https://api.telegram.org/bot${telegramToken}/sendMessage`;
+      let tokenAtual = localStorage.getItem('telegramToken') || telegramToken;
+      let chatidAtual = localStorage.getItem('telegramChatId') || telegramChatId;
+
+      if (!tokenAtual || !chatidAtual) {
+        console.warn("Telegram não enviado: Token ou Chat ID não configurados.");
+        return;
+      }
+
+      const url = `https://api.telegram.org/bot${tokenAtual}/sendMessage`;
       const dados = {
-        chat_id: telegramChatId,
+        chat_id: chatidAtual,
         text: `❄️ [REI DO GELO - ALERTA]\n\n${mensagem}`,
         parse_mode: 'Markdown'
       };
@@ -443,7 +459,7 @@
       localStorage.setItem('telegramChatId', telegramChatId);
 
       atualizarRotulosDegelo();
-      alert('Configurações e credenciais do Telegram salvas com sucesso!');
+      alert('Configurações e credenciais do Telegram salvas e sincronizadas!');
       buscarDados();
     }
 
@@ -719,7 +735,7 @@
 
         if (!estadoAlarmeAtivo.falhaSensor) {
           adicionarAlarme("Falha no Sensor de Temp.", "CRÍTICO");
-          dispararTelegram("🌡️ *Falha no Sensor!*\nErro de leitura ou sensor desconectado na câmara fria.");
+          dispararTelegram("🌡️ *Falha no Sensor!* Erro de leitura ou sensor desconectado na câmara fria.");
           estadoAlarmeAtivo.falhaSensor = true;
         }
         return;
@@ -727,6 +743,7 @@
 
       if (estadoAlarmeAtivo.falhaSensor) {
         normalizarAlarme("Falha no Sensor de Temp.");
+        dispararTelegram("✅ *Sensor Normalizado* Leitura de temperatura restabelecida.");
         estadoAlarmeAtivo.falhaSensor = false;
       }
 
@@ -741,6 +758,12 @@
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-800 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5";
         gauge.classList.add('gauge-fill-normal');
+
+        if (estadoAlarmeAtivo.degeloExcedido) {
+          normalizarAlarme("Degelo Excedido");
+          dispararTelegram("✅ *Temperatura Normalizada*\nA câmara retornou à faixa segura de operação.");
+          estadoAlarmeAtivo.degeloExcedido = false;
+        }
       } 
       else {
         if (segundosForaDaFaixa <= limiteSegundos) {
@@ -754,7 +777,7 @@
 
           if (!estadoAlarmeAtivo.degeloExcedido) {
             adicionarAlarme(`Degelo Excedido (>${tempoDegeloMinutos} min)`, "CRÍTICO");
-            dispararTelegram(`⚠️ *Degelo Excedido!*\nTemperatura atual em *${temp.toFixed(1)} °C* (Ultrapassou o limite de ${tempoDegeloMinutos} min).`);
+            dispararTelegram(`⚠️️ *Degelo Excedido!*\nTemperatura atual em *${temp.toFixed(1)} °C* (Ultrapassou o limite de ${tempoDegeloMinutos} min).`);
             estadoAlarmeAtivo.degeloExcedido = true;
           }
         }
@@ -842,7 +865,7 @@
       let temperaturaForaDaFaixa = (ultimaTemperaturaCalculada !== null && (ultimaTemperaturaCalculada < -30.0 || ultimaTemperaturaCalculada > -1.0));
 
       if (temAlarmeAtivo || temperaturaForaDaFaixa) {
-        alert("⚠️ Ação não permitida! O histórico só pode ser limpo quando a câmara estiver em condição normal de processo e sem alarmes ativos.");
+        alert("⚠️️ Ação não permitida! O histórico só pode ser limpo quando a câmara estiver em condição normal de processo e sem alarmes ativos.");
         return;
       }
 
