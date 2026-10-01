@@ -355,43 +355,32 @@
     }
     setInterval(atualizarDataHora, 1000);
 
-    // SINCRONIZAÇÃO COMPARTILHADA: Extrai rigorosamente o timestamp do exato alarme de fora de faixa gerado
-    function sincronizarInicioForaFaixa(feeds) {
-      // 1. Procura no histórico de alarmes local o alarme de degelo/fora da faixa ativo mais recente
-      let alarmeAtivo = listaAlarmes.find(a => (a.evento.includes("Degelo Excedido") || a.evento.includes("Temp.")) && a.status === 'Ativo');
+    // SINCRONIZAÇÃO ÚNICA NA NUVEM: Varre os dados do ThingSpeak para encontrar o exato start da falha de temperatura
+    function sincronizarInicioForaFaixaDoFeed(feeds) {
+      let idxPrimeiraQueda = -1;
       
-      if (alarmeAtivo) {
-        // Converte a string "DD/MM/YYYY, HH:MM:SS" do alarme para timestamp universal (ms)
-        let partes = alarmeAtivo.data.split(', ');
-        let dataPartes = partes[0].split('/');
-        let horaPartes = partes[1].split(':');
-        let dataIso = `${dataPartes[2]}-${dataPartes[1]}-${dataPartes[0]}T${horaPartes[0]}:${horaPartes[1]}:${horaPartes[2]}`;
-        let tsAlarme = new Date(dataIso).getTime();
-        
-        if (!isNaN(tsAlarme)) {
-          timestampInicioForaFaixa = tsAlarme;
-          return;
-        }
-      }
-
-      // 2. Fallback de segurança: varre o feed do ThingSpeak retroativamente para achar o exato instante da leitura fora da faixa
+      // Varre o histórico do ThingSpeak de trás para frente ou frente para achar onde começou a sair da faixa (-30°C a -1°C)
       for (let i = 0; i < feeds.length; i++) {
         let tRaw = parseFloat(feeds[i].field1);
         let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
 
         if (tVal !== null && (tVal < -30.0 || tVal > -1.0)) {
-          timestampInicioForaFaixa = new Date(feeds[i].created_at).getTime();
-          return;
+          idxPrimeiraQueda = i;
+          break; // Captura a PRIMEIRA ocorrência do evento de fuga térmica
         }
       }
 
-      timestampInicioForaFaixa = null;
+      if (idxPrimeiraQueda !== -1) {
+        // Define o timestamp exato do servidor ThingSpeak como o start universal e inalterável
+        timestampInicioForaFaixa = new Date(feeds[idxPrimeiraQueda].created_at).getTime();
+      } else {
+        timestampInicioForaFaixa = null;
+      }
     }
 
     function calcularTempoContemporaneo() {
       if (timestampInicioForaFaixa !== null && timestampInicioForaFaixa > 0) {
         let agoraUniversal = Date.now();
-        // Diferença exata compartilhada baseada no timestamp real do alarme
         segundosForaDaFaixa = Math.max(0, Math.floor((agoraUniversal - timestampInicioForaFaixa) / 1000));
       } else {
         segundosForaDaFaixa = 0;
@@ -625,10 +614,10 @@
       let tempBrutaAtual = parseFloat(ultimoFeed.field1);
       let tempAtualCalculada = (isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0) ? null : (tempBrutaAtual + tempOffset);
 
-      // Sincroniza perfeitamente o início do evento com base no alarme ou histórico exato
-      sincronizarInicioForaFaixa(feeds);
+      // SINCRONIZAÇÃO COMPARTILHADA DA FONTE ÚNICA: Varre o feed do ThingSpeak para manter mobile e web perfeitamente alinhados
+      sincronizarInicioForaFaixaDoFeed(feeds);
 
-      // Reseta apenas quando a temperatura retornar para a faixa oficial de processo (-30°C a -1°C)
+      // Reseta a contagem apenas quando a temperatura retornar para a faixa oficial de processo (-30°C a -1°C)
       if (tempAtualCalculada !== null && tempAtualCalculada >= -30.0 && tempAtualCalculada <= -1.0) {
         timestampInicioForaFaixa = null;
         segundosForaDaFaixa = 0;
