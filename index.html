@@ -268,8 +268,8 @@
 
     <!-- ABA 4: CONFIGURAÇÕES -->
     <div id="aba-configuracoes" class="hidden bg-white p-4 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
-      <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">CONFIGURAÇÕES DO SISTEMA</h3>
-      <p class="text-xs text-slate-500">Ajuste os parâmetros do monitoramento da câmara fria.</p>
+      <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">CONFIGURAÇÕES DO SISTEMA E TELEGRAM</h3>
+      <p class="text-xs text-slate-500">Ajuste os parâmetros do monitoramento e insira as credenciais do seu bot do Telegram.</p>
       
       <div class="max-w-md space-y-3.5">
         <div>
@@ -292,8 +292,20 @@
           <input type="number" min="1" max="120" id="input-tempo-degelo" placeholder="Ex: 5" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-900 outline-none">
         </div>
 
+        <hr class="border-slate-200 my-2">
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Telegram Bot Token</label>
+          <input type="text" id="input-telegram-token" placeholder="Ex: 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-900 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Telegram Chat ID</label>
+          <input type="text" id="input-telegram-chatid" placeholder="Ex: 987654321" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-900 outline-none">
+        </div>
+
         <button onclick="salvarConfiguracao()" id="btn-salvar-config" class="bg-blue-900 text-white font-bold text-xs px-4 py-3 rounded-xl hover:bg-blue-950 transition-colors shadow flex items-center justify-center gap-2 w-full mt-2">
-          <span>Salvar Parâmetros</span>
+          <span>Salvar Parâmetros e Telegram</span>
         </button>
       </div>
     </div>
@@ -326,7 +338,10 @@
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
-    // Recupera a lista unificada ou inicializa com a referência padrão
+    let telegramToken = localStorage.getItem('telegramToken') || '';
+    let telegramChatId = localStorage.getItem('telegramChatId') || '';
+
+    // Recupera a lista unificada de alarmes
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes'));
     if (!listaAlarmes) {
       listaAlarmes = [
@@ -353,6 +368,8 @@
     document.getElementById('input-write-api-key').value = writeApiKey;
     document.getElementById('input-temp-offset').value = tempOffset;
     document.getElementById('input-tempo-degelo').value = tempoDegeloMinutos;
+    document.getElementById('input-telegram-token').value = telegramToken;
+    document.getElementById('input-telegram-chatid').value = telegramChatId;
 
     let chartTemp = null;
     let chartPeriodo = null;
@@ -360,6 +377,22 @@
 
     let ultimaRespostaComSucesso = 0;
     const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 120000;
+
+    function dispararTelegram(mensagem) {
+      if (!telegramToken || !telegramChatId) return;
+      const url = `https://api.telegram.org/bot${telegramToken}/sendMessage`;
+      const dados = {
+        chat_id: telegramChatId,
+        text: `❄️ [REI DO GELO - ALERTA]\n\n${mensagem}`,
+        parse_mode: 'Markdown'
+      };
+
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados)
+      }).catch(err => console.error("Erro ao enviar Telegram:", err));
+    }
 
     function atualizarDataHora() {
       document.getElementById('data-hora').innerText = new Date().toLocaleString('pt-BR');
@@ -379,7 +412,6 @@
 
     function atualizarRotulosDegelo() {
       document.getElementById('lbl-tol-degelo').innerText = tempoDegeloMinutos;
-      
       const hor = String(Math.floor(tempoDegeloMinutos / 60)).padStart(2, '0');
       const min = String(tempoDegeloMinutos % 60).padStart(2, '0');
       document.getElementById('lbl-lim-degelo').innerText = `${hor}h ${min}m`;
@@ -390,15 +422,11 @@
       let writeKeyInput = document.getElementById('input-write-api-key').value.trim();
       let offsetInput = parseFloat(document.getElementById('input-temp-offset').value);
       let degeloInput = parseInt(document.getElementById('input-tempo-degelo').value);
+      let tokenInput = document.getElementById('input-telegram-token').value.trim();
+      let chatIdInput = document.getElementById('input-telegram-chatid').value.trim();
 
-      if (idInput) { 
-        channelId = idInput; 
-        localStorage.setItem('channelId', channelId); 
-      }
-      if (writeKeyInput) { 
-        writeApiKey = writeKeyInput; 
-        localStorage.setItem('writeApiKey', writeApiKey); 
-      }
+      if (idInput) { channelId = idInput; localStorage.setItem('channelId', channelId); }
+      if (writeKeyInput) { writeApiKey = writeKeyInput; localStorage.setItem('writeApiKey', writeApiKey); }
 
       tempOffset = isNaN(offsetInput) ? 0.0 : offsetInput;
       localStorage.setItem('tempOffset', tempOffset);
@@ -408,20 +436,23 @@
         localStorage.setItem('tempoDegeloMinutos', tempoDegeloMinutos);
       }
 
+      telegramToken = tokenInput;
+      localStorage.setItem('telegramToken', telegramToken);
+
+      telegramChatId = chatIdInput;
+      localStorage.setItem('telegramChatId', telegramChatId);
+
       atualizarRotulosDegelo();
-      alert('Configurações salvas localmente com sucesso!');
+      alert('Configurações e credenciais do Telegram salvas com sucesso!');
       buscarDados();
     }
 
     function mudarAba(aba) {
       const abas = ['dashboard', 'temperatura', 'alarmes', 'configuracoes'];
-      
       abas.forEach(a => {
         document.getElementById(`aba-${a}`).classList.add('hidden');
-        
         const btnDt = document.getElementById(`btn-${a === 'dashboard' ? 'dash' : a === 'temperatura' ? 'temp' : a === 'alarmes' ? 'alarm' : 'config'}-dt`);
         if(btnDt) btnDt.className = "w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition-all text-left";
-
         const btnMb = document.getElementById(`btn-${a === 'dashboard' ? 'dash' : a === 'temperatura' ? 'temp' : a === 'alarmes' ? 'alarm' : 'config'}-mb`);
         if(btnMb) btnMb.className = "flex flex-col items-center gap-1 text-slate-400 py-1 px-3";
       });
@@ -585,12 +616,24 @@
       const gauge = document.getElementById('gauge-circle');
       gauge.className = "gauge-fill gauge-fill-error";
       gauge.style.strokeDashoffset = 0;
+
+      if (!estadoAlarmeAtivo.conexao) {
+        adicionarAlarme("Perda de Conexão com Hardware", "CRÍTICO");
+        dispararTelegram("🚨 *Alerta Crítico!*\nPerda de Conexão com o Hardware da Câmara Fria.");
+        estadoAlarmeAtivo.conexao = true;
+      }
     }
 
     function marcarConectado() {
       const badgeSys = document.getElementById('badge-sistema');
       badgeSys.className = "bg-blue-900 text-white px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-[10px] shadow-sm";
       badgeSys.innerHTML = `<span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> CONECTADO`;
+
+      if (estadoAlarmeAtivo.conexao) {
+        normalizarAlarme("Perda de Conexão com Hardware");
+        dispararTelegram("✅ *Sistema Normalizado*\nConexão com o Hardware restabelecida.");
+        estadoAlarmeAtivo.conexao = false;
+      }
     }
 
     function processarDadosThingSpeak(feeds) {
@@ -612,6 +655,12 @@
         valBateria.className = "font-black text-sm text-blue-700";
         subBateria.innerText = "Carregada";
         subBateria.className = "text-[9px] text-slate-400 font-medium mt-1 truncate";
+
+        if (estadoAlarmeAtivo.redeEletrica) {
+          normalizarAlarme("Queda na Rede Elétrica");
+          dispararTelegram("⚡ *Rede Elétrica Normalizada*\nA energia da câmara fria foi restabelecida.");
+          estadoAlarmeAtivo.redeEletrica = false;
+        }
       } else {
         statusRede.innerText = "INATIVA";
         statusRede.className = "font-black text-sm text-slate-500";
@@ -619,6 +668,12 @@
         valBateria.className = "font-black text-sm text-blue-600 animate-pulse";
         subBateria.innerText = "Em uso";
         subBateria.className = "text-[9px] text-slate-400 font-medium mt-1 truncate";
+
+        if (!estadoAlarmeAtivo.redeEletrica) {
+          adicionarAlarme("Queda na Rede Elétrica", "CRÍTICO");
+          dispararTelegram("⚡ *Alerta de Energia!*\nQueda detectada na Rede Elétrica da câmara fria.");
+          estadoAlarmeAtivo.redeEletrica = true;
+        }
       }
 
       const isFalha = isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0;
@@ -661,7 +716,18 @@
         elBadge.className = "bg-slate-700 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
         gauge.classList.add('gauge-fill-error');
         gauge.style.strokeDashoffset = 0;
+
+        if (!estadoAlarmeAtivo.falhaSensor) {
+          adicionarAlarme("Falha no Sensor de Temp.", "CRÍTICO");
+          dispararTelegram("🌡️ *Falha no Sensor!*\nErro de leitura ou sensor desconectado na câmara fria.");
+          estadoAlarmeAtivo.falhaSensor = true;
+        }
         return;
+      }
+
+      if (estadoAlarmeAtivo.falhaSensor) {
+        normalizarAlarme("Falha no Sensor de Temp.");
+        estadoAlarmeAtivo.falhaSensor = false;
       }
 
       elVal.innerText = `${temp.toFixed(1)} °C`;
@@ -685,6 +751,12 @@
           elBadge.innerText = temp > -1.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
           elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-error');
+
+          if (!estadoAlarmeAtivo.degeloExcedido) {
+            adicionarAlarme(`Degelo Excedido (>${tempoDegeloMinutos} min)`, "CRÍTICO");
+            dispararTelegram(`⚠️ *Degelo Excedido!*\nTemperatura atual em *${temp.toFixed(1)} °C* (Ultrapassou o limite de ${tempoDegeloMinutos} min).`);
+            estadoAlarmeAtivo.degeloExcedido = true;
+          }
         }
       }
     }
@@ -707,6 +779,32 @@
       }
     }
 
+    function adicionarAlarme(evento, nivel) {
+      const existeAtivo = listaAlarmes.some(a => a.evento === evento && a.status === 'Ativo');
+      if (existeAtivo) return;
+
+      const dataHora = new Date().toLocaleString('pt-BR');
+      listaAlarmes.unshift({ data: dataHora, evento: evento, nivel: nivel, status: 'Ativo' });
+      localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
+      renderizarTabelaAlarmes();
+    }
+
+    function normalizarAlarme(nomeEvento) {
+      let alterou = false;
+      for (let item of listaAlarmes) {
+        if (item.evento.includes(nomeEvento) || nomeEvento.includes(item.evento)) {
+          if (item.status === 'Ativo') {
+            item.status = 'OK';
+            alterou = true;
+          }
+        }
+      }
+      if (alterou) {
+        localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
+        renderizarTabelaAlarmes();
+      }
+    }
+
     function renderizarTabelaAlarmes() {
       const tbody = document.getElementById('tabela-alarmes');
       tbody.innerHTML = '';
@@ -716,7 +814,6 @@
       }
       listaAlarmes.forEach(item => {
         const tr = document.createElement('tr');
-        
         let nivelBadgeClass = "bg-blue-100 text-blue-900";
         let eventoColorClass = "text-blue-900";
         
@@ -740,7 +837,6 @@
       });
     }
 
-    // TRAVA DE SEGURANÇA E LIMPEZA SINCRONIZADA MOBILE/WEB
     function limparHistoricoAlarmes() {
       let temAlarmeAtivo = listaAlarmes.some(a => a.status === 'Ativo');
       let temperaturaForaDaFaixa = (ultimaTemperaturaCalculada !== null && (ultimaTemperaturaCalculada < -30.0 || ultimaTemperaturaCalculada > -1.0));
