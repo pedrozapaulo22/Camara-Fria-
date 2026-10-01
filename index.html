@@ -355,24 +355,41 @@
     }
     setInterval(atualizarDataHora, 1000);
 
-    // SINCRONIZAÇÃO ÚNICA NA NUVEM: Varre os dados do ThingSpeak para encontrar o exato start da falha de temperatura
-    function sincronizarInicioForaFaixaDoFeed(feeds) {
+    // UNIFICAÇÃO DA FONTE: Varre o histórico do ThingSpeak para encontrar o start exato e unificar com a tabela de alarmes
+    function processarAlarmesEStartDoFeed(feeds) {
       let idxPrimeiraQueda = -1;
-      
-      // Varre o histórico do ThingSpeak de trás para frente ou frente para achar onde começou a sair da faixa (-30°C a -1°C)
+      let dataHoraPrimeiraQueda = "";
+
       for (let i = 0; i < feeds.length; i++) {
         let tRaw = parseFloat(feeds[i].field1);
         let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
 
         if (tVal !== null && (tVal < -30.0 || tVal > -1.0)) {
           idxPrimeiraQueda = i;
-          break; // Captura a PRIMEIRA ocorrência do evento de fuga térmica
+          dataHoraPrimeiraQueda = new Date(feeds[i].created_at).toLocaleString('pt-BR');
+          break; // Captura a primeira ocorrência do evento de fuga térmica
         }
       }
 
       if (idxPrimeiraQueda !== -1) {
-        // Define o timestamp exato do servidor ThingSpeak como o start universal e inalterável
         timestampInicioForaFaixa = new Date(feeds[idxPrimeiraQueda].created_at).getTime();
+
+        // Garante que o alarme exato do evento conste unificado na lista para web e mobile
+        let nomeEventoAlarme = `Degelo Excedido (>${tempoDegeloMinutos} min)`;
+        let existeNoHistorico = listaAlarmes.some(a => a.evento.includes("Degelo Excedido") && a.status === 'Ativo');
+
+        if (!existeNoHistorico) {
+          // Remove alarmes antigos de degelo finalizados e insere o oficial sincronizado
+          listaAlarmes = listaAlarmes.filter(a => !a.evento.includes("Degelo Excedido"));
+          listaAlarmes.unshift({
+            data: dataHoraPrimeiraQueda,
+            evento: nomeEventoAlarme,
+            nivel: 'CRÍTICO',
+            status: 'Ativo'
+          });
+          localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
+          renderizarTabelaAlarmes();
+        }
       } else {
         timestampInicioForaFaixa = null;
       }
@@ -614,13 +631,14 @@
       let tempBrutaAtual = parseFloat(ultimoFeed.field1);
       let tempAtualCalculada = (isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0) ? null : (tempBrutaAtual + tempOffset);
 
-      // SINCRONIZAÇÃO COMPARTILHADA DA FONTE ÚNICA: Varre o feed do ThingSpeak para manter mobile e web perfeitamente alinhados
-      sincronizarInicioForaFaixaDoFeed(feeds);
+      // Sincroniza e força a tabela de alarmes a usar exatamente o mesmo start do feed
+      processarAlarmesEStartDoFeed(feeds);
 
       // Reseta a contagem apenas quando a temperatura retornar para a faixa oficial de processo (-30°C a -1°C)
       if (tempAtualCalculada !== null && tempAtualCalculada >= -30.0 && tempAtualCalculada <= -1.0) {
         timestampInicioForaFaixa = null;
         segundosForaDaFaixa = 0;
+        normalizarAlarme("Degelo Excedido");
       }
 
       calcularTempoContemporaneo();
@@ -720,31 +738,16 @@
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-800 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5";
         gauge.classList.add('gauge-fill-normal');
-        
-        if (estadoAlarmeAtivo.degeloExcedido) {
-          normalizarAlarme(`Degelo Excedido (>${tempoDegeloMinutos} min)`);
-          estadoAlarmeAtivo.degeloExcedido = false;
-        }
       } 
       else {
         if (segundosForaDaFaixa <= limiteSegundos) {
           elBadge.innerText = "DEGELO";
           elBadge.className = "bg-sky-600 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-degelo');
-          
-          if (estadoAlarmeAtivo.degeloExcedido) {
-            normalizarAlarme(`Degelo Excedido (>${tempoDegeloMinutos} min)`);
-            estadoAlarmeAtivo.degeloExcedido = false;
-          }
         } else {
           elBadge.innerText = temp > -1.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
           elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-error');
-          
-          if (!estadoAlarmeAtivo.degeloExcedido) {
-            adicionarAlarme(`Degelo Excedido (>${tempoDegeloMinutos} min)`, "CRÍTICO");
-            estadoAlarmeAtivo.degeloExcedido = true;
-          }
         }
       }
     }
