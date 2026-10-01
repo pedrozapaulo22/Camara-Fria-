@@ -326,9 +326,8 @@
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
-    let timestampInicioForaFaixa = parseInt(localStorage.getItem('timestampInicioForaFaixa')) || null;
+    let timestampInicioForaFaixa = null;
     let segundosForaDaFaixa = 0;
-    let offsetServidorMs = 0; // Sincroniza o relógio do dispositivo com o servidor ThingSpeak
 
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes')) || [];
 
@@ -356,11 +355,44 @@
     }
     setInterval(atualizarDataHora, 1000);
 
+    // SINCRONIZAÇÃO COMPARTILHADA: Extrai rigorosamente o timestamp do exato alarme de fora de faixa gerado
+    function sincronizarInicioForaFaixa(feeds) {
+      // 1. Procura no histórico de alarmes local o alarme de degelo/fora da faixa ativo mais recente
+      let alarmeAtivo = listaAlarmes.find(a => (a.evento.includes("Degelo Excedido") || a.evento.includes("Temp.")) && a.status === 'Ativo');
+      
+      if (alarmeAtivo) {
+        // Converte a string "DD/MM/YYYY, HH:MM:SS" do alarme para timestamp universal (ms)
+        let partes = alarmeAtivo.data.split(', ');
+        let dataPartes = partes[0].split('/');
+        let horaPartes = partes[1].split(':');
+        let dataIso = `${dataPartes[2]}-${dataPartes[1]}-${dataPartes[0]}T${horaPartes[0]}:${horaPartes[1]}:${horaPartes[2]}`;
+        let tsAlarme = new Date(dataIso).getTime();
+        
+        if (!isNaN(tsAlarme)) {
+          timestampInicioForaFaixa = tsAlarme;
+          return;
+        }
+      }
+
+      // 2. Fallback de segurança: varre o feed do ThingSpeak retroativamente para achar o exato instante da leitura fora da faixa
+      for (let i = 0; i < feeds.length; i++) {
+        let tRaw = parseFloat(feeds[i].field1);
+        let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
+
+        if (tVal !== null && (tVal < -30.0 || tVal > -1.0)) {
+          timestampInicioForaFaixa = new Date(feeds[i].created_at).getTime();
+          return;
+        }
+      }
+
+      timestampInicioForaFaixa = null;
+    }
+
     function calcularTempoContemporaneo() {
       if (timestampInicioForaFaixa !== null && timestampInicioForaFaixa > 0) {
-        // Usa o tempo sincronizado com o servidor ThingSpeak para evitar divergências entre celular e PC
-        let agoraServidor = Date.now() + offsetServidorMs;
-        segundosForaDaFaixa = Math.max(0, Math.floor((agoraServidor - timestampInicioForaFaixa) / 1000));
+        let agoraUniversal = Date.now();
+        // Diferença exata compartilhada baseada no timestamp real do alarme
+        segundosForaDaFaixa = Math.max(0, Math.floor((agoraUniversal - timestampInicioForaFaixa) / 1000));
       } else {
         segundosForaDaFaixa = 0;
       }
@@ -511,13 +543,6 @@
             return;
           }
 
-          // Calcula o offset de tempo entre o relógio local e o servidor do ThingSpeak para manter sincronia absoluta entre dispositivos
-          const ultimoFeedCabecalho = data.feeds[data.feeds.length - 1];
-          if (ultimoFeedCabecalho && ultimoFeedCabecalho.created_at) {
-            let tempoServidorMs = new Date(ultimoFeedCabecalho.created_at).getTime();
-            offsetServidorMs = tempoServidorMs - (Date.now() - (5 * 1000)); // aproximação segura baseada no envio
-          }
-
           const feeds = data.feeds;
           const ultimoFeed = feeds[feeds.length - 1];
           
@@ -600,30 +625,13 @@
       let tempBrutaAtual = parseFloat(ultimoFeed.field1);
       let tempAtualCalculada = (isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0) ? null : (tempBrutaAtual + tempOffset);
 
-      // VARREDURA COMPLETA NO HISTÓRICO PARA CAPTURAR EXATAMENTE O INÍCIO DA SAÍDA DA FAIXA (-30°C a -1°C)
-      if (timestampInicioForaFaixa === null) {
-        let idxPrimeiraQueda = -1;
-        for (let i = 0; i < feeds.length; i++) {
-          let tRaw = parseFloat(feeds[i].field1);
-          let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
+      // Sincroniza perfeitamente o início do evento com base no alarme ou histórico exato
+      sincronizarInicioForaFaixa(feeds);
 
-          if (tVal !== null && (tVal < -30.0 || tVal > -1.0)) {
-            idxPrimeiraQueda = i;
-            break; 
-          }
-        }
-
-        if (idxPrimeiraQueda !== -1) {
-          timestampInicioForaFaixa = new Date(feeds[idxPrimeiraQueda].created_at).getTime();
-          localStorage.setItem('timestampInicioForaFaixa', timestampInicioForaFaixa);
-        }
-      }
-
-      // SÓ RESETA QUANDO A TEMPERATURA RETORNAR OFICIALMENTE PARA A FAIXA DE PROCESSO
+      // Reseta apenas quando a temperatura retornar para a faixa oficial de processo (-30°C a -1°C)
       if (tempAtualCalculada !== null && tempAtualCalculada >= -30.0 && tempAtualCalculada <= -1.0) {
         timestampInicioForaFaixa = null;
         segundosForaDaFaixa = 0;
-        localStorage.removeItem('timestampInicioForaFaixa');
       }
 
       calcularTempoContemporaneo();
