@@ -326,7 +326,6 @@
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
-    // Recupera o timestamp de início persistido se já houver um evento em andamento
     let timestampInicioForaFaixa = parseInt(localStorage.getItem('timestampInicioForaFaixa')) || null;
     let segundosForaDaFaixa = 0;
 
@@ -592,32 +591,28 @@
       let tempBrutaAtual = parseFloat(ultimoFeed.field1);
       let tempAtualCalculada = (isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0) ? null : (tempBrutaAtual + tempOffset);
 
-      // RASTREAMENTO CORRETO: Varre o histórico para achar a primeira leitura contínua fora da faixa,
-      // ou mantém o timestamp atual salvo para evitar resets indesejados.
-      if (tempAtualCalculada !== null && (tempAtualCalculada < -30.0 || tempAtualCalculada > -1.0)) {
-        if (timestampInicioForaFaixa === null) {
-          let idxPrimeiraQueda = -1;
-          for (let i = feeds.length - 1; i >= 0; i--) {
-            let tRaw = parseFloat(feeds[i].field1);
-            let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
+      // VARREDURA COMPLETA NO HISTÓRICO DO THINGSPEAK:
+      // Identifica com precisão o exato momento em que a temperatura iniciou a saída da faixa normal
+      if (timestampInicioForaFaixa === null) {
+        let idxPrimeiraQueda = -1;
+        for (let i = 0; i < feeds.length; i++) {
+          let tRaw = parseFloat(feeds[i].field1);
+          let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
 
-            if (tVal !== null && (tVal < -30.0 || tVal > -1.0)) {
-              idxPrimeiraQueda = i;
-            } else {
-              break;
-            }
+          if (tVal !== null && (tVal < -30.0 || tVal > -1.0)) {
+            idxPrimeiraQueda = i;
+            break; // Encontra a PRIMEIRA leitura exata do início do evento histórico
           }
+        }
 
-          if (idxPrimeiraQueda !== -1) {
-            timestampInicioForaFaixa = new Date(feeds[idxPrimeiraQueda].created_at).getTime();
-          } else {
-            timestampInicioForaFaixa = new Date(ultimoFeed.created_at).getTime();
-          }
+        if (idxPrimeiraQueda !== -1) {
+          timestampInicioForaFaixa = new Date(feeds[idxPrimeiraQueda].created_at).getTime();
           localStorage.setItem('timestampInicioForaFaixa', timestampInicioForaFaixa);
         }
-      } 
-      else if (tempAtualCalculada !== null && tempAtualCalculada >= -30.0 && tempAtualCalculada <= -1.0) {
-        // SÓ RESETA QUANDO A TEMPERATURA VOLTAR DE FATO PARA A FAIXA DE PROCESSO
+      }
+
+      // SÓ RESETA QUANDO A TEMPERATURA RETORNAR OFICIALMENTE PARA A FAIXA DE PROCESSO (-30 °C a -1 °C)
+      if (tempAtualCalculada !== null && tempAtualCalculada >= -30.0 && tempAtualCalculada <= -1.0) {
         timestampInicioForaFaixa = null;
         segundosForaDaFaixa = 0;
         localStorage.removeItem('timestampInicioForaFaixa');
