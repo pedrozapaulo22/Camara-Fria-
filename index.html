@@ -343,8 +343,8 @@
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
-    // CREDENCIAIS FIXAS DO TELEGRAM INTEGRADAS DIRETAMENTE NO CÓDIGO
-    const telegramToken = "8910254546:AAGF7omnfyPbIZjwBDFd7bYFmdMW3-OXNw";
+    // NOVO TOKEN E ID DO TELEGRAM CONFIGURADOS DIRETAMENTE NO CÓDIGO
+    const telegramToken = "8910254546:AAF_w98tfvtoXxUMGF2c6PDRY9qaEE3Uw_Y";
     const telegramChatId = "-5089800564";
 
     window.addEventListener('storage', (event) => {
@@ -433,7 +433,7 @@
             let descricoesAtivas = [];
             if (estadoAlarmeAtivo.conexao) descricoesAtivas.push("🚨 Perda de Conexão com o Hardware");
             if (estadoAlarmeAtivo.redeEletrica) descricoesAtivas.push("⚡ Queda na Rede Elétrica");
-            if (estadoAlarmeAtivo.falhaSensor) descricoesAtivas.push("🌡️️ Falha no Sensor de Temperatura");
+            if (estadoAlarmeAtivo.falhaSensor) descricoesAtivas.push("🌡️ Falha no Sensor de Temperatura");
             if (estadoAlarmeAtivo.temperaturaAnomala) {
               let tempTexto = ultimaTemperaturaCalculada !== null ? `${ultimaTemperaturaCalculada.toFixed(1)} °C` : "Fora de faixa";
               descricoesAtivas.push(`⚠️ Temperatura Anómala / Fora da Faixa (${tempTexto})`);
