@@ -320,6 +320,335 @@
   <!-- BARRA DE NAVEGAÇÃO INFERIOR (MOBILE) -->
   <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-[#0f172a] border-t border-slate-800 flex justify-around items-center pt-2 pb-safe z-50 shadow-2xl">
     <button onclick="mudarAba('dashboard')" id="btn-dash-mb" class="flex flex-col items-center gap-1 text-blue-500 py-1 px-3">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2O motivo pelo qual o alarme cíclico não estava a disparar sozinho é que a função responsável por iniciar o temporizador de 5 em 5 minutos (`gerenciarLoopReenvioAlarmes()`) nunca estava a ser chamada automaticamente dentro do fluxo de leitura do ThingSpeak. Ela apenas verificava o estado, mas faltava o comando para dar o "start" no ciclo assim que um alarme era detetado.
+
+Corrigi este detalhe crítico integrando a chamada do loop no processamento dos dados e no tratamento de falhas.
+
+O **código completo e corrigido** encontra-se abaixo:
+
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>REI DO GELO - Monitoramento da Câmara Fria</title>
+  <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+  <script src="[https://cdn.jsdelivr.net/npm/chart.js](https://cdn.jsdelivr.net/npm/chart.js)"></script>
+  <script src="[https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js](https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js)"></script>
+  <script src="[https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js](https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js)"></script>
+  <style>
+    @import url('[https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap)');
+    body { font-family: 'Inter', sans-serif; background-color: #f4f7fb; -webkit-tap-highlight-color: transparent; }
+    .sidebar { background: linear-gradient(180deg, #0f172a 0%, #090d16 100%); }
+    .gauge-wrapper { width: 140px; height: 140px; position: relative; display: flex; align-items: center; justify-content: center; }
+    @media (min-width: 640px) { .gauge-wrapper { width: 160px; height: 160px; } }
+    .gauge-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .gauge-bg { fill: none; stroke: #e2e8f0; stroke-width: 10; }
+    .gauge-fill { fill: none; stroke: #0284c7; stroke-width: 10; stroke-linecap: round; stroke-dasharray: 251.2; stroke-dashoffset: 251.2; transition: all 0.5s ease; }
+    .gauge-fill-normal { stroke: #0284c7 !important; }
+    .gauge-fill-degelo { stroke: #f59e0b !important; }
+    .gauge-fill-error { stroke: #dc2626 !important; }
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 12px); }
+  </style>
+</head>
+<body class="flex flex-col md:flex-row h-screen overflow-hidden text-slate-800">
+
+  <!-- BARRA LATERAL (DESKTOP) -->
+  <aside class="hidden md:flex w-64 sidebar text-white flex-col justify-between p-6 shrink-0 shadow-xl border-r border-slate-800">
+    <div>
+      <div class="mb-8 flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-black text-white text-base shadow-md">❄️</div>
+        <div>
+          <span class="font-black text-xs tracking-widest text-slate-400 block leading-none">REI DO</span>
+          <span class="font-black text-sm tracking-widest text-white block">GELO</span>
+        </div>
+      </div>
+      <nav class="space-y-2 text-xs font-semibold" id="nav-desktop">
+        <button onclick="mudarAba('dashboard')" id="btn-dash-dt" class="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-900/30 transition-all text-left font-bold">Dashboard</button>
+        <button onclick="mudarAba('temperatura')" id="btn-temp-dt" class="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition-all text-left">Temperatura</button>
+        <button onclick="mudarAba('alarmes')" id="btn-alarm-dt" class="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition-all text-left">Alarmes</button>
+        <button onclick="mudarAba('configuracoes')" id="btn-config-dt" class="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition-all text-left">Configurações</button>
+      </nav>
+    </div>
+    <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800 text-[10px] font-extrabold text-sky-400 uppercase leading-tight text-center">
+      CONTROLE INDUSTRIAL
+    </div>
+  </aside>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <main class="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-5 pb-28 md:pb-6">
+    
+    <!-- CABEÇALHO SUPERIOR -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between bg-white px-5 py-3.5 rounded-2xl border border-slate-200/80 shadow-sm gap-2">
+      <div class="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
+        <div class="flex items-center gap-2">
+          <span class="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xs font-black shadow">❄️</span>
+          <h1 class="font-black text-slate-900 text-sm sm:text-base tracking-wide"><span class="text-blue-600">REI</span> DO GELO</h1>
+        </div>
+        <span class="text-slate-200 hidden sm:inline">|</span>
+        <span class="text-[10px] sm:text-xs font-extrabold text-slate-600 uppercase tracking-wide bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">CÂMARA FRIA</span>
+      </div>
+      <div class="flex items-center justify-between sm:justify-end gap-2 text-xs font-bold w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-0 border-slate-100 flex-wrap sm:flex-nowrap">
+        <span id="badge-sistema" class="bg-blue-900 text-white px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-[10px] shadow-sm">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> DESCONECTADO
+        </span>
+        <span id="data-hora" class="text-slate-400 font-medium text-[10px]">--/--/---- --:--:--</span>
+      </div>
+    </header>
+
+    <!-- ABA 1: DASHBOARD -->
+    <div id="aba-dashboard" class="space-y-4 sm:space-y-5">
+      
+      <!-- CARD DE TEMPERATURA ATUAL + PARÂMETROS -->
+      <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+        <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+          <span class="text-blue-600 font-black">❄</span> TEMPERATURA ATUAL
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+          
+          <!-- GAUGE DE TEMPERATURA -->
+          <div class="md:col-span-5 flex flex-col items-center justify-center p-2 border-b md:border-b-0 md:border-r border-slate-100 pb-4 md:pb-0">
+            <div class="gauge-wrapper my-2">
+              <svg class="gauge-svg" viewBox="0 0 100 100">
+                <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
+                <circle id="gauge-circle" class="gauge-fill gauge-fill-normal" cx="50" cy="50" r="40" style="stroke-dashoffset: 0;"></circle>
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-1">
+                <span id="val-temperatura" class="text-2xl sm:text-3xl font-black text-slate-900 leading-none tracking-tight">-</span>
+                <span id="badge-sensor-status" class="bg-blue-900 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5">SEM SINAL</span>
+                <span class="text-[10px] text-slate-400 font-bold">Setpoint: -18 °C</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- PARÂMETROS -->
+          <div class="md:col-span-7 space-y-3.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between">
+                <div>
+                  <span class="text-[10px] font-bold text-slate-400 block">Temp. Mínima Normal</span>
+                  <span class="text-sm font-black text-slate-800">-30 °C</span>
+                </div>
+                <span class="text-blue-600 font-black text-lg">❄</span>
+              </div>
+
+              <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between">
+                <div>
+                  <span class="text-[10px] font-bold text-slate-400 block">Temp. Máxima Normal</span>
+                  <span class="text-sm font-black text-slate-800">-1 °C</span>
+                </div>
+                <span class="text-blue-600 font-black text-lg">❄</span>
+              </div>
+            </div>
+
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between">
+              <div>
+                <span class="text-[10px] font-bold text-slate-400 block">Limite Fora da Faixa</span>
+                <span class="text-xs font-extrabold text-slate-800">Até <span id="lbl-tol-degelo">5</span> min</span>
+              </div>
+              <span class="text-slate-400 font-black text-base">⏱</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- TREND DE TEMPERATURA ENQUADRADA -->
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+        <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider mb-3 sm:mb-4 flex items-center gap-2">
+          <span>📈</span> TENDÊNCIA DA TEMPERATURA
+          <span class="flex h-2 w-2 relative ml-auto">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+          </span>
+        </h3>
+        <div class="h-48 sm:h-60 w-full relative">
+          <canvas id="chartTemperatura"></canvas>
+        </div>
+      </div>
+
+      <!-- CARDS DE STATUS DO SISTEMA -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] font-bold text-slate-400 uppercase">REDE ELÉTRICA</span>
+            <span class="text-blue-600 text-sm">⚡</span>
+          </div>
+          <div id="status-rede" class="font-black text-sm text-slate-400">DESCONHECIDO</div>
+          <span class="text-[9px] text-slate-400 font-medium mt-1">Tensão: Normal</span>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] font-bold text-slate-400 uppercase">BATERIA</span>
+            <span class="text-blue-600 text-sm">🔋</span>
+          </div>
+          <div id="val-bateria" class="font-black text-sm text-slate-400">-- %</div>
+          <span id="sub-bateria" class="text-[9px] text-slate-400 font-medium mt-1">Sem dados</span>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] font-bold text-slate-400 uppercase">FORA DA FAIXA</span>
+            <span class="text-slate-400 text-sm">⏱</span>
+          </div>
+          <div id="val-fora-faixa" class="font-black text-sm text-slate-900">00h 00m 00s</div>
+          <span class="text-[9px] text-slate-400 font-medium mt-1">Lim: <span id="lbl-lim-degelo">00h 05m</span></span>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between bg-blue-50/20">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] font-bold text-slate-600 uppercase">HARDWARE</span>
+            <span class="text-blue-600 text-sm">📟</span>
+          </div>
+          <div class="font-black text-sm text-blue-700 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span> ONLINE
+          </div>
+          <span class="text-[9px] text-slate-400 font-medium mt-1">Conectado</span>
+        </div>
+
+      </div>
+
+      <!-- STATUS DOS EQUIPAMENTOS -->
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3.5">
+        <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center justify-between">
+          <span>⚙️ STATUS DOS EQUIPAMENTOS</span>
+        </h3>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
+            <span class="text-[10px] font-extrabold text-slate-500 uppercase block">COMPRESSOR</span>
+            <span id="st-compressor" class="text-xs font-black text-slate-400 block">--</span>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
+            <span class="text-[10px] font-extrabold text-slate-500 uppercase block">PORTA</span>
+            <span id="st-porta" class="text-xs font-black text-slate-400 block">--</span>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
+            <span class="text-[10px] font-extrabold text-slate-500 uppercase block">VENTILAÇÃO</span>
+            <span id="st-ventilacao" class="text-xs font-black text-slate-400 block">--</span>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
+            <span class="text-[10px] font-extrabold text-slate-500 uppercase block">ALARME</span>
+            <span id="st-alarme" class="text-xs font-black text-slate-400 block">--</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ABA 2: TEMPERATURA E RELATÓRIOS -->
+    <div id="aba-temperatura" class="hidden space-y-4 sm:space-y-5">
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4">FILTRO DE PERÍODO E RELATÓRIOS</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-end">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1">Data/Hora Início</label>
+            <input type="datetime-local" id="temp-inicio" class="w-full border border-slate-300 rounded-lg p-2 text-xs">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1">Data/Hora Fim</label>
+            <input type="datetime-local" id="temp-fim" class="w-full border border-slate-300 rounded-lg p-2 text-xs">
+          </div>
+          <div>
+            <button onclick="filtrarGraficoTemperatura()" class="bg-blue-900 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-blue-950 transition-colors w-full">Filtrar Período</button>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="exportarCSV()" class="bg-blue-700 text-white font-bold text-xs px-3 py-2.5 rounded-lg hover:bg-blue-800 transition-colors w-1/2">CSV</button>
+            <button onclick="exportarPDF()" class="bg-slate-800 text-white font-bold text-xs px-3 py-2.5 rounded-lg hover:bg-slate-900 transition-colors w-1/2">PDF</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4">GRÁFICO HISTÓRICO</h3>
+        <div class="h-56 sm:h-72 w-full relative">
+          <canvas id="chartPeriodo"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA 3: ALARMES -->
+    <div id="aba-alarmes" class="hidden space-y-5">
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">HISTÓRICO DE ALARMES</h3>
+          <button onclick="limparHistoricoAlarmes()" class="text-xs font-bold text-blue-700 hover:text-blue-900 transition-colors bg-blue-50 px-2.5 py-1 rounded-md shadow-sm">Limpar</button>
+        </div>
+        <div class="overflow-x-auto w-full -mx-2 px-2">
+          <table class="w-full text-left text-xs min-w-[500px]">
+            <thead class="bg-slate-50 text-slate-500 uppercase border-b">
+              <tr>
+                <th class="p-2.5 sm:p-3">Data / Hora</th>
+                <th class="p-2.5 sm:p-3">Evento / Alarme</th>
+                <th class="p-2.5 sm:p-3">Nível</th>
+                <th class="p-2.5 sm:p-3">Status</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-alarmes" class="divide-y whitespace-nowrap">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA 4: CONFIGURAÇÕES -->
+    <div id="aba-configuracoes" class="hidden bg-white p-4 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+      <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">CONFIGURAÇÕES DO SISTEMA E TELEGRAM</h3>
+      <p class="text-xs text-slate-500">Ajuste os parâmetros do monitoramento e insira as credenciais do seu bot do Telegram.</p>
+      
+      <div class="max-w-md space-y-3.5">
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1">ID do Canal ThingSpeak</label>
+          <input type="text" id="input-channel-id" placeholder="Ex: 3498175" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-900 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1">ThingSpeak Read API Key (Opcional)</label>
+          <input type="text" id="input-write-api-key" placeholder="Apenas Read Key se o canal for privado" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-900 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1">Offset de Temperatura (°C)</label>
+          <input type="number" step="0.1" id="input-temp-offset" placeholder="Ex: -4.9 ou 1.2" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-900 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1">Tempo de Degelo (Minutos)</label>
+          <input type="number" min="1" max="120" id="input-tempo-degelo" placeholder="Ex: 5" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-900 outline-none">
+        </div>
+
+        <hr class="border-slate-200 my-2">
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Telegram Bot Token</label>
+          <input type="text" id="input-telegram-token" placeholder="Ex: 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-900 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Telegram Chat ID</label>
+          <input type="text" id="input-telegram-chatid" placeholder="Ex: -5089800564" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-900 outline-none">
+        </div>
+
+        <div class="flex gap-2 pt-1">
+          <button onclick="salvarConfiguracao()" id="btn-salvar-config" class="bg-blue-900 text-white font-bold text-xs px-4 py-3 rounded-xl hover:bg-blue-950 transition-colors shadow flex-1 flex items-center justify-center gap-2">
+            <span>Salvar Parâmetros</span>
+          </button>
+          <button onclick="testarTelegramManual()" class="bg-emerald-600 text-white font-bold text-xs px-4 py-3 rounded-xl hover:bg-emerald-700 transition-colors shadow flex items-center justify-center gap-1.5">
+            <span>Testar Telegram</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- BARRA DE NAVEGAÇÃO INFERIOR (MOBILE) -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-[#0f172a] border-t border-slate-800 flex justify-around items-center pt-2 pb-safe z-50 shadow-2xl">
+    <button onclick="mudarAba('dashboard')" id="btn-dash-mb" class="flex flex-col items-center gap-1 text-blue-500 py-1 px-3">
       <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
       <span class="text-[9px] font-bold">Dashboard</span>
     </button>
@@ -401,7 +730,7 @@
         return;
       }
 
-      const url = `https://api.telegram.org/bot${tokenAtual}/sendMessage`;
+      const url = `[https://api.telegram.org/bot$](https://api.telegram.org/bot$){tokenAtual}/sendMessage`;
       const dados = {
         chat_id: chatidAtual.trim(),
         text: `❄️ [REI DO GELO - ALERTA]\n\n${mensagem}`
@@ -430,29 +759,33 @@
       dispararTelegram("🔔 Teste de funcionamento manual realizado com sucesso a partir do painel Rei do Gelo!", true);
     }
 
-    // Gerencia o loop de reenvio automático a cada 5 minutos (300000 ms) se houver qualquer alarme ativo
+    // Gerencia o loop cíclico de reenvio automático a cada 5 minutos (300.000 ms) enquanto houver alarme ativo
     function gerenciarLoopReenvioAlarmes() {
       const temProblemaAtivo = estadoAlarmeAtivo.conexao || estadoAlarmeAtivo.redeEletrica || estadoAlarmeAtivo.falhaSensor || estadoAlarmeAtivo.temperaturaAnomala;
 
-      if (temProblemaAtivo && !intervaloReenvioAlarme) {
-        intervaloReenvioAlarme = setInterval(() => {
-          let descricoesAtivas = [];
-          if (estadoAlarmeAtivo.conexao) descricoesAtivas.push("🚨 Perda de Conexão com o Hardware");
-          if (estadoAlarmeAtivo.redeEletrica) descricoesAtivas.push("⚡ Queda na Rede Elétrica");
-          if (estadoAlarmeAtivo.falhaSensor) descricoesAtivas.push("🌡️ Falha no Sensor de Temperatura");
-          if (estadoAlarmeAtivo.temperaturaAnomala) {
-            let tempTexto = ultimaTemperaturaCalculada !== null ? `${ultimaTemperaturaCalculada.toFixed(1)} °C` : "Fora de faixa";
-            descricoesAtivas.push(`⚠️ Temperatura Anómala / Fora da Faixa (${tempTexto})`);
-          }
+      if (temProblemaAtivo) {
+        if (!intervaloReenvioAlarme) {
+          intervaloReenvioAlarme = setInterval(() => {
+            let descricoesAtivas = [];
+            if (estadoAlarmeAtivo.conexao) descricoesAtivas.push("🚨 Perda de Conexão com o Hardware");
+            if (estadoAlarmeAtivo.redeEletrica) descricoesAtivas.push("⚡ Queda na Rede Elétrica");
+            if (estadoAlarmeAtivo.falhaSensor) descricoesAtivas.push("🌡️ Falha no Sensor de Temperatura");
+            if (estadoAlarmeAtivo.temperaturaAnomala) {
+              let tempTexto = ultimaTemperaturaCalculada !== null ? `${ultimaTemperaturaCalculada.toFixed(1)} °C` : "Fora de faixa";
+              descricoesAtivas.push(`⚠️ Temperatura Anómala / Fora da Faixa (${tempTexto})`);
+            }
 
-          if (descricoesAtivas.length > 0) {
-            let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 5 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + descricoesAtivas.join("\n");
-            dispararTelegram(msgRecorrente);
-          }
-        }, 300000); // 300.000 ms = exatamente 5 minutos
-      } else if (!temProblemaAtivo && intervaloReenvioAlarme) {
-        clearInterval(intervaloReenvioAlarme);
-        intervaloReenvioAlarme = null;
+            if (descricoesAtivas.length > 0) {
+              let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 5 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + descricoesAtivas.join("\n");
+              dispararTelegram(msgRecorrente);
+            }
+          }, 300000); // 300.000 ms = exatamente 5 minutos
+        }
+      } else {
+        if (intervaloReenvioAlarme) {
+          clearInterval(intervaloReenvioAlarme);
+          intervaloReenvioAlarme = null;
+        }
       }
     }
 
@@ -602,7 +935,7 @@
 
       let readKeyParam = writeApiKey ? `&api_key=${writeApiKey}` : '';
       
-      fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=800${readKeyParam}&_ts=${Date.now()}`)
+      fetch(`[https://api.thingspeak.com/channels/$](https://api.thingspeak.com/channels/$){channelId}/feeds.json?results=800${readKeyParam}&_ts=${Date.now()}`)
         .then(res => {
           if (!res.ok) throw new Error("Erro HTTP");
           return res.json();
@@ -742,6 +1075,8 @@
 
       const isFalha = isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0;
       tratarTemperaturaESensor(ultimaTemperaturaCalculada, isFalha);
+      
+      // Chamada obrigatória para garantir que o ciclo de 5 minutos avalie o estado atual
       gerenciarLoopReenvioAlarmes();
 
       let labels = [];
@@ -787,6 +1122,7 @@
           dispararTelegram("🌡️ Falha no Sensor: Erro de leitura ou sensor desconectado na câmara fria.");
           estadoAlarmeAtivo.falhaSensor = true;
         }
+        gerenciarLoopReenvioAlarmes();
         return;
       }
 
@@ -831,6 +1167,7 @@
           estadoAlarmeAtivo.temperaturaAnomala = true;
         }
       }
+      gerenciarLoopReenvioAlarmes();
     }
 
     function atualizarDisplayForaDaFaixa() {
@@ -971,6 +1308,9 @@
       iniciarGraficoPeriodo();
       iniciarGraficos();
       buscarDados();
+      
+      // Avalia o estado inicial dos alarmes assim que a página carrega
+      gerenciarLoopReenvioAlarmes();
       
       setInterval(buscarDados, 5000);
       setInterval(checarInatividade, 2000);
