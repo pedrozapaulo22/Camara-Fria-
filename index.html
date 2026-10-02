@@ -301,12 +301,17 @@
 
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Telegram Chat ID</label>
-          <input type="text" id="input-telegram-chatid" placeholder="Ex: 987654321" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-900 outline-none">
+          <input type="text" id="input-telegram-chatid" placeholder="Ex: 5631908640" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-900 outline-none">
         </div>
 
-        <button onclick="salvarConfiguracao()" id="btn-salvar-config" class="bg-blue-900 text-white font-bold text-xs px-4 py-3 rounded-xl hover:bg-blue-950 transition-colors shadow flex items-center justify-center gap-2 w-full mt-2">
-          <span>Salvar Parâmetros e Telegram</span>
-        </button>
+        <div class="flex gap-2 pt-1">
+          <button onclick="salvarConfiguracao()" id="btn-salvar-config" class="bg-blue-900 text-white font-bold text-xs px-4 py-3 rounded-xl hover:bg-blue-950 transition-colors shadow flex-1 flex items-center justify-center gap-2">
+            <span>Salvar Parâmetros</span>
+          </button>
+          <button onclick="testarTelegramManual()" class="bg-emerald-600 text-white font-bold text-xs px-4 py-3 rounded-xl hover:bg-emerald-700 transition-colors shadow flex items-center justify-center gap-1.5">
+            <span>Testar Telegram</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -371,6 +376,9 @@
       degeloExcedido: true
     };
 
+    // Controle de reenvio periódico a cada 5 minutos (300.000 ms) para alarmes ativos
+    let intervaloReenvioAlarme = null;
+
     document.getElementById('input-channel-id').value = channelId;
     document.getElementById('input-write-api-key').value = writeApiKey;
     document.getElementById('input-temp-offset').value = tempOffset;
@@ -385,19 +393,19 @@
     let ultimaRespostaComSucesso = 0;
     const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 120000;
 
-    function dispararTelegram(mensagem) {
-      let tokenAtual = localStorage.getItem('telegramToken') || telegramToken;
-      let chatidAtual = localStorage.getItem('telegramChatId') || telegramChatId;
+    function dispararTelegram(mensagem, forcarEnvio = false) {
+      let tokenAtual = document.getElementById('input-telegram-token').value.trim() || localStorage.getItem('telegramToken') || telegramToken;
+      let chatidAtual = document.getElementById('input-telegram-chatid').value.trim() || localStorage.getItem('telegramChatId') || telegramChatId;
 
       if (!tokenAtual || !chatidAtual) {
-        console.warn("Telegram não enviado: Token ou Chat ID em falta.");
+        if (forcarEnvio) alert("⚠️ Por favor, preencha o Token e o Chat ID do Telegram nas configurações.");
         return;
       }
 
       const url = `https://api.telegram.org/bot${tokenAtual}/sendMessage`;
       const dados = {
         chat_id: chatidAtual.trim(),
-        text: `❄️ [REI DO GELO - ALERTA]\n\n${mensagem}`
+        text: `❄️️ [REI DO GELO - ALERTA]\n\n${mensagem}`
       };
 
       fetch(url, {
@@ -407,9 +415,43 @@
       })
       .then(res => res.json())
       .then(resp => {
-        if (!resp.ok) console.error("Erro Telegram API:", resp.description);
+        if (resp.ok && forcarEnvio) {
+          alert("✅ Mensagem de teste enviada com sucesso para o Telegram!");
+        } else if (!resp.ok && forcarEnvio) {
+          alert("❌ Erro do Telegram: " + resp.description);
+        }
       })
-      .catch(err => console.error("Erro de rede ao enviar Telegram:", err));
+      .catch(err => {
+        console.error("Erro de rede:", err);
+        if (forcarEnvio) alert("❌ Erro de rede ao conectar com o Telegram.");
+      });
+    }
+
+    function testarTelegramManual() {
+      dispararTelegram("🔔 Teste de funcionamento manual realizado com sucesso a partir do painel Rei do Gelo!", true);
+    }
+
+    // Gerencia o loop de repetição a cada 5 minutos caso haja algum alarme crítico ativo
+    function gerenciarLoopReenvioAlarmes() {
+      const temProblemaAtivo = estadoAlarmeAtivo.conexao || estadoAlarmeAtivo.redeEletrica || estadoAlarmeAtivo.falhaSensor || estadoAlarmeAtivo.degeloExcedido;
+
+      if (temProblemaAtivo && !intervaloReenvioAlarme) {
+        intervaloReenvioAlarme = setInterval(() => {
+          let descricoesAtivas = [];
+          if (estadoAlarmeAtivo.conexao) descricoesAtivas.push("🚨 Perda de Conexão com o Hardware");
+          if (estadoAlarmeAtivo.redeEletrica) descricoesAtivas.push("⚡ Queda na Rede Elétrica");
+          if (estadoAlarmeAtivo.falhaSensor) descricoesAtivas.push("🌡️ Falha no Sensor de Temperatura");
+          if (estadoAlarmeAtivo.degeloExcedido) descricoesAtivas.push(`⚠️ Degelo Excedido (>${tempoDegeloMinutos} min)`);
+
+          if (descricoesAtivas.length > 0) {
+            let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 5 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + descricoesAtivas.join("\n");
+            dispararTelegram(msgRecorrente);
+          }
+        }, 300000); // 300.000 ms = 5 minutos
+      } else if (!temProblemaAtivo && intervaloReenvioAlarme) {
+        clearInterval(intervaloReenvioAlarme);
+        intervaloReenvioAlarme = null;
+      }
     }
 
     function atualizarDataHora() {
@@ -462,9 +504,6 @@
 
       atualizarRotulosDegelo();
       alert('Configurações salvas e sincronizadas com sucesso!');
-      
-      // Teste imediato de envio ao salvar para confirmar se o bot está respondendo
-      dispararTelegram("✅ Configurações salvas com sucesso no sistema Rei do Gelo!");
       buscarDados();
     }
 
@@ -643,6 +682,7 @@
         dispararTelegram("🚨 Alerta Crítico: Perda de Conexão com o Hardware da Câmara Fria.");
         estadoAlarmeAtivo.conexao = true;
       }
+      gerenciarLoopReenvioAlarmes();
     }
 
     function marcarConectado() {
@@ -655,6 +695,7 @@
         dispararTelegram("✅ Sistema Normalizado: Conexão com o Hardware restabelecida.");
         estadoAlarmeAtivo.conexao = false;
       }
+      gerenciarLoopReenvioAlarmes();
     }
 
     function processarDadosThingSpeak(feeds) {
@@ -699,6 +740,7 @@
 
       const isFalha = isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0;
       tratarTemperaturaESensor(ultimaTemperaturaCalculada, isFalha);
+      gerenciarLoopReenvioAlarmes();
 
       let labels = [];
       let dataValores = [];
@@ -740,7 +782,7 @@
 
         if (!estadoAlarmeAtivo.falhaSensor) {
           adicionarAlarme("Falha no Sensor de Temp.", "CRÍTICO");
-          dispararTelegram("🌡️ Falha no Sensor: Erro de leitura ou sensor desconectado na câmara fria.");
+          dispararTelegram("🌡️️ Falha no Sensor: Erro de leitura ou sensor desconectado na câmara fria.");
           estadoAlarmeAtivo.falhaSensor = true;
         }
         return;
