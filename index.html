@@ -423,24 +423,30 @@
       dispararTelegram("🔔 Teste de funcionamento manual realizado com sucesso a partir do painel Rei do Gelo!", true);
     }
 
-    // Gerencia o loop de reenvio periódico a cada 5 minutos (300.000 ms) se houver algum alarme ativo
+    // Varredura inicial e gerenciamento do loop de reenvio periódico a cada 5 minutos (300.000 ms)
     function gerenciarLoopReenvioAlarmes() {
-      const temProblemaAtivo = estadoAlarmeAtivo.conexao || estadoAlarmeAtivo.redeEletrica || estadoAlarmeAtivo.falhaSensor || estadoAlarmeAtivo.temperaturaAnomala;
+      // Varre o histórico armazenado em busca de alarmes com status 'Ativo'
+      let alarmesAtivosStorage = listaAlarmes.filter(a => a.status === 'Ativo');
 
-      if (temProblemaAtivo) {
+      if (alarmesAtivosStorage.length > 0) {
+        // Atualiza os estados lógicos correspondentes com base na varredura inicial
+        alarmesAtivosStorage.forEach(item => {
+          if (item.evento.includes("Conexão")) estadoAlarmeAtivo.conexao = true;
+          if (item.evento.includes("Rede Elétrica")) estadoAlarmeAtivo.redeEletrica = true;
+          if (item.evento.includes("Sensor")) estadoAlarmeAtivo.falhaSensor = true;
+          if (item.evento.includes("Temperatura") || item.evento.includes("Degelo")) estadoAlarmeAtivo.temperaturaAnomala = true;
+        });
+
+        // Dispara imediatamente o primeiro aviso caso haja alarmes ativos logo na inicialização
+        let descricoesAtivas = alarmesAtivosStorage.map(a => `⚠️ ${a.evento} (${a.nivel})`);
+        dispararTelegram(`🚨 *ALERTA DE SISTEMA (Inicialização)*\nForam encontrados eventos ATIVOS no histórico da câmara fria:\n\n` + descricoesAtivas.join("\n"));
+
         if (!intervaloReenvioAlarme) {
           intervaloReenvioAlarme = setInterval(() => {
-            let descricoesAtivas = [];
-            if (estadoAlarmeAtivo.conexao) descricoesAtivas.push("🚨 Perda de Conexão com o Hardware");
-            if (estadoAlarmeAtivo.redeEletrica) descricoesAtivas.push("⚡ Queda na Rede Elétrica");
-            if (estadoAlarmeAtivo.falhaSensor) descricoesAtivas.push("🌡️ Falha no Sensor de Temperatura");
-            if (estadoAlarmeAtivo.temperaturaAnomala) {
-              let tempTexto = ultimaTemperaturaCalculada !== null ? `${ultimaTemperaturaCalculada.toFixed(1)} °C` : "Fora de faixa";
-              descricoesAtivas.push(`⚠️ Temperatura Anómala / Fora da Faixa (${tempTexto})`);
-            }
-
-            if (descricoesAtivas.length > 0) {
-              let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 5 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + descricoesAtivas.join("\n");
+            let atuaisAtivos = listaAlarmes.filter(a => a.status === 'Ativo');
+            if (atuaisAtivos.length > 0) {
+              let msgs = atuaisAtivos.map(a => `• ${a.evento}`);
+              let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 5 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + msgs.join("\n");
               dispararTelegram(msgRecorrente);
             }
           }, 300000); // Exatamente 5 minutos
@@ -962,11 +968,11 @@
       iniciarGraficoPeriodo();
       iniciarGraficos();
       
-      // Primeira busca imediata ao abrir a página
-      buscarDados();
+      // Realiza a varredura inicial de alarmes ativos e dispara o loop automático imediatamente ao carregar
       gerenciarLoopReenvioAlarmes();
-      
-      // Consultas automáticas a cada 5 segundos buscando novos dados do ThingSpeak em tempo real (sem precisar atualizar a página)
+
+      // Busca dados do ThingSpeak e mantém checagens contínuas em segundo plano
+      buscarDados();
       setInterval(buscarDados, 5000);
       setInterval(checarInatividade, 2000);
     };
