@@ -404,7 +404,7 @@
       const url = `https://api.telegram.org/bot${tokenAtual}/sendMessage`;
       const dados = {
         chat_id: chatidAtual.trim(),
-        text: `❄️️ [REI DO GELO - ALERTA]\n\n${mensagem}`
+        text: `❄️ [REI DO GELO - ALERTA]\n\n${mensagem}`
       };
 
       fetch(url, {
@@ -430,6 +430,7 @@
       dispararTelegram("🔔 Teste de funcionamento manual realizado com sucesso a partir do painel Rei do Gelo!", true);
     }
 
+    // Gerencia o ciclo automático de 5 minutos (300.000 ms) enquanto houver qualquer problema ativo
     function gerenciarLoopReenvioAlarmes() {
       const temProblemaAtivo = estadoAlarmeAtivo.conexao || estadoAlarmeAtivo.redeEletrica || estadoAlarmeAtivo.falhaSensor || estadoAlarmeAtivo.temperaturaAnomala;
 
@@ -449,7 +450,7 @@
               let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 5 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + descricoesAtivas.join("\n");
               dispararTelegram(msgRecorrente);
             }
-          }, 300000); // 300.000 ms = exatamente 5 minutos
+          }, 300000); // Exatamente 5 minutos
         }
       } else {
         if (intervaloReenvioAlarme) {
@@ -831,7 +832,7 @@
 
         if (!estadoAlarmeAtivo.temperaturaAnomala) {
           adicionarAlarme(`Temperatura Fora da Faixa (${temp.toFixed(1)} °C)`, "CRÍTICO");
-          dispararTelegram(`⚠️️ Alerta de Temperatura: A câmara encontra-se em ${temp.toFixed(1)} °C (Fora da faixa segura de -30°C a -1°C).`);
+          dispararTelegram(`⚠️ Alerta de Temperatura: A câmara encontra-se em ${temp.toFixed(1)} °C (Fora da faixa segura de -30°C a -1°C).`);
           estadoAlarmeAtivo.temperaturaAnomala = true;
         }
       }
@@ -977,8 +978,10 @@
       iniciarGraficos();
       buscarDados();
       
+      // Avalia o estado inicial e dispara o ciclo automático assim que a tela abre
       gerenciarLoopReenvioAlarmes();
       
+      // Consultas automáticas a cada 5 segundos buscando novos dados do ThingSpeak em tempo real
       setInterval(buscarDados, 5000);
       setInterval(checarInatividade, 2000);
     };
