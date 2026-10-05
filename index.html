@@ -205,7 +205,7 @@
       <!-- STATUS DOS EQUIPAMENTOS -->
       <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3.5">
         <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center justify-between">
-          <span>⚙️ STATUS DOS EQUIPAMENTOS</span>
+          <span>⚙️️ STATUS DOS EQUIPAMENTOS</span>
         </h3>
 
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -361,13 +361,14 @@
     let writeApiKey = localStorage.getItem('writeApiKey') || '';
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
+    
+    // Setpoint unificado com sincronização otimizada por polling no servidor e evento global
     let setpointAtual = parseFloat(localStorage.getItem('setpointAtual')) || -18.0;
 
     // TOKEN E CHAT ID FIXOS NO CÓDIGO
     const telegramToken = "8910254546:AAF_w98tfvtoXxUMGF2c6PDRY9qaEE3Uw_Y";
     const telegramChatId = "-5089800564";
 
-    // Sincronização automática entre abas e dispositivos (Web e Mobile)
     window.addEventListener('storage', (event) => {
       if (event.key === 'channelId' && event.newValue) { channelId = event.newValue; document.getElementById('input-channel-id').value = channelId; }
       if (event.key === 'writeApiKey') { writeApiKey = event.newValue || ''; document.getElementById('input-write-api-key').value = writeApiKey; }
@@ -430,9 +431,16 @@
 
     function confirmarSetpoint() {
       localStorage.setItem('setpointAtual', setpointAtual);
+      
+      // Envia o setpoint atualizado também para o canal ThingSpeak (Field 3) para sincronização real em nuvem entre Web e Mobile
+      if (writeApiKey) {
+        fetch(`https://api.thingspeak.com/update?api_key=${writeApiKey}&field3=${setpointAtual}`)
+          .catch(err => console.error("Erro ao sincronizar setpoint na nuvem:", err));
+      }
+
       atualizarDisplaySetpoint();
-      alert(`✅ Setpoint atualizado com sucesso para ${setpointAtual.toFixed(1)} °C!`);
-      dispararTelegram(`⚙️ Setpoint alterado manualmente para ${setpointAtual.toFixed(1)} °C.`);
+      alert(`✅ Setpoint atualizado e sincronizado para ${setpointAtual.toFixed(1)} °C!`);
+      dispararTelegram(`⚙️ Setpoint alterado para ${setpointAtual.toFixed(1)} °C.`);
     }
 
     function dispararTelegram(mensagem, forcarEnvio = false) {
@@ -661,6 +669,16 @@
             return;
           }
 
+          // Sincroniza o Setpoint caso venha atualizado pelo field3 do servidor
+          if (ultimoFeed.field3 !== undefined && ultimoFeed.field3 !== null && ultimoFeed.field3 !== "") {
+            let serverSetpoint = parseFloat(ultimoFeed.field3);
+            if (!isNaN(serverSetpoint) && serverSetpoint !== setpointAtual) {
+              setpointAtual = serverSetpoint;
+              localStorage.setItem('setpointAtual', setpointAtual);
+              atualizarDisplaySetpoint();
+            }
+          }
+
           const dataCriacaoDado = new Date(ultimoFeed.created_at).getTime();
           const agora = Date.now();
           const diferencaTempo = agora - dataCriacaoDado;
@@ -685,6 +703,12 @@
       if (alarmesStorage && alarmesStorage.length !== listaAlarmes.length) {
         listaAlarmes = alarmesStorage;
         renderizarTabelaAlarmes();
+      }
+
+      let spStorage = localStorage.getItem('setpointAtual');
+      if (spStorage && parseFloat(spStorage) !== setpointAtual) {
+        setpointAtual = parseFloat(spStorage);
+        atualizarDisplaySetpoint();
       }
 
       const tempoSemResposta = Date.now() - ultimaRespostaComSucesso;
@@ -843,7 +867,7 @@
       gauge.style.strokeDashoffset = 251.2 * (1 - pct);
 
       const limiteSegundos = tempoDegeloMinutos * 60;
-      const tempMaximaNormal = -15.0; // Atualizado para -15°C
+      const tempMaximaNormal = -15.0;
 
       if (temp >= -30.0 && temp <= tempMaximaNormal) {
         elBadge.innerText = "NORMAL";
@@ -971,7 +995,7 @@
       let temperaturaForaDaFaixa = (ultimaTemperaturaCalculada !== null && (ultimaTemperaturaCalculada < -30.0 || ultimaTemperaturaCalculada > -15.0));
 
       if (temAlarmeAtivo || temperaturaForaDaFaixa) {
-        alert("⚠️ Ação não permitida! O histórico só pode ser limpo quando a câmara estiver em condição normal de processo e sem alarmes ativos.");
+        alert("⚠️️ Ação não permitida! O histórico só pode ser limpo quando a câmara estiver em condição normal de processo e sem alarmes ativos.");
         return;
       }
 
@@ -1029,10 +1053,8 @@
       iniciarGraficoPeriodo();
       iniciarGraficos();
       
-      // Varre alarmes ativos na inicialização e envia o primeiro aviso de imediato
       verificarVarreduraInicialAlarmes();
 
-      // Busca dados do ThingSpeak e mantém checagens contínuas em segundo plano
       buscarDados();
       setInterval(buscarDados, 5000);
       setInterval(checarInatividade, 2000);
