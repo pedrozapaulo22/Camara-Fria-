@@ -352,6 +352,12 @@
       if (event.key === 'writeApiKey') { writeApiKey = event.newValue || ''; document.getElementById('input-write-api-key').value = writeApiKey; }
       if (event.key === 'tempOffset') { tempOffset = parseFloat(event.newValue) || 0.0; document.getElementById('input-temp-offset').value = tempOffset; }
       if (event.key === 'tempoDegeloMinutos') { tempoDegeloMinutos = parseInt(event.newValue) || 5; document.getElementById('input-tempo-degelo').value = tempoDegeloMinutos; atualizarRotulosDegelo(); }
+      
+      // Sincronização em tempo real do histórico de alarmes entre web e mobile
+      if (event.key === 'historicoAlarmes') {
+        listaAlarmes = JSON.parse(event.newValue) || [];
+        renderizarTabelaAlarmes();
+      }
     });
 
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes'));
