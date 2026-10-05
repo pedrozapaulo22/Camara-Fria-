@@ -90,12 +90,12 @@
               <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-1">
                 <span id="val-temperatura" class="text-2xl sm:text-3xl font-black text-slate-900 leading-none tracking-tight">-</span>
                 <span id="badge-sensor-status" class="bg-blue-900 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5">SEM SINAL</span>
-                <span id="lbl-setpoint-gauge" class="text-[10px] text-slate-400 font-bold">Setpoint: -18.0 °C</span>
+                <span class="text-[10px] text-slate-400 font-bold">Setpoint: <span id="lbl-sp-gauge">--</span> °C</span>
               </div>
             </div>
           </div>
 
-          <!-- PARÂMETROS E AJUSTE DE SETPOINT -->
+          <!-- PARÂMETROS E AJUSTE DE SETPOINT (ESTRUTURA DA ADEGA) -->
           <div class="md:col-span-7 space-y-3.5">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between">
@@ -123,19 +123,22 @@
               <span class="text-slate-400 font-black text-base">⏱</span>
             </div>
 
-            <!-- CARD AJUSTE DE SETPOINT -->
-            <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div>
-                <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Ajuste de Setpoint</span>
-                <span id="val-setpoint-display" class="text-lg font-black text-slate-900">-18.0 °C</span>
-              </div>
-              <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-                <div class="flex items-center gap-1.5">
-                  <button onclick="alterarSetpointValor(-0.5)" class="w-8 h-8 rounded-lg bg-white border border-slate-300 font-black text-slate-700 shadow-sm hover:bg-slate-100 transition-colors flex items-center justify-center">-</button>
-                  <button onclick="alterarSetpointValor(0.5)" class="w-8 h-8 rounded-lg bg-white border border-slate-300 font-black text-slate-700 shadow-sm hover:bg-slate-100 transition-colors flex items-center justify-center">+</button>
+            <!-- CONTROLE DE SETPOINT COM ESTRUTURA UNIFICADA DA ADEGA -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80 shadow-sm space-y-3">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ajuste de Setpoint</p>
+                  <p id="display-setpoint" class="text-xl font-black text-slate-800">-- °C</p>
                 </div>
-                <button onclick="confirmarSetpoint()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow transition-colors">
-                  Confirmar Setpoint
+                <div class="flex items-center gap-1.5">
+                  <button onclick="ajustarSetpointLocal(-0.5)" class="w-9 h-9 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-lg font-black text-lg shadow-sm active:scale-95 transition-all flex items-center justify-center">-</button>
+                  <button onclick="ajustarSetpointLocal(0.5)" class="w-9 h-9 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-lg font-black text-lg shadow-sm active:scale-95 transition-all flex items-center justify-center">+</button>
+                </div>
+              </div>
+
+              <div class="flex justify-start">
+                <button id="btn-confirmar-setpoint" onclick="confirmarEnviarSetpoint()" class="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-lg shadow-md active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span>CONFIRMAR SETPOINT</span>
                 </button>
               </div>
             </div>
@@ -205,7 +208,7 @@
       <!-- STATUS DOS EQUIPAMENTOS -->
       <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3.5">
         <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center justify-between">
-          <span>⚙️️ STATUS DOS EQUIPAMENTOS</span>
+          <span>⚙️ STATUS DOS EQUIPAMENTOS</span>
         </h3>
 
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -361,35 +364,21 @@
     let writeApiKey = localStorage.getItem('writeApiKey') || '';
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
-    
-    // Setpoint unificado com sincronização otimizada por polling no servidor e evento global
-    let setpointAtual = parseFloat(localStorage.getItem('setpointAtual')) || -18.0;
 
-    // TOKEN E CHAT ID FIXOS NO CÓDIGO
+    // VARIÁVEIS DE CONTROLE DE SETPOINT DA ADEGA (SINCRONIZADAS VIA CLOUD)
+    let setpointAtual = null;
+    let setpointPendente = null;
+    let gravandoSetpoint = false;
+    let timerTravaSetpoint = null;
+
+    // TOKEN E CHAT ID FIXOS DO TELEGRAM
     const telegramToken = "8910254546:AAF_w98tfvtoXxUMGF2c6PDRY9qaEE3Uw_Y";
     const telegramChatId = "-5089800564";
 
-    window.addEventListener('storage', (event) => {
-      if (event.key === 'channelId' && event.newValue) { channelId = event.newValue; document.getElementById('input-channel-id').value = channelId; }
-      if (event.key === 'writeApiKey') { writeApiKey = event.newValue || ''; document.getElementById('input-write-api-key').value = writeApiKey; }
-      if (event.key === 'tempOffset') { tempOffset = parseFloat(event.newValue) || 0.0; document.getElementById('input-temp-offset').value = tempOffset; }
-      if (event.key === 'tempoDegeloMinutos') { tempoDegeloMinutos = parseInt(event.newValue) || 5; document.getElementById('input-tempo-degelo').value = tempoDegeloMinutos; atualizarRotulosDegelo(); }
-      if (event.key === 'setpointAtual' && event.newValue) {
-        setpointAtual = parseFloat(event.newValue) || -18.0;
-        atualizarDisplaySetpoint();
-      }
-    });
-
-    let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes'));
-    if (!listaAlarmes) {
-      listaAlarmes = [
-        { data: "30/09/2026, 14:29:06", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-        { data: "30/09/2026, 13:55:44", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-        { data: "30/09/2026, 13:37:46", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-        { data: "30/09/2026, 13:29:03", evento: "Degelo Excedido (>5 min)", nivel: "CRÍTICO", status: "Ativo" }
-      ];
-      localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
-    }
+    let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes')) || [
+      { data: "30/09/2026, 14:29:06", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+      { data: "30/09/2026, 13:29:03", evento: "Degelo Excedido (>5 min)", nivel: "CRÍTICO", status: "Ativo" }
+    ];
 
     let timestampInicioForaFaixa = new Date("2026-09-30T13:29:03").getTime();
     let segundosForaDaFaixa = 0;
@@ -419,28 +408,53 @@
     let ultimaRespostaComSucesso = 0;
     const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 120000;
 
-    function atualizarDisplaySetpoint() {
-      document.getElementById('val-setpoint-display').innerText = `${setpointAtual.toFixed(1)} °C`;
-      document.getElementById('lbl-setpoint-gauge').innerText = `Setpoint: ${setpointAtual.toFixed(1)} °C`;
-    }
-
-    function alterarSetpointValor(delta) {
-      setpointAtual = Math.round((setpointAtual + delta) * 10) / 10;
-      atualizarDisplaySetpoint();
-    }
-
-    function confirmarSetpoint() {
-      localStorage.setItem('setpointAtual', setpointAtual);
+    // ESTRUTURA DE SETPOINT IDÊNTICA À DA ADEGA
+    function ajustarSetpointLocal(delta) {
+      let base = (setpointPendente !== null) ? setpointPendente : (setpointAtual !== null ? setpointAtual : -18.0);
+      setpointPendente = Math.min(-5, Math.max(-30, base + delta)); // Limites para câmara fria (-30°C a -5°C)
       
-      // Envia o setpoint atualizado também para o canal ThingSpeak (Field 3) para sincronização real em nuvem entre Web e Mobile
-      if (writeApiKey) {
-        fetch(`https://api.thingspeak.com/update?api_key=${writeApiKey}&field3=${setpointAtual}`)
-          .catch(err => console.error("Erro ao sincronizar setpoint na nuvem:", err));
-      }
+      document.getElementById('display-setpoint').innerText = `${setpointPendente.toFixed(1)} °C`;
+      
+      const btn = document.getElementById('btn-confirmar-setpoint');
+      btn.className = "py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-lg shadow-md active:scale-95 transition-all flex items-center justify-center gap-1.5 animate-pulse cursor-pointer";
+      btn.innerHTML = `<span>CONFIRMAR (${setpointPendente.toFixed(1)} °C)</span>`;
+    }
 
-      atualizarDisplaySetpoint();
-      alert(`✅ Setpoint atualizado e sincronizado para ${setpointAtual.toFixed(1)} °C!`);
-      dispararTelegram(`⚙️ Setpoint alterado para ${setpointAtual.toFixed(1)} °C.`);
+    function confirmarEnviarSetpoint() {
+      let valorParaSalvar = (setpointPendente !== null) ? setpointPendente : setpointAtual;
+      if (valorParaSalvar === null) return;
+
+      gravandoSetpoint = true;
+      setpointAtual = valorParaSalvar;
+
+      const btn = document.getElementById('btn-confirmar-setpoint');
+      btn.className = "py-2 px-4 bg-slate-400 text-white font-extrabold text-xs rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-not-allowed";
+      btn.innerHTML = `<span>SALVANDO...</span>`;
+
+      // Envia diretamente para o Field 3 do ThingSpeak para garantir sincronia idêntica na Web e no Mobile
+      fetch(`https://api.thingspeak.com/update?api_key=${writeApiKey}&field3=${setpointAtual.toFixed(1)}`)
+        .then(() => {
+          btn.className = "py-2 px-4 bg-emerald-600 text-white font-extrabold text-xs rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5";
+          btn.innerHTML = `<span>SALVO COM SUCESSO!</span>`;
+          setpointPendente = null;
+          
+          document.getElementById('display-setpoint').innerText = `${setpointAtual.toFixed(1)} °C`;
+          document.getElementById('lbl-sp-gauge').innerText = `${setpointAtual.toFixed(1)}`;
+          dispararTelegram(`⚙️ Setpoint alterado para ${setpointAtual.toFixed(1)} °C.`);
+
+          if (timerTravaSetpoint) clearTimeout(timerTravaSetpoint);
+          timerTravaSetpoint = setTimeout(() => {
+            gravandoSetpoint = false;
+            btn.className = "py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-lg shadow-md active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer";
+            btn.innerHTML = `<span>CONFIRMAR SETPOINT</span>`;
+          }, 6000);
+        })
+        .catch(err => {
+          console.error("Erro ao gravar Setpoint:", err);
+          btn.className = "py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-lg shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer";
+          btn.innerHTML = `<span>ERRO - TENTAR NOVAMENTE</span>`;
+          gravandoSetpoint = false;
+        });
     }
 
     function dispararTelegram(mensagem, forcarEnvio = false) {
@@ -473,7 +487,6 @@
       dispararTelegram("🔔 Teste de funcionamento manual realizado com sucesso a partir do painel Rei do Gelo!", true);
     }
 
-    // Gerencia o loop de reenvio periódico a cada 2 minutos (120.000 ms) se houver alarmes ativos
     function gerenciarLoopReenvioAlarmes() {
       const temProblemaAtivo = estadoAlarmeAtivo.conexao || estadoAlarmeAtivo.redeEletrica || estadoAlarmeAtivo.falhaSensor || estadoAlarmeAtivo.temperaturaAnomala;
 
@@ -486,7 +499,7 @@
               let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 2 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + msgs.join("\n");
               dispararTelegram(msgRecorrente);
             }
-          }, 120000); // Exatamente 2 minutos
+          }, 120000);
         }
       } else {
         if (intervaloReenvioAlarme) {
@@ -499,13 +512,6 @@
     function verificarVarreduraInicialAlarmes() {
       let alarmesAtivosStorage = listaAlarmes.filter(a => a.status === 'Ativo');
       if (alarmesAtivosStorage.length > 0) {
-        alarmesAtivosStorage.forEach(item => {
-          if (item.evento.includes("Conexão")) estadoAlarmeAtivo.conexao = true;
-          if (item.evento.includes("Rede Elétrica")) estadoAlarmeAtivo.redeEletrica = true;
-          if (item.evento.includes("Sensor")) estadoAlarmeAtivo.falhaSensor = true;
-          if (item.evento.includes("Temperatura") || item.evento.includes("Degelo")) estadoAlarmeAtivo.temperaturaAnomala = true;
-        });
-
         let descricoesAtivas = alarmesAtivosStorage.map(a => `⚠️ ${a.evento} (${a.nivel})`);
         dispararTelegram(`🚨 *ALERTA DE SISTEMA (Inicialização)*\nForam encontrados eventos ATIVOS no histórico da câmara fria:\n\n` + descricoesAtivas.join("\n"));
         gerenciarLoopReenvioAlarmes();
@@ -669,13 +675,13 @@
             return;
           }
 
-          // Sincroniza o Setpoint caso venha atualizado pelo field3 do servidor
-          if (ultimoFeed.field3 !== undefined && ultimoFeed.field3 !== null && ultimoFeed.field3 !== "") {
-            let serverSetpoint = parseFloat(ultimoFeed.field3);
-            if (!isNaN(serverSetpoint) && serverSetpoint !== setpointAtual) {
-              setpointAtual = serverSetpoint;
-              localStorage.setItem('setpointAtual', setpointAtual);
-              atualizarDisplaySetpoint();
+          // Atualiza o Setpoint global do servidor se não estiver sendo alterado ativamente no momento
+          if (!gravandoSetpoint && setpointPendente === null && ultimoFeed.field3) {
+            let sp = parseFloat(ultimoFeed.field3);
+            if (!isNaN(sp)) {
+              setpointAtual = sp;
+              document.getElementById('display-setpoint').innerText = `${setpointAtual.toFixed(1)} °C`;
+              document.getElementById('lbl-sp-gauge').innerText = `${setpointAtual.toFixed(1)}`;
             }
           }
 
@@ -703,12 +709,6 @@
       if (alarmesStorage && alarmesStorage.length !== listaAlarmes.length) {
         listaAlarmes = alarmesStorage;
         renderizarTabelaAlarmes();
-      }
-
-      let spStorage = localStorage.getItem('setpointAtual');
-      if (spStorage && parseFloat(spStorage) !== setpointAtual) {
-        setpointAtual = parseFloat(spStorage);
-        atualizarDisplaySetpoint();
       }
 
       const tempoSemResposta = Date.now() - ultimaRespostaComSucesso;
@@ -867,7 +867,7 @@
       gauge.style.strokeDashoffset = 251.2 * (1 - pct);
 
       const limiteSegundos = tempoDegeloMinutos * 60;
-      const tempMaximaNormal = -15.0;
+      const tempMaximaNormal = -15.0; // Ajustado para -15°C
 
       if (temp >= -30.0 && temp <= tempMaximaNormal) {
         elBadge.innerText = "NORMAL";
@@ -995,7 +995,7 @@
       let temperaturaForaDaFaixa = (ultimaTemperaturaCalculada !== null && (ultimaTemperaturaCalculada < -30.0 || ultimaTemperaturaCalculada > -15.0));
 
       if (temAlarmeAtivo || temperaturaForaDaFaixa) {
-        alert("⚠️️ Ação não permitida! O histórico só pode ser limpo quando a câmara estiver em condição normal de processo e sem alarmes ativos.");
+        alert("⚠️ Ação não permitida! O histórico só pode ser limpo quando a câmara estiver em condição normal de processo e sem alarmes ativos.");
         return;
       }
 
@@ -1047,7 +1047,6 @@
 
     window.onload = () => {
       atualizarRotulosDegelo();
-      atualizarDisplaySetpoint();
       calcularTempoContemporaneo();
       renderizarTabelaAlarmes();
       iniciarGraficoPeriodo();
