@@ -108,7 +108,7 @@
               <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between">
                 <div>
                   <span class="text-[10px] font-bold text-slate-400 block">Temp. Máxima Normal</span>
-                  <span class="text-sm font-black text-slate-800">-14 °C</span>
+                  <span class="text-sm font-black text-slate-800">-1 °C</span>
                 </div>
                 <span class="text-blue-600 font-black text-lg">❄</span>
               </div>
@@ -356,12 +356,16 @@
 
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes'));
     if (!listaAlarmes) {
-      listaAlarmes = [];
+      listaAlarmes = [
+        { data: "30/09/2026, 14:29:06", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "30/09/2026, 13:55:44", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "30/09/2026, 13:37:46", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "30/09/2026, 13:29:03", evento: "Degelo Excedido (>5 min)", nivel: "CRÍTICO", status: "Ativo" }
+      ];
       localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
     }
 
-    // Carrega ou inicializa a referência real da primeira excursão fora da faixa
-    let timestampInicioForaFaixa = parseInt(localStorage.getItem('timestampInicioForaFaixa')) || 0;
+    let timestampInicioForaFaixa = new Date("2026-09-30T13:29:03").getTime();
     let segundosForaDaFaixa = 0;
     let ultimaTemperaturaCalculada = null;
 
@@ -369,9 +373,7 @@
       conexao: false,
       redeEletrica: false,
       falhaSensor: false,
-      degelo: false,
-      temperaturaAlta: false,
-      temperaturaBaixa: false
+      temperaturaAnomala: false
     };
 
     let intervaloReenvioAlarme = null;
@@ -421,19 +423,20 @@
       dispararTelegram("🔔 Teste de funcionamento manual realizado com sucesso a partir do painel Rei do Gelo!", true);
     }
 
+    // Gerencia o loop de reenvio periódico a cada 2 minutos (120.000 ms) se houver alarmes ativos
     function gerenciarLoopReenvioAlarmes() {
-      const temProblemaAtivo = estadoAlarmeAtivo.conexao || estadoAlarmeAtivo.redeEletrica || estadoAlarmeAtivo.falhaSensor || estadoAlarmeAtivo.degelo || estadoAlarmeAtivo.temperaturaAlta || estadoAlarmeAtivo.temperaturaBaixa;
+      const temProblemaAtivo = estadoAlarmeAtivo.conexao || estadoAlarmeAtivo.redeEletrica || estadoAlarmeAtivo.falhaSensor || estadoAlarmeAtivo.temperaturaAnomala;
 
       if (temProblemaAtivo) {
         if (!intervaloReenvioAlarme) {
           intervaloReenvioAlarme = setInterval(() => {
             let atuaisAtivos = listaAlarmes.filter(a => a.status === 'Ativo');
             if (atuaisAtivos.length > 0) {
-              let msgs = atuaisAtivos.map(a => `• ${a.evento} (Desde: ${a.data})`);
+              let msgs = atuaisAtivos.map(a => `• ${a.evento}`);
               let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 2 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + msgs.join("\n");
               dispararTelegram(msgRecorrente);
             }
-          }, 120000);
+          }, 120000); // Exatamente 2 minutos
         }
       } else {
         if (intervaloReenvioAlarme) {
@@ -450,12 +453,10 @@
           if (item.evento.includes("Conexão")) estadoAlarmeAtivo.conexao = true;
           if (item.evento.includes("Rede Elétrica")) estadoAlarmeAtivo.redeEletrica = true;
           if (item.evento.includes("Sensor")) estadoAlarmeAtivo.falhaSensor = true;
-          if (item.evento.includes("Degelo")) estadoAlarmeAtivo.degelo = true;
-          if (item.evento.includes("Alta")) estadoAlarmeAtivo.temperaturaAlta = true;
-          if (item.evento.includes("Baixa")) estadoAlarmeAtivo.temperaturaBaixa = true;
+          if (item.evento.includes("Temperatura") || item.evento.includes("Degelo")) estadoAlarmeAtivo.temperaturaAnomala = true;
         });
 
-        let descricoesAtivas = alarmesAtivosStorage.map(a => `⚠️ ${a.evento} - Início: ${a.data} (${a.nivel})`);
+        let descricoesAtivas = alarmesAtivosStorage.map(a => `⚠️ ${a.evento} (${a.nivel})`);
         dispararTelegram(`🚨 *ALERTA DE SISTEMA (Inicialização)*\nForam encontrados eventos ATIVOS no histórico da câmara fria:\n\n` + descricoesAtivas.join("\n"));
         gerenciarLoopReenvioAlarmes();
       }
@@ -801,66 +802,46 @@
 
       const limiteSegundos = tempoDegeloMinutos * 60;
 
-      // Faixa normal: -30 °C a -14 °C
-      if (temp >= -30.0 && temp <= -14.0) {
+      if (temp >= -30.0 && temp <= -1.0) {
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-800 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5";
         gauge.classList.add('gauge-fill-normal');
 
-        // Zera a contagem e reseta os estados se retornou para a faixa segura
-        if (timestampInicioForaFaixa !== 0) {
-          timestampInicioForaFaixa = 0;
-          localStorage.setItem('timestampInicioForaFaixa', 0);
-        }
-
-        if (estadoAlarmeAtivo.degelo || estadoAlarmeAtivo.temperaturaAlta || estadoAlarmeAtivo.temperaturaBaixa) {
-          if (estadoAlarmeAtivo.degelo) { normalizarAlarme("Degelo Excedido"); estadoAlarmeAtivo.degelo = false; }
-          if (estadoAlarmeAtivo.temperaturaAlta) { normalizarAlarme("Temperatura Alta"); estadoAlarmeAtivo.temperaturaAlta = false; }
-          if (estadoAlarmeAtivo.temperaturaBaixa) { normalizarAlarme("Temperatura Baixa"); estadoAlarmeAtivo.temperaturaBaixa = false; }
+        if (estadoAlarmeAtivo.temperaturaAnomala) {
+          normalizarAlarme("Temperatura Fora da Faixa");
           dispararTelegram("✅ Temperatura Normalizada: A câmara retornou à faixa segura de operação.");
+          estadoAlarmeAtivo.temperaturaAnomala = false;
         }
       } 
       else {
-        // Se está fora da faixa, garante a marcação inicial da primeira excursão caso esteja zerada
-        if (timestampInicioForaFaixa === 0) {
-          timestampInicioForaFaixa = Date.now();
-          localStorage.setItem('timestampInicioForaFaixa', timestampInicioForaFaixa);
-        }
+        let nomeEventoAlarme = "";
+        let textoMsgTelegram = "";
 
-        // Verifica se estourou o tempo de degelo ou se atingiu alta/baixa crítica independentemente
         if (segundosForaDaFaixa <= limiteSegundos) {
           elBadge.innerText = "DEGELO";
           elBadge.className = "bg-sky-600 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-degelo');
           
-          if (!estadoAlarmeAtivo.degelo) {
-            adicionarAlarme(`Degelo Excedido (> ${tempoDegeloMinutos} min)`, "CRÍTICO");
-            dispararTelegram(`⚠️ Alerta de Degelo: A câmara encontra-se em ${temp.toFixed(1)} °C ultrapassando o tempo limite de tolerância.`);
-            estadoAlarmeAtivo.degelo = true;
-          }
+          nomeEventoAlarme = `Degelo Excedido (> ${tempoDegeloMinutos} min)`;
+          textoMsgTelegram = `⚠️ Alerta de Degelo: A câmara encontra-se em ${temp.toFixed(1)} °C ultrapassando o tempo limite de tolerância.`;
         } else {
-          // Passou do tempo limite de degelo ou a temperatura está criticamente alterada (ex: Temperatura Alta detectada em painel)
-          if (temp > -14.0) {
-            elBadge.innerText = "TEMP. ALTA";
-            elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
-            gauge.classList.add('gauge-fill-error');
+          elBadge.innerText = temp > -1.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
+          elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
+          gauge.classList.add('gauge-fill-error');
 
-            if (!estadoAlarmeAtivo.temperaturaAlta) {
-              adicionarAlarme(`Temperatura Alta (${temp.toFixed(1)} °C)`, "CRÍTICO");
-              dispararTelegram(`🚨 Alerta Crítico de Temperatura Alta: A câmara atingiu ${temp.toFixed(1)} °C (Limite máximo permitido: -14 °C).`);
-              estadoAlarmeAtivo.temperaturaAlta = true;
-            }
-          } else if (temp < -30.0) {
-            elBadge.innerText = "TEMP. BAIXA";
-            elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
-            gauge.classList.add('gauge-fill-error');
-
-            if (!estadoAlarmeAtivo.temperaturaBaixa) {
-              adicionarAlarme(`Temperatura Baixa (${temp.toFixed(1)} °C)`, "CRÍTICO");
-              dispararTelegram(`⚠️ Alerta de Temperatura Baixa: A câmara atingiu ${temp.toFixed(1)} °C (Limite mínimo permitido: -30 °C).`);
-              estadoAlarmeAtivo.temperaturaBaixa = true;
-            }
+          if (temp > -1.0) {
+            nomeEventoAlarme = `Temperatura Alta (${temp.toFixed(1)} °C)`;
+            textoMsgTelegram = `🚨 Alerta Crítico de Temperatura Alta: A câmara atingiu ${temp.toFixed(1)} °C (Limite máximo permitido: -1 °C).`;
+          } else {
+            nomeEventoAlarme = `Temperatura Baixa (${temp.toFixed(1)} °C)`;
+            textoMsgTelegram = `⚠️ Alerta de Temperatura Baixa: A câmara atingiu ${temp.toFixed(1)} °C (Limite mínimo permitido: -30 °C).`;
           }
+        }
+
+        if (!estadoAlarmeAtivo.temperaturaAnomala) {
+          adicionarAlarme(nomeEventoAlarme, "CRÍTICO");
+          dispararTelegram(textoMsgTelegram);
+          estadoAlarmeAtivo.temperaturaAnomala = true;
         }
       }
       gerenciarLoopReenvioAlarmes();
@@ -897,7 +878,7 @@
     function normalizarAlarme(nomeEvento) {
       let alterou = false;
       for (let item of listaAlarmes) {
-        if (item.evento.includes(nomeEvento) || nomeEvento.includes(item.evento)) {
+        if (item.evento.includes(nomeEvento) || nomeEvento.includes(item.evento) || item.evento.includes("Temperatura") || item.evento.includes("Degelo")) {
           if (item.status === 'Ativo') {
             item.status = 'OK';
             alterou = true;
@@ -944,7 +925,7 @@
 
     function limparHistoricoAlarmes() {
       let temAlarmeAtivo = listaAlarmes.some(a => a.status === 'Ativo');
-      let temperaturaForaDaFaixa = (ultimaTemperaturaCalculada !== null && (ultimaTemperaturaCalculada < -30.0 || ultimaTemperaturaCalculada > -14.0));
+      let temperaturaForaDaFaixa = (ultimaTemperaturaCalculada !== null && (ultimaTemperaturaCalculada < -30.0 || ultimaTemperaturaCalculada > -1.0));
 
       if (temAlarmeAtivo || temperaturaForaDaFaixa) {
         alert("⚠️ Ação não permitida! O histórico só pode ser limpo quando a câmara estiver em condição normal de processo e sem alarmes ativos.");
@@ -954,8 +935,6 @@
       if (confirm("Deseja apagar todo o histórico de alarmes em todos os dispositivos?")) {
         listaAlarmes = [];
         localStorage.removeItem('historicoAlarmes');
-        timestampInicioForaFaixa = 0;
-        localStorage.setItem('timestampInicioForaFaixa', 0);
         renderizarTabelaAlarmes();
       }
     }
@@ -1006,8 +985,10 @@
       iniciarGraficoPeriodo();
       iniciarGraficos();
       
+      // Varre alarmes ativos na inicialização e envia o primeiro aviso de imediato
       verificarVarreduraInicialAlarmes();
 
+      // Busca dados do ThingSpeak e mantém checagens contínuas em segundo plano
       buscarDados();
       setInterval(buscarDados, 5000);
       setInterval(checarInatividade, 2000);
