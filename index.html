@@ -109,7 +109,7 @@
               <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between">
                 <div>
                   <span class="text-[10px] font-bold text-slate-400 block">Temp. Máxima Normal</span>
-                  <span class="text-sm font-black text-slate-800">-1.0 °C</span>
+                  <span class="text-sm font-black text-slate-800">-15.0 °C</span>
                 </div>
                 <span class="text-blue-600 font-black text-lg">❄</span>
               </div>
@@ -367,12 +367,16 @@
     const telegramToken = "8910254546:AAF_w98tfvtoXxUMGF2c6PDRY9qaEE3Uw_Y";
     const telegramChatId = "-5089800564";
 
+    // Sincronização automática entre abas e dispositivos (Web e Mobile)
     window.addEventListener('storage', (event) => {
       if (event.key === 'channelId' && event.newValue) { channelId = event.newValue; document.getElementById('input-channel-id').value = channelId; }
       if (event.key === 'writeApiKey') { writeApiKey = event.newValue || ''; document.getElementById('input-write-api-key').value = writeApiKey; }
       if (event.key === 'tempOffset') { tempOffset = parseFloat(event.newValue) || 0.0; document.getElementById('input-temp-offset').value = tempOffset; }
       if (event.key === 'tempoDegeloMinutos') { tempoDegeloMinutos = parseInt(event.newValue) || 5; document.getElementById('input-tempo-degelo').value = tempoDegeloMinutos; atualizarRotulosDegelo(); }
-      if (event.key === 'setpointAtual') { setpointAtual = parseFloat(event.newValue) || -18.0; atualizarDisplaySetpoint(); }
+      if (event.key === 'setpointAtual' && event.newValue) {
+        setpointAtual = parseFloat(event.newValue) || -18.0;
+        atualizarDisplaySetpoint();
+      }
     });
 
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes'));
@@ -426,6 +430,7 @@
 
     function confirmarSetpoint() {
       localStorage.setItem('setpointAtual', setpointAtual);
+      atualizarDisplaySetpoint();
       alert(`✅ Setpoint atualizado com sucesso para ${setpointAtual.toFixed(1)} °C!`);
       dispararTelegram(`⚙️ Setpoint alterado manualmente para ${setpointAtual.toFixed(1)} °C.`);
     }
@@ -838,8 +843,9 @@
       gauge.style.strokeDashoffset = 251.2 * (1 - pct);
 
       const limiteSegundos = tempoDegeloMinutos * 60;
+      const tempMaximaNormal = -15.0; // Atualizado para -15°C
 
-      if (temp >= -30.0 && temp <= -1.0) {
+      if (temp >= -30.0 && temp <= tempMaximaNormal) {
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-800 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5";
         gauge.classList.add('gauge-fill-normal');
@@ -862,13 +868,13 @@
           nomeEventoAlarme = `Degelo Excedido (> ${tempoDegeloMinutos} min)`;
           textoMsgTelegram = `⚠️ Alerta de Degelo: A câmara encontra-se em ${temp.toFixed(1)} °C ultrapassando o tempo limite de tolerância.`;
         } else {
-          elBadge.innerText = temp > -1.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
+          elBadge.innerText = temp > tempMaximaNormal ? "TEMP. ALTA" : "TEMP. BAIXA";
           elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-error');
 
-          if (temp > -1.0) {
+          if (temp > tempMaximaNormal) {
             nomeEventoAlarme = `Temperatura Alta (${temp.toFixed(1)} °C)`;
-            textoMsgTelegram = `🚨 Alerta Crítico de Temperatura Alta: A câmara atingiu ${temp.toFixed(1)} °C (Limite máximo permitido: -1 °C).`;
+            textoMsgTelegram = `🚨 Alerta Crítico de Temperatura Alta: A câmara atingiu ${temp.toFixed(1)} °C (Limite máximo permitido: ${tempMaximaNormal} °C).`;
           } else {
             nomeEventoAlarme = `Temperatura Baixa (${temp.toFixed(1)} °C)`;
             textoMsgTelegram = `⚠️ Alerta de Temperatura Baixa: A câmara atingiu ${temp.toFixed(1)} °C (Limite mínimo permitido: -30 °C).`;
@@ -962,7 +968,7 @@
 
     function limparHistoricoAlarmes() {
       let temAlarmeAtivo = listaAlarmes.some(a => a.status === 'Ativo');
-      let temperaturaForaDaFaixa = (ultimaTemperaturaCalculada !== null && (ultimaTemperaturaCalculada < -30.0 || ultimaTemperaturaCalculada > -1.0));
+      let temperaturaForaDaFaixa = (ultimaTemperaturaCalculada !== null && (ultimaTemperaturaCalculada < -30.0 || ultimaTemperaturaCalculada > -15.0));
 
       if (temAlarmeAtivo || temperaturaForaDaFaixa) {
         alert("⚠️ Ação não permitida! O histórico só pode ser limpo quando a câmara estiver em condição normal de processo e sem alarmes ativos.");
