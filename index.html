@@ -90,7 +90,7 @@
               <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-1">
                 <span id="val-temperatura" class="text-2xl sm:text-3xl font-black text-slate-900 leading-none tracking-tight">-</span>
                 <span id="badge-sensor-status" class="bg-blue-900 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5">SEM SINAL</span>
-                <span class="text-[10px] text-slate-400 font-bold">Setpoint: <span id="lbl-sp-gauge">-18.0</span> °C</span>
+                <span class="text-[10px] text-slate-400 font-bold">Setpoint: <span id="lbl-sp-gauge">--</span> °C</span>
               </div>
             </div>
           </div>
@@ -128,7 +128,7 @@
               <div class="flex items-center justify-between">
                 <div>
                   <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ajuste de Setpoint</p>
-                  <p id="display-setpoint" class="text-xl font-black text-slate-800">-18.0 °C</p>
+                  <p id="display-setpoint" class="text-xl font-black text-slate-800">-- °C</p>
                 </div>
                 <div class="flex items-center gap-1.5">
                   <button onclick="ajustarSetpointLocal(-0.5)" class="w-9 h-9 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-lg font-black text-lg shadow-sm active:scale-95 transition-all flex items-center justify-center">-</button>
@@ -359,8 +359,8 @@
     let writeApiKey = localStorage.getItem('writeApiKey') || '';
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
-    // VARIÁVEIS DE CONTROLE DE SETPOINT UNIFICADO VIA FIELD 3
-    let setpointAtual = -18.0;
+    // VARIÁVEIS DE CONTROLE DE SETPOINT COM MEMÓRIA PERSISTENTE NO LOCALSTORAGE
+    let setpointAtual = parseFloat(localStorage.getItem('setpointCache')) || -18.0;
     let setpointPendente = null;
     let gravandoSetpoint = false;
     let timerTravaSetpoint = null;
@@ -401,7 +401,7 @@
     let ultimaRespostaComSucesso = 0;
     const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 120000;
 
-    // INICIALIZA O DISPLAY DE SETPOINT IMEDIATAMENTE
+    // INICIALIZA O DISPLAY DE SETPOINT IMEDIATAMENTE NA ABERTURA
     function atualizarDisplaysSetpointVisual() {
       let valorExibir = (setpointPendente !== null) ? setpointPendente : setpointAtual;
       document.getElementById('display-setpoint').innerText = `${valorExibir.toFixed(1)} °C`;
@@ -426,6 +426,9 @@
 
       gravandoSetpoint = true;
       setpointAtual = valorParaSalvar;
+      
+      // Salva na memória local para garantir que a recarga mantenha o valor instantaneamente
+      localStorage.setItem('setpointCache', setpointAtual);
 
       const btn = document.getElementById('btn-confirmar-setpoint');
       btn.className = "py-2 px-4 bg-slate-400 text-white font-extrabold text-xs rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-not-allowed";
@@ -670,11 +673,12 @@
             return;
           }
 
-          // Sincroniza automaticamente o Setpoint vindo do Field 3 do servidor
+          // Sincroniza o Setpoint do Field 3 do ThingSpeak caso venha atualizado do servidor
           if (!gravandoSetpoint && setpointPendente === null && ultimoFeed.field3) {
             let sp = parseFloat(ultimoFeed.field3);
             if (!isNaN(sp)) {
               setpointAtual = sp;
+              localStorage.setItem('setpointCache', setpointAtual);
               atualizarDisplaysSetpointVisual();
             }
           }
