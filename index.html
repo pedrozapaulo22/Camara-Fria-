@@ -423,33 +423,42 @@
       dispararTelegram("🔔 Teste de funcionamento manual realizado com sucesso a partir do painel Rei do Gelo!", true);
     }
 
-    // Gerencia o loop de reenvio periódico a cada 5 minutos (300.000 ms) se houver algum alarme ativo
+    // Gerencia o loop de reenvio periódico a cada 2 minutos (120.000 ms) se houver alarmes ativos
     function gerenciarLoopReenvioAlarmes() {
       const temProblemaAtivo = estadoAlarmeAtivo.conexao || estadoAlarmeAtivo.redeEletrica || estadoAlarmeAtivo.falhaSensor || estadoAlarmeAtivo.temperaturaAnomala;
 
       if (temProblemaAtivo) {
         if (!intervaloReenvioAlarme) {
           intervaloReenvioAlarme = setInterval(() => {
-            let descricoesAtivas = [];
-            if (estadoAlarmeAtivo.conexao) descricoesAtivas.push("🚨 Perda de Conexão com o Hardware");
-            if (estadoAlarmeAtivo.redeEletrica) descricoesAtivas.push("⚡ Queda na Rede Elétrica");
-            if (estadoAlarmeAtivo.falhaSensor) descricoesAtivas.push("🌡️ Falha no Sensor de Temperatura");
-            if (estadoAlarmeAtivo.temperaturaAnomala) {
-              let tempTexto = ultimaTemperaturaCalculada !== null ? `${ultimaTemperaturaCalculada.toFixed(1)} °C` : "Fora de faixa";
-              descricoesAtivas.push(`⚠️ Temperatura Anómala / Fora da Faixa (${tempTexto})`);
-            }
-
-            if (descricoesAtivas.length > 0) {
-              let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 5 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + descricoesAtivas.join("\n");
+            let atuaisAtivos = listaAlarmes.filter(a => a.status === 'Ativo');
+            if (atuaisAtivos.length > 0) {
+              let msgs = atuaisAtivos.map(a => `• ${a.evento}`);
+              let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 2 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + msgs.join("\n");
               dispararTelegram(msgRecorrente);
             }
-          }, 300000); // Exatamente 5 minutos
+          }, 120000); // Exatamente 2 minutos
         }
       } else {
         if (intervaloReenvioAlarme) {
           clearInterval(intervaloReenvioAlarme);
           intervaloReenvioAlarme = null;
         }
+      }
+    }
+
+    function verificarVarreduraInicialAlarmes() {
+      let alarmesAtivosStorage = listaAlarmes.filter(a => a.status === 'Ativo');
+      if (alarmesAtivosStorage.length > 0) {
+        alarmesAtivosStorage.forEach(item => {
+          if (item.evento.includes("Conexão")) estadoAlarmeAtivo.conexao = true;
+          if (item.evento.includes("Rede Elétrica")) estadoAlarmeAtivo.redeEletrica = true;
+          if (item.evento.includes("Sensor")) estadoAlarmeAtivo.falhaSensor = true;
+          if (item.evento.includes("Temperatura") || item.evento.includes("Degelo")) estadoAlarmeAtivo.temperaturaAnomala = true;
+        });
+
+        let descricoesAtivas = alarmesAtivosStorage.map(a => `⚠️ ${a.evento} (${a.nivel})`);
+        dispararTelegram(`🚨 *ALERTA DE SISTEMA (Inicialização)*\nForam encontrados eventos ATIVOS no histórico da câmara fria:\n\n` + descricoesAtivas.join("\n"));
+        gerenciarLoopReenvioAlarmes();
       }
     }
 
@@ -805,19 +814,33 @@
         }
       } 
       else {
+        let nomeEventoAlarme = "";
+        let textoMsgTelegram = "";
+
         if (segundosForaDaFaixa <= limiteSegundos) {
           elBadge.innerText = "DEGELO";
           elBadge.className = "bg-sky-600 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-degelo');
+          
+          nomeEventoAlarme = `Degelo Excedido (> ${tempoDegeloMinutos} min)`;
+          textoMsgTelegram = `⚠️ Alerta de Degelo: A câmara encontra-se em ${temp.toFixed(1)} °C ultrapassando o tempo limite de tolerância.`;
         } else {
           elBadge.innerText = temp > -1.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
           elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-error');
+
+          if (temp > -1.0) {
+            nomeEventoAlarme = `Temperatura Alta (${temp.toFixed(1)} °C)`;
+            textoMsgTelegram = `🚨 Alerta Crítico de Temperatura Alta: A câmara atingiu ${temp.toFixed(1)} °C (Limite máximo permitido: -1 °C).`;
+          } else {
+            nomeEventoAlarme = `Temperatura Baixa (${temp.toFixed(1)} °C)`;
+            textoMsgTelegram = `⚠️ Alerta de Temperatura Baixa: A câmara atingiu ${temp.toFixed(1)} °C (Limite mínimo permitido: -30 °C).`;
+          }
         }
 
         if (!estadoAlarmeAtivo.temperaturaAnomala) {
-          adicionarAlarme(`Temperatura Fora da Faixa (${temp.toFixed(1)} °C)`, "CRÍTICO");
-          dispararTelegram(`⚠️ Alerta de Temperatura: A câmara encontra-se em ${temp.toFixed(1)} °C (Fora da faixa segura de -30°C a -1°C).`);
+          adicionarAlarme(nomeEventoAlarme, "CRÍTICO");
+          dispararTelegram(textoMsgTelegram);
           estadoAlarmeAtivo.temperaturaAnomala = true;
         }
       }
@@ -855,7 +878,7 @@
     function normalizarAlarme(nomeEvento) {
       let alterou = false;
       for (let item of listaAlarmes) {
-        if (item.evento.includes(nomeEvento) || nomeEvento.includes(item.evento) || item.evento.includes("Temperatura Fora da Faixa")) {
+        if (item.evento.includes(nomeEvento) || nomeEvento.includes(item.evento) || item.evento.includes("Temperatura") || item.evento.includes("Degelo")) {
           if (item.status === 'Ativo') {
             item.status = 'OK';
             alterou = true;
@@ -962,11 +985,11 @@
       iniciarGraficoPeriodo();
       iniciarGraficos();
       
-      // Primeira busca imediata ao abrir a página
+      // Varre alarmes ativos na inicialização e envia o primeiro aviso de imediato
+      verificarVarreduraInicialAlarmes();
+
+      // Busca dados do ThingSpeak e mantém checagens contínuas em segundo plano
       buscarDados();
-      gerenciarLoopReenvioAlarmes();
-      
-      // Consultas automáticas a cada 5 segundos buscando novos dados do ThingSpeak em tempo real (sem precisar atualizar a página)
       setInterval(buscarDados, 5000);
       setInterval(checarInatividade, 2000);
     };
