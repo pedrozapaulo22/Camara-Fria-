@@ -108,7 +108,7 @@
               <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between">
                 <div>
                   <span class="text-[10px] font-bold text-slate-400 block">Temp. Máxima Normal</span>
-                  <span class="text-sm font-black text-slate-800">-1 °C</span>
+                  <span class="text-sm font-black text-slate-800">-14 °C</span>
                 </div>
                 <span class="text-blue-600 font-black text-lg">❄</span>
               </div>
@@ -802,7 +802,8 @@
 
       const limiteSegundos = tempoDegeloMinutos * 60;
 
-      if (temp >= -30.0 && temp <= -1.0) {
+      // Faixa normal atualizada: Mínima -30 °C e Máxima -14 °C
+      if (temp >= -30.0 && temp <= -14.0) {
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-800 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5";
         gauge.classList.add('gauge-fill-normal');
@@ -825,13 +826,13 @@
           nomeEventoAlarme = `Degelo Excedido (> ${tempoDegeloMinutos} min)`;
           textoMsgTelegram = `⚠️ Alerta de Degelo: A câmara encontra-se em ${temp.toFixed(1)} °C ultrapassando o tempo limite de tolerância.`;
         } else {
-          elBadge.innerText = temp > -1.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
+          elBadge.innerText = temp > -14.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
           elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-error');
 
-          if (temp > -1.0) {
+          if (temp > -14.0) {
             nomeEventoAlarme = `Temperatura Alta (${temp.toFixed(1)} °C)`;
-            textoMsgTelegram = `🚨 Alerta Crítico de Temperatura Alta: A câmara atingiu ${temp.toFixed(1)} °C (Limite máximo permitido: -1 °C).`;
+            textoMsgTelegram = `🚨 Alerta Crítico de Temperatura Alta: A câmara atingiu ${temp.toFixed(1)} °C (Limite máximo permitido: -14 °C).`;
           } else {
             nomeEventoAlarme = `Temperatura Baixa (${temp.toFixed(1)} °C)`;
             textoMsgTelegram = `⚠️ Alerta de Temperatura Baixa: A câmara atingiu ${temp.toFixed(1)} °C (Limite mínimo permitido: -30 °C).`;
@@ -925,7 +926,7 @@
 
     function limparHistoricoAlarmes() {
       let temAlarmeAtivo = listaAlarmes.some(a => a.status === 'Ativo');
-      let temperaturaForaDaFaixa = (ultimaTemperaturaCalculada !== null && (ultimaTemperaturaCalculada < -30.0 || ultimaTemperaturaCalculada > -1.0));
+      let temperaturaForaDaFaixa = (ultimaTemperaturaCalculada !== null && (ultimaTemperaturaCalculada < -30.0 || ultimaTemperaturaCalculada > -14.0));
 
       if (temAlarmeAtivo || temperaturaForaDaFaixa) {
         alert("⚠️ Ação não permitida! O histórico só pode ser limpo quando a câmara estiver em condição normal de processo e sem alarmes ativos.");
