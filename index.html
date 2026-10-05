@@ -58,11 +58,10 @@
           <h1 class="font-black text-slate-900 text-sm sm:text-base tracking-wide"><span class="text-blue-600">REI</span> DO GELO</h1>
         </div>
         <span class="text-slate-200 hidden sm:inline">|</span>
-        <span class="text-[10px] sm:text-xs font-extrabold text-slate-600 uppercase tracking-wide bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">CÂMARA FRIA - BARUERI</span>
+        <span class="text-[10px] sm:text-xs font-extrabold text-slate-600 uppercase tracking-wide bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">CÂMARA FRIA</span>
       </div>
-      <div class="flex items-center justify-between sm:justify-end gap-2.5 text-xs font-bold w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-0 border-slate-100 flex-wrap sm:flex-nowrap">
-        <span class="text-[10px] font-extrabold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 uppercase tracking-wide">SELETORA: LOCAL</span>
-        <span id="badge-sistema" class="bg-blue-900 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-[10px] shadow-sm uppercase tracking-wide">
+      <div class="flex items-center justify-between sm:justify-end gap-2 text-xs font-bold w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-0 border-slate-100 flex-wrap sm:flex-nowrap">
+        <span id="badge-sistema" class="bg-blue-900 text-white px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-[10px] shadow-sm">
           <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> DESCONECTADO
         </span>
         <span id="data-hora" class="text-slate-400 font-medium text-[10px]">--/--/---- --:--:--</span>
@@ -90,18 +89,18 @@
               <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-1">
                 <span id="val-temperatura" class="text-2xl sm:text-3xl font-black text-slate-900 leading-none tracking-tight">-</span>
                 <span id="badge-sensor-status" class="bg-blue-900 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5">SEM SINAL</span>
-                <span id="lbl-setpoint-gauge" class="text-[10px] text-slate-400 font-bold">Setpoint: -18.0 °C</span>
+                <span class="text-[10px] text-slate-400 font-bold">Setpoint: -18 °C</span>
               </div>
             </div>
           </div>
 
-          <!-- PARÂMETROS E AJUSTE DE SETPOINT -->
+          <!-- PARÂMETROS -->
           <div class="md:col-span-7 space-y-3.5">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between">
                 <div>
                   <span class="text-[10px] font-bold text-slate-400 block">Temp. Mínima Normal</span>
-                  <span class="text-sm font-black text-slate-800">-30.0 °C</span>
+                  <span class="text-sm font-black text-slate-800">-30 °C</span>
                 </div>
                 <span class="text-blue-600 font-black text-lg">❄</span>
               </div>
@@ -109,7 +108,7 @@
               <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between">
                 <div>
                   <span class="text-[10px] font-bold text-slate-400 block">Temp. Máxima Normal</span>
-                  <span class="text-sm font-black text-slate-800">-1.0 °C</span>
+                  <span class="text-sm font-black text-slate-800">-1 °C</span>
                 </div>
                 <span class="text-blue-600 font-black text-lg">❄</span>
               </div>
@@ -122,24 +121,6 @@
               </div>
               <span class="text-slate-400 font-black text-base">⏱</span>
             </div>
-
-            <!-- CARD AJUSTE DE SETPOINT -->
-            <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div>
-                <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Ajuste de Setpoint</span>
-                <span id="val-setpoint-display" class="text-lg font-black text-slate-900">-18.0 °C</span>
-              </div>
-              <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-                <div class="flex items-center gap-1.5">
-                  <button onclick="alterarSetpointValor(-0.5)" class="w-8 h-8 rounded-lg bg-white border border-slate-300 font-black text-slate-700 shadow-sm hover:bg-slate-100 transition-colors flex items-center justify-center">-</button>
-                  <button onclick="alterarSetpointValor(0.5)" class="w-8 h-8 rounded-lg bg-white border border-slate-300 font-black text-slate-700 shadow-sm hover:bg-slate-100 transition-colors flex items-center justify-center">+</button>
-                </div>
-                <button onclick="confirmarSetpoint()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow transition-colors">
-                  Confirmar Setpoint
-                </button>
-              </div>
-            </div>
-
           </div>
 
         </div>
@@ -361,7 +342,6 @@
     let writeApiKey = localStorage.getItem('writeApiKey') || '';
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
-    let setpointAtual = parseFloat(localStorage.getItem('setpointAtual')) || -18.0;
 
     // TOKEN E CHAT ID FIXOS NO CÓDIGO
     const telegramToken = "8910254546:AAF_w98tfvtoXxUMGF2c6PDRY9qaEE3Uw_Y";
@@ -372,7 +352,6 @@
       if (event.key === 'writeApiKey') { writeApiKey = event.newValue || ''; document.getElementById('input-write-api-key').value = writeApiKey; }
       if (event.key === 'tempOffset') { tempOffset = parseFloat(event.newValue) || 0.0; document.getElementById('input-temp-offset').value = tempOffset; }
       if (event.key === 'tempoDegeloMinutos') { tempoDegeloMinutos = parseInt(event.newValue) || 5; document.getElementById('input-tempo-degelo').value = tempoDegeloMinutos; atualizarRotulosDegelo(); }
-      if (event.key === 'setpointAtual') { setpointAtual = parseFloat(event.newValue) || -18.0; atualizarDisplaySetpoint(); }
     });
 
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes'));
@@ -414,22 +393,6 @@
     let ultimaRespostaComSucesso = 0;
     const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 120000;
 
-    function atualizarDisplaySetpoint() {
-      document.getElementById('val-setpoint-display').innerText = `${setpointAtual.toFixed(1)} °C`;
-      document.getElementById('lbl-setpoint-gauge').innerText = `Setpoint: ${setpointAtual.toFixed(1)} °C`;
-    }
-
-    function alterarSetpointValor(delta) {
-      setpointAtual = Math.round((setpointAtual + delta) * 10) / 10;
-      atualizarDisplaySetpoint();
-    }
-
-    function confirmarSetpoint() {
-      localStorage.setItem('setpointAtual', setpointAtual);
-      alert(`✅ Setpoint atualizado com sucesso para ${setpointAtual.toFixed(1)} °C!`);
-      dispararTelegram(`⚙️ Setpoint alterado manualmente para ${setpointAtual.toFixed(1)} °C.`);
-    }
-
     function dispararTelegram(mensagem, forcarEnvio = false) {
       const url = `https://api.telegram.org/bot${telegramToken}/sendMessage`;
       const dados = {
@@ -460,42 +423,33 @@
       dispararTelegram("🔔 Teste de funcionamento manual realizado com sucesso a partir do painel Rei do Gelo!", true);
     }
 
-    // Gerencia o loop de reenvio periódico a cada 2 minutos (120.000 ms) se houver alarmes ativos
+    // Gerencia o loop de reenvio periódico a cada 5 minutos (300.000 ms) se houver algum alarme ativo
     function gerenciarLoopReenvioAlarmes() {
       const temProblemaAtivo = estadoAlarmeAtivo.conexao || estadoAlarmeAtivo.redeEletrica || estadoAlarmeAtivo.falhaSensor || estadoAlarmeAtivo.temperaturaAnomala;
 
       if (temProblemaAtivo) {
         if (!intervaloReenvioAlarme) {
           intervaloReenvioAlarme = setInterval(() => {
-            let atuaisAtivos = listaAlarmes.filter(a => a.status === 'Ativo');
-            if (atuaisAtivos.length > 0) {
-              let msgs = atuaisAtivos.map(a => `• ${a.evento}`);
-              let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 2 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + msgs.join("\n");
+            let descricoesAtivas = [];
+            if (estadoAlarmeAtivo.conexao) descricoesAtivas.push("🚨 Perda de Conexão com o Hardware");
+            if (estadoAlarmeAtivo.redeEletrica) descricoesAtivas.push("⚡ Queda na Rede Elétrica");
+            if (estadoAlarmeAtivo.falhaSensor) descricoesAtivas.push("🌡️ Falha no Sensor de Temperatura");
+            if (estadoAlarmeAtivo.temperaturaAnomala) {
+              let tempTexto = ultimaTemperaturaCalculada !== null ? `${ultimaTemperaturaCalculada.toFixed(1)} °C` : "Fora de faixa";
+              descricoesAtivas.push(`⚠️ Temperatura Anómala / Fora da Faixa (${tempTexto})`);
+            }
+
+            if (descricoesAtivas.length > 0) {
+              let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 5 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + descricoesAtivas.join("\n");
               dispararTelegram(msgRecorrente);
             }
-          }, 120000); // Exatamente 2 minutos
+          }, 300000); // Exatamente 5 minutos
         }
       } else {
         if (intervaloReenvioAlarme) {
           clearInterval(intervaloReenvioAlarme);
           intervaloReenvioAlarme = null;
         }
-      }
-    }
-
-    function verificarVarreduraInicialAlarmes() {
-      let alarmesAtivosStorage = listaAlarmes.filter(a => a.status === 'Ativo');
-      if (alarmesAtivosStorage.length > 0) {
-        alarmesAtivosStorage.forEach(item => {
-          if (item.evento.includes("Conexão")) estadoAlarmeAtivo.conexao = true;
-          if (item.evento.includes("Rede Elétrica")) estadoAlarmeAtivo.redeEletrica = true;
-          if (item.evento.includes("Sensor")) estadoAlarmeAtivo.falhaSensor = true;
-          if (item.evento.includes("Temperatura") || item.evento.includes("Degelo")) estadoAlarmeAtivo.temperaturaAnomala = true;
-        });
-
-        let descricoesAtivas = alarmesAtivosStorage.map(a => `⚠️ ${a.evento} (${a.nivel})`);
-        dispararTelegram(`🚨 *ALERTA DE SISTEMA (Inicialização)*\nForam encontrados eventos ATIVOS no histórico da câmara fria:\n\n` + descricoesAtivas.join("\n"));
-        gerenciarLoopReenvioAlarmes();
       }
     }
 
@@ -690,7 +644,7 @@
 
     function marcarDesconectado() {
       const badgeSys = document.getElementById('badge-sistema');
-      badgeSys.className = "bg-slate-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-[10px] shadow-sm uppercase tracking-wide";
+      badgeSys.className = "bg-slate-700 text-white px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-[10px] shadow-sm";
       badgeSys.innerHTML = `<span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> DESCONECTADO`;
 
       document.getElementById('val-temperatura').innerText = "-";
@@ -724,7 +678,7 @@
 
     function marcarConectado() {
       const badgeSys = document.getElementById('badge-sistema');
-      badgeSys.className = "bg-blue-900 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-[10px] shadow-sm uppercase tracking-wide";
+      badgeSys.className = "bg-blue-900 text-white px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-[10px] shadow-sm";
       badgeSys.innerHTML = `<span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> CONECTADO`;
 
       if (estadoAlarmeAtivo.conexao) {
@@ -851,33 +805,19 @@
         }
       } 
       else {
-        let nomeEventoAlarme = "";
-        let textoMsgTelegram = "";
-
         if (segundosForaDaFaixa <= limiteSegundos) {
           elBadge.innerText = "DEGELO";
           elBadge.className = "bg-sky-600 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-degelo');
-          
-          nomeEventoAlarme = `Degelo Excedido (> ${tempoDegeloMinutos} min)`;
-          textoMsgTelegram = `⚠️ Alerta de Degelo: A câmara encontra-se em ${temp.toFixed(1)} °C ultrapassando o tempo limite de tolerância.`;
         } else {
           elBadge.innerText = temp > -1.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
           elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-error');
-
-          if (temp > -1.0) {
-            nomeEventoAlarme = `Temperatura Alta (${temp.toFixed(1)} °C)`;
-            textoMsgTelegram = `🚨 Alerta Crítico de Temperatura Alta: A câmara atingiu ${temp.toFixed(1)} °C (Limite máximo permitido: -1 °C).`;
-          } else {
-            nomeEventoAlarme = `Temperatura Baixa (${temp.toFixed(1)} °C)`;
-            textoMsgTelegram = `⚠️ Alerta de Temperatura Baixa: A câmara atingiu ${temp.toFixed(1)} °C (Limite mínimo permitido: -30 °C).`;
-          }
         }
 
         if (!estadoAlarmeAtivo.temperaturaAnomala) {
-          adicionarAlarme(nomeEventoAlarme, "CRÍTICO");
-          dispararTelegram(textoMsgTelegram);
+          adicionarAlarme(`Temperatura Fora da Faixa (${temp.toFixed(1)} °C)`, "CRÍTICO");
+          dispararTelegram(`⚠️ Alerta de Temperatura: A câmara encontra-se em ${temp.toFixed(1)} °C (Fora da faixa segura de -30°C a -1°C).`);
           estadoAlarmeAtivo.temperaturaAnomala = true;
         }
       }
@@ -915,7 +855,7 @@
     function normalizarAlarme(nomeEvento) {
       let alterou = false;
       for (let item of listaAlarmes) {
-        if (item.evento.includes(nomeEvento) || nomeEvento.includes(item.evento) || item.evento.includes("Temperatura") || item.evento.includes("Degelo")) {
+        if (item.evento.includes(nomeEvento) || nomeEvento.includes(item.evento) || item.evento.includes("Temperatura Fora da Faixa")) {
           if (item.status === 'Ativo') {
             item.status = 'OK';
             alterou = true;
@@ -1017,17 +957,16 @@
 
     window.onload = () => {
       atualizarRotulosDegelo();
-      atualizarDisplaySetpoint();
       calcularTempoContemporaneo();
       renderizarTabelaAlarmes();
       iniciarGraficoPeriodo();
       iniciarGraficos();
       
-      // Varre alarmes ativos na inicialização e envia o primeiro aviso de imediato
-      verificarVarreduraInicialAlarmes();
-
-      // Busca dados do ThingSpeak e mantém checagens contínuas em segundo plano
+      // Primeira busca imediata ao abrir a página
       buscarDados();
+      gerenciarLoopReenvioAlarmes();
+      
+      // Consultas automáticas a cada 5 segundos buscando novos dados do ThingSpeak em tempo real (sem precisar atualizar a página)
       setInterval(buscarDados, 5000);
       setInterval(checarInatividade, 2000);
     };
