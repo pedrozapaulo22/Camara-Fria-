@@ -354,19 +354,29 @@
       if (event.key === 'tempoDegeloMinutos') { tempoDegeloMinutos = parseInt(event.newValue) || 5; document.getElementById('input-tempo-degelo').value = tempoDegeloMinutos; atualizarRotulosDegelo(); }
       
       // Sincronização em tempo real do histórico de alarmes entre web e mobile
-      if (event.key === 'historicoAlarmes') {
+      if (event.key === 'historicoAlarmes' && event.newValue) {
         listaAlarmes = JSON.parse(event.newValue) || [];
         renderizarTabelaAlarmes();
       }
     });
 
+    // UNIFICAÇÃO DA BASE DE DADOS (Referência exata da Imagem Web completa)
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes'));
-    if (!listaAlarmes) {
+    if (!listaAlarmes || listaAlarmes.length === 0) {
       listaAlarmes = [
+        { data: "06/10/2026, 10:56:24", evento: "Temperatura Alta (22.7 °C)", nivel: "CRÍTICO", status: "Ativo" },
+        { data: "05/10/2026, 19:46:05", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "05/10/2026, 16:14:53", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "05/10/2026, 15:21:56", evento: "Degelo Excedido (> 5 min)", nivel: "CRÍTICO", status: "OK" },
+        { data: "05/10/2026, 12:42:53", evento: "Temperatura Alta (22.9 °C)", nivel: "CRÍTICO", status: "OK" },
+        { data: "05/10/2026, 11:51:46", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "02/10/2026, 20:21:41", evento: "Queda na Rede Elétrica", nivel: "CRÍTICO", status: "OK" },
+        { data: "02/10/2026, 08:58:46", evento: "Temperatura Fora da Faixa (20.9 °C)", nivel: "CRÍTICO", status: "OK" },
+        { data: "02/10/2026, 08:24:33", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
         { data: "30/09/2026, 14:29:06", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
         { data: "30/09/2026, 13:55:44", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
         { data: "30/09/2026, 13:37:46", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-        { data: "30/09/2026, 13:29:03", evento: "Degelo Excedido (>5 min)", nivel: "CRÍTICO", status: "Ativo" }
+        { data: "30/09/2026, 13:29:03", evento: "Degelo Excedido (>5 min)", nivel: "CRÍTICO", status: "OK" }
       ];
       localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
     }
@@ -403,7 +413,7 @@
       const url = `https://api.telegram.org/bot${telegramToken}/sendMessage`;
       const dados = {
         chat_id: telegramChatId.trim(),
-        text: `❄️ [REI DO GELO - ALERTA]\n\n${mensagem}`
+        text: `❄️️ [REI DO GELO - ALERTA]\n\n${mensagem}`
       };
 
       fetch(url, {
@@ -429,7 +439,6 @@
       dispararTelegram("🔔 Teste de funcionamento manual realizado com sucesso a partir do painel Rei do Gelo!", true);
     }
 
-    // Gerencia o loop de reenvio periódico a cada 2 minutos (120.000 ms) se houver alarmes ativos
     function gerenciarLoopReenvioAlarmes() {
       const temProblemaAtivo = estadoAlarmeAtivo.conexao || estadoAlarmeAtivo.redeEletrica || estadoAlarmeAtivo.falhaSensor || estadoAlarmeAtivo.temperaturaAnomala;
 
@@ -442,7 +451,7 @@
               let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 2 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + msgs.join("\n");
               dispararTelegram(msgRecorrente);
             }
-          }, 120000); // Exatamente 2 minutos
+          }, 120000);
         }
       } else {
         if (intervaloReenvioAlarme) {
@@ -646,7 +655,7 @@
 
     function checarInatividade() {
       let alarmesStorage = JSON.parse(localStorage.getItem('historicoAlarmes'));
-      if (alarmesStorage && alarmesStorage.length !== listaAlarmes.length) {
+      if (alarmesStorage && JSON.stringify(alarmesStorage) !== JSON.stringify(listaAlarmes)) {
         listaAlarmes = alarmesStorage;
         renderizarTabelaAlarmes();
       }
@@ -991,10 +1000,8 @@
       iniciarGraficoPeriodo();
       iniciarGraficos();
       
-      // Varre alarmes ativos na inicialização e envia o primeiro aviso de imediato
       verificarVarreduraInicialAlarmes();
 
-      // Busca dados do ThingSpeak e mantém checagens contínuas em segundo plano
       buscarDados();
       setInterval(buscarDados, 5000);
       setInterval(checarInatividade, 2000);
