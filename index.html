@@ -186,7 +186,7 @@
       <!-- STATUS DOS EQUIPAMENTOS -->
       <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3.5">
         <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center justify-between">
-          <span>⚙️️ STATUS DOS EQUIPAMENTOS</span>
+          <span>⚙ STATUS DOS EQUIPAMENTOS</span>
         </h3>
 
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -808,7 +808,10 @@
         elBadge.className = "bg-blue-800 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5";
         gauge.classList.add('gauge-fill-normal');
 
-        // Verifica se havia algum alarme de temperatura ou degelo ativo para normalizar
+        // Reseta o contador de fora da faixa quando voltar ao normal
+        timestampInicioForaFaixa = null;
+        segundosForaDaFaixa = 0;
+
         let tinhaAnomaliaAtiva = listaAlarmes.some(a => (a.evento.includes("Alarme de Temperatura") || a.evento.includes("Degelo excedido")) && a.status === 'Ativo');
         if (tinhaAnomaliaAtiva) {
           normalizarAlarme("Alarme de Temperatura");
@@ -817,6 +820,11 @@
         }
       } 
       else {
+        // Se entrou fora da faixa e o timer estava zerado, inicializa a contagem
+        if (timestampInicioForaFaixa === null) {
+          timestampInicioForaFaixa = Date.now();
+        }
+
         // 1. Verificação individual de Degelo Excedido
         if (segundosForaDaFaixa > limiteSegundos) {
           let nomeDegelo = "Degelo excedido";
@@ -856,6 +864,12 @@
     }
 
     function atualizarDisplayForaDaFaixa() {
+      if (timestampInicioForaFaixa !== null && timestampInicioForaFaixa > 0) {
+        segundosForaDaFaixa = Math.max(0, Math.floor((Date.now() - timestampInicioForaFaixa) / 1000));
+      } else {
+        segundosForaDaFaixa = 0;
+      }
+
       const horas = String(Math.floor(segundosForaDaFaixa / 3600)).padStart(2, '0');
       const mins = String(Math.floor((segundosForaDaFaixa % 3600) / 60)).padStart(2, '0');
       const segs = String(segundosForaDaFaixa % 60).padStart(2, '0');
