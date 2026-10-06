@@ -347,6 +347,7 @@
     const telegramToken = "8910254546:AAF_w98tfvtoXxUMGF2c6PDRY9qaEE3Uw_Y";
     const telegramChatId = "-5089800564";
 
+    // SINCRONISMO DE ALARMES ENTRE ABAS E DISPOSITIVOS (WEB/MOBILE) VIA STORAGE EVENT
     window.addEventListener('storage', (event) => {
       if (event.key === 'channelId' && event.newValue) { channelId = event.newValue; document.getElementById('input-channel-id').value = channelId; }
       if (event.key === 'writeApiKey') { writeApiKey = event.newValue || ''; document.getElementById('input-write-api-key').value = writeApiKey; }
@@ -362,7 +363,7 @@
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes'));
     if (!listaAlarmes || listaAlarmes.length === 0) {
       listaAlarmes = [
-        { data: "06/10/2026, 10:56:24", evento: "Temperatura Alta (22.7 °C)", nivel: "CRÍTICO", status: "Ativo" },
+        { data: "06/10/2026, 10:56:24", evento: "Alarme de Temperatura (22.7 °C)", nivel: "CRÍTICO", status: "Ativo" },
         { data: "05/10/2026, 19:46:05", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" }
       ];
       localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
@@ -455,7 +456,7 @@
           if (item.evento.includes("Conexão")) estadoAlarmeAtivo.conexao = true;
           if (item.evento.includes("Rede Elétrica")) estadoAlarmeAtivo.redeEletrica = true;
           if (item.evento.includes("Sensor")) estadoAlarmeAtivo.falhaSensor = true;
-          if (item.evento.includes("Temperatura") || item.evento.includes("Degelo")) estadoAlarmeAtivo.temperaturaAnomala = true;
+          if (item.evento.includes("Temperatura") || item.evento.includes("Alarme de Temperatura")) estadoAlarmeAtivo.temperaturaAnomala = true;
         });
 
         let descricoesAtivas = alarmesAtivosStorage.map(a => `⚠️ ${a.evento} (${a.nivel})`);
@@ -811,8 +812,8 @@
         gauge.classList.add('gauge-fill-normal');
 
         if (estadoAlarmeAtivo.temperaturaAnomala) {
+          normalizarAlarme("Alarme de Temperatura");
           normalizarAlarme("Temperatura Fora da Faixa");
-          normalizarAlarme("Degelo Excedido");
           normalizarAlarme("Temperatura Alta");
           normalizarAlarme("Temperatura Baixa");
           dispararTelegram("✅ Temperatura Normalizada: A câmara retornou à faixa segura de operação.");
@@ -822,22 +823,20 @@
       else {
         let msgsAcumuladasParaTelegram = [];
 
-        // CORREÇÃO DEFINITIVA: IFs totalmente independentes para que o Degelo e a Temp Alta sejam verificados em paralelo
-
-        // 1. Verificação independente de Degelo Excedido
+        // 1. Verificação de Alarme de Temperatura por estourar o tempo configurado (substituindo degelo excedido)
         if (segundosForaDaFaixa > limiteSegundos) {
-          let nomeDegelo = `Degelo Excedido (> ${tempoDegeloMinutos} min)`;
-          if (!listaAlarmes.some(a => a.evento.includes("Degelo Excedido") && a.status === 'Ativo')) {
-            adicionarAlarme(nomeDegelo, "CRÍTICO");
+          let nomeAlarmeTemp = `Alarme de Temperatura (> ${tempoDegeloMinutos} min)`;
+          if (!listaAlarmes.some(a => a.evento.includes("Alarme de Temperatura") && a.status === 'Ativo')) {
+            adicionarAlarme(nomeAlarmeTemp, "CRÍTICO");
           }
-          msgsAcumuladasParaTelegram.push(`⚠️ ${nomeDegelo} (CRÍTICO)`);
+          msgsAcumuladasParaTelegram.push(`⚠️ ${nomeAlarmeTemp} (CRÍTICO)`);
           
-          elBadge.innerText = "DEGELO";
+          elBadge.innerText = "ALERTA TEMP";
           elBadge.className = "bg-sky-600 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-degelo');
         }
 
-        // 2. Verificação independente de Temperatura Alta ou Baixa (roda junto com o degelo se aplicável)
+        // 2. Verificações de Temperatura Alta ou Baixa
         if (temp > -14.0) {
           elBadge.innerText = "TEMP. ALTA";
           elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
@@ -865,7 +864,6 @@
           estadoAlarmeAtivo.temperaturaAnomala = true;
         }
 
-        // Dispara todos os eventos ativos simultaneamente em uma única mensagem para o Telegram
         if (msgsAcumuladasParaTelegram.length > 0) {
           dispararTelegram(`⚠️ *Eventos de Alerta Ativos na Câmara Fria:*\n\n` + msgsAcumuladasParaTelegram.join("\n"));
         }
@@ -904,7 +902,7 @@
     function normalizarAlarme(nomeEvento) {
       let alterou = false;
       for (let item of listaAlarmes) {
-        if (item.evento.includes(nomeEvento) || nomeEvento.includes(item.evento) || item.evento.includes("Temperatura") || item.evento.includes("Degelo")) {
+        if (item.evento.includes(nomeEvento) || nomeEvento.includes(item.evento) || item.evento.includes("Temperatura") || item.evento.includes("Alarme de Temperatura")) {
           if (item.status === 'Ativo') {
             item.status = 'OK';
             alterou = true;
