@@ -126,7 +126,7 @@
         </div>
       </div>
 
-      <!-- TREND DE TEMPERATURA -->
+      <!-- TREND DE TEMPERATURA ENQUADRADA -->
       <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm">
         <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider mb-3 sm:mb-4 flex items-center gap-2">
           <span>📈</span> TENDÊNCIA DA TEMPERATURA
@@ -347,24 +347,36 @@
     const telegramToken = "8910254546:AAF_w98tfvtoXxUMGF2c6PDRY9qaEE3Uw_Y";
     const telegramChatId = "-5089800564";
 
-    // SINCRONISMO DE ALARMES ENTRE ABAS E DISPOSITIVOS (WEB/MOBILE) VIA STORAGE EVENT
     window.addEventListener('storage', (event) => {
       if (event.key === 'channelId' && event.newValue) { channelId = event.newValue; document.getElementById('input-channel-id').value = channelId; }
       if (event.key === 'writeApiKey') { writeApiKey = event.newValue || ''; document.getElementById('input-write-api-key').value = writeApiKey; }
       if (event.key === 'tempOffset') { tempOffset = parseFloat(event.newValue) || 0.0; document.getElementById('input-temp-offset').value = tempOffset; }
       if (event.key === 'tempoDegeloMinutos') { tempoDegeloMinutos = parseInt(event.newValue) || 5; document.getElementById('input-tempo-degelo').value = tempoDegeloMinutos; atualizarRotulosDegelo(); }
       
+      // Sincronização em tempo real do histórico de alarmes entre web e mobile
       if (event.key === 'historicoAlarmes' && event.newValue) {
         listaAlarmes = JSON.parse(event.newValue) || [];
         renderizarTabelaAlarmes();
       }
     });
 
+    // UNIFICAÇÃO DA BASE DE DADOS (Referência exata da Imagem Web completa)
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes'));
     if (!listaAlarmes || listaAlarmes.length === 0) {
       listaAlarmes = [
-        { data: "06/10/2026, 10:56:24", evento: "Alarme de Temperatura (22.7 °C)", nivel: "CRÍTICO", status: "Ativo" },
-        { data: "05/10/2026, 19:46:05", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" }
+        { data: "06/10/2026, 10:56:24", evento: "Temperatura Alta (22.7 °C)", nivel: "CRÍTICO", status: "Ativo" },
+        { data: "05/10/2026, 19:46:05", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "05/10/2026, 16:14:53", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "05/10/2026, 15:21:56", evento: "Degelo Excedido (> 5 min)", nivel: "CRÍTICO", status: "OK" },
+        { data: "05/10/2026, 12:42:53", evento: "Temperatura Alta (22.9 °C)", nivel: "CRÍTICO", status: "OK" },
+        { data: "05/10/2026, 11:51:46", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "02/10/2026, 20:21:41", evento: "Queda na Rede Elétrica", nivel: "CRÍTICO", status: "OK" },
+        { data: "02/10/2026, 08:58:46", evento: "Temperatura Fora da Faixa (20.9 °C)", nivel: "CRÍTICO", status: "OK" },
+        { data: "02/10/2026, 08:24:33", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "30/09/2026, 14:29:06", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "30/09/2026, 13:55:44", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "30/09/2026, 13:37:46", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "30/09/2026, 13:29:03", evento: "Degelo Excedido (>5 min)", nivel: "CRÍTICO", status: "OK" }
       ];
       localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
     }
@@ -435,7 +447,7 @@
           intervaloReenvioAlarme = setInterval(() => {
             let atuaisAtivos = listaAlarmes.filter(a => a.status === 'Ativo');
             if (atuaisAtivos.length > 0) {
-              let msgs = atuaisAtivos.map(a => `• ${a.evento} (${a.nivel})`);
+              let msgs = atuaisAtivos.map(a => `• ${a.evento}`);
               let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 2 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + msgs.join("\n");
               dispararTelegram(msgRecorrente);
             }
@@ -456,7 +468,7 @@
           if (item.evento.includes("Conexão")) estadoAlarmeAtivo.conexao = true;
           if (item.evento.includes("Rede Elétrica")) estadoAlarmeAtivo.redeEletrica = true;
           if (item.evento.includes("Sensor")) estadoAlarmeAtivo.falhaSensor = true;
-          if (item.evento.includes("Temperatura") || item.evento.includes("Alarme de Temperatura")) estadoAlarmeAtivo.temperaturaAnomala = true;
+          if (item.evento.includes("Temperatura") || item.evento.includes("Degelo")) estadoAlarmeAtivo.temperaturaAnomala = true;
         });
 
         let descricoesAtivas = alarmesAtivosStorage.map(a => `⚠️ ${a.evento} (${a.nivel})`);
@@ -785,7 +797,7 @@
 
         if (!estadoAlarmeAtivo.falhaSensor) {
           adicionarAlarme("Falha no Sensor de Temp.", "CRÍTICO");
-          dispararTelegram("🌡 Falha no Sensor: Erro de leitura ou sensor desconectado na câmara fria.");
+          dispararTelegram("🌡️ Falha no Sensor: Erro de leitura ou sensor desconectado na câmara fria.");
           estadoAlarmeAtivo.falhaSensor = true;
         }
         gerenciarLoopReenvioAlarmes();
@@ -805,67 +817,47 @@
 
       const limiteSegundos = tempoDegeloMinutos * 60;
 
-      // Faixa normal: -25 °C a -14 °C
+      // Faixa normal ajustada: -25 °C a -14 °C
       if (temp >= -25.0 && temp <= -14.0) {
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-800 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5";
         gauge.classList.add('gauge-fill-normal');
 
         if (estadoAlarmeAtivo.temperaturaAnomala) {
-          normalizarAlarme("Alarme de Temperatura");
           normalizarAlarme("Temperatura Fora da Faixa");
-          normalizarAlarme("Temperatura Alta");
-          normalizarAlarme("Temperatura Baixa");
           dispararTelegram("✅ Temperatura Normalizada: A câmara retornou à faixa segura de operação.");
           estadoAlarmeAtivo.temperaturaAnomala = false;
         }
       } 
       else {
-        let msgsAcumuladasParaTelegram = [];
+        let nomeEventoAlarme = "";
+        let textoMsgTelegram = "";
 
-        // 1. Verificação de Alarme de Temperatura por estourar o tempo configurado (substituindo degelo excedido)
-        if (segundosForaDaFaixa > limiteSegundos) {
-          let nomeAlarmeTemp = `Alarme de Temperatura (> ${tempoDegeloMinutos} min)`;
-          if (!listaAlarmes.some(a => a.evento.includes("Alarme de Temperatura") && a.status === 'Ativo')) {
-            adicionarAlarme(nomeAlarmeTemp, "CRÍTICO");
-          }
-          msgsAcumuladasParaTelegram.push(`⚠️ ${nomeAlarmeTemp} (CRÍTICO)`);
-          
-          elBadge.innerText = "ALERTA TEMP";
+        if (segundosForaDaFaixa <= limiteSegundos) {
+          elBadge.innerText = "DEGELO";
           elBadge.className = "bg-sky-600 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-degelo');
-        }
-
-        // 2. Verificações de Temperatura Alta ou Baixa
-        if (temp > -14.0) {
-          elBadge.innerText = "TEMP. ALTA";
+          
+          nomeEventoAlarme = `Degelo Excedido (> ${tempoDegeloMinutos} min)`;
+          textoMsgTelegram = `⚠️ Alerta de Degelo: A câmara encontra-se em ${temp.toFixed(1)} °C ultrapassando o tempo limite de tolerância.`;
+        } else {
+          elBadge.innerText = temp > -14.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
           elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-error');
 
-          let nomeTempAlta = `Temperatura Alta (${temp.toFixed(1)} °C)`;
-          if (!listaAlarmes.some(a => a.evento.includes("Temperatura Alta") && a.status === 'Ativo')) {
-            adicionarAlarme(nomeTempAlta, "CRÍTICO");
+          if (temp > -14.0) {
+            nomeEventoAlarme = `Temperatura Alta (${temp.toFixed(1)} °C)`;
+            textoMsgTelegram = `🚨 Alerta Crítico de Temperatura Alta: A câmara atingiu ${temp.toFixed(1)} °C (Limite máximo permitido: -14 °C).`;
+          } else {
+            nomeEventoAlarme = `Temperatura Baixa (${temp.toFixed(1)} °C)`;
+            textoMsgTelegram = `⚠️ Alerta de Temperatura Baixa: A câmara atingiu ${temp.toFixed(1)} °C (Limite mínimo permitido: -25 °C).`;
           }
-          msgsAcumuladasParaTelegram.push(`🚨 ${nomeTempAlta} (CRÍTICO)`);
-        } 
-        else if (temp < -25.0) {
-          elBadge.innerText = "TEMP. BAIXA";
-          elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
-          gauge.classList.add('gauge-fill-error');
-
-          let nomeTempBaixa = `Temperatura Baixa (${temp.toFixed(1)} °C)`;
-          if (!listaAlarmes.some(a => a.evento.includes("Temperatura Baixa") && a.status === 'Ativo')) {
-            adicionarAlarme(nomeTempBaixa, "CRÍTICO");
-          }
-          msgsAcumuladasParaTelegram.push(`⚠️ ${nomeTempBaixa} (CRÍTICO)`);
         }
 
         if (!estadoAlarmeAtivo.temperaturaAnomala) {
+          adicionarAlarme(nomeEventoAlarme, "CRÍTICO");
+          dispararTelegram(textoMsgTelegram);
           estadoAlarmeAtivo.temperaturaAnomala = true;
-        }
-
-        if (msgsAcumuladasParaTelegram.length > 0) {
-          dispararTelegram(`⚠️ *Eventos de Alerta Ativos na Câmara Fria:*\n\n` + msgsAcumuladasParaTelegram.join("\n"));
         }
       }
       gerenciarLoopReenvioAlarmes();
@@ -902,7 +894,7 @@
     function normalizarAlarme(nomeEvento) {
       let alterou = false;
       for (let item of listaAlarmes) {
-        if (item.evento.includes(nomeEvento) || nomeEvento.includes(item.evento) || item.evento.includes("Temperatura") || item.evento.includes("Alarme de Temperatura")) {
+        if (item.evento.includes(nomeEvento) || nomeEvento.includes(item.evento) || item.evento.includes("Temperatura") || item.evento.includes("Degelo")) {
           if (item.status === 'Ativo') {
             item.status = 'OK';
             alterou = true;
