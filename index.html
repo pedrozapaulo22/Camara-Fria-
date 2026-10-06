@@ -126,7 +126,7 @@
         </div>
       </div>
 
-      <!-- TREND DE TEMPERATURA ENQUADRADA -->
+      <!-- TREND DE TEMPERATURA -->
       <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm">
         <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider mb-3 sm:mb-4 flex items-center gap-2">
           <span>📈</span> TENDÊNCIA DA TEMPERATURA
@@ -363,18 +363,7 @@
     if (!listaAlarmes || listaAlarmes.length === 0) {
       listaAlarmes = [
         { data: "06/10/2026, 10:56:24", evento: "Temperatura Alta (22.7 °C)", nivel: "CRÍTICO", status: "Ativo" },
-        { data: "05/10/2026, 19:46:05", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-        { data: "05/10/2026, 16:14:53", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-        { data: "05/10/2026, 15:21:56", evento: "Degelo Excedido (> 5 min)", nivel: "CRÍTICO", status: "OK" },
-        { data: "05/10/2026, 12:42:53", evento: "Temperatura Alta (22.9 °C)", nivel: "CRÍTICO", status: "OK" },
-        { data: "05/10/2026, 11:51:46", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-        { data: "02/10/2026, 20:21:41", evento: "Queda na Rede Elétrica", nivel: "CRÍTICO", status: "OK" },
-        { data: "02/10/2026, 08:58:46", evento: "Temperatura Fora da Faixa (20.9 °C)", nivel: "CRÍTICO", status: "OK" },
-        { data: "02/10/2026, 08:24:33", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-        { data: "30/09/2026, 14:29:06", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-        { data: "30/09/2026, 13:55:44", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-        { data: "30/09/2026, 13:37:46", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-        { data: "30/09/2026, 13:29:03", evento: "Degelo Excedido (>5 min)", nivel: "CRÍTICO", status: "OK" }
+        { data: "05/10/2026, 19:46:05", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" }
       ];
       localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
     }
@@ -445,7 +434,7 @@
           intervaloReenvioAlarme = setInterval(() => {
             let atuaisAtivos = listaAlarmes.filter(a => a.status === 'Ativo');
             if (atuaisAtivos.length > 0) {
-              let msgs = atuaisAtivos.map(a => `• ${a.evento}`);
+              let msgs = atuaisAtivos.map(a => `• ${a.evento} (${a.nivel})`);
               let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 2 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + msgs.join("\n");
               dispararTelegram(msgRecorrente);
             }
@@ -795,7 +784,7 @@
 
         if (!estadoAlarmeAtivo.falhaSensor) {
           adicionarAlarme("Falha no Sensor de Temp.", "CRÍTICO");
-          dispararTelegram("🌡️ Falha no Sensor: Erro de leitura ou sensor desconectado na câmara fria.");
+          dispararTelegram("🌡️️ Falha no Sensor: Erro de leitura ou sensor desconectado na câmara fria.");
           estadoAlarmeAtivo.falhaSensor = true;
         }
         gerenciarLoopReenvioAlarmes();
@@ -842,11 +831,11 @@
           let nomeDegelo = `Degelo Excedido (> ${tempoDegeloMinutos} min)`;
           if (!listaAlarmes.some(a => a.evento.includes("Degelo Excedido") && a.status === 'Ativo')) {
             adicionarAlarme(nomeDegelo, "CRÍTICO");
-            msgsAcumuladasParaTelegram.push(`⚠️ Alerta de Degelo: A câmara encontra-se em ${temp.toFixed(1)} °C ultrapassando o tempo limite de tolerância.`);
+            msgsAcumuladasParaTelegram.push(`⚠️ ${nomeDegelo} (CRÍTICO)`);
           }
         } 
         else {
-          // 2. Passou do tempo de degelo: emite Degelo Excedido (se já não estiver) + Alarme de Temperatura Alta ou Baixa com base na leitura atual
+          // 2. Passou do tempo de degelo: acumula Degelo Excedido + Alarme de Temperatura Alta ou Baixa
           elBadge.innerText = temp > -14.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
           elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-error');
@@ -854,20 +843,20 @@
           let nomeDegelo = `Degelo Excedido (> ${tempoDegeloMinutos} min)`;
           if (!listaAlarmes.some(a => a.evento.includes("Degelo Excedido") && a.status === 'Ativo')) {
             adicionarAlarme(nomeDegelo, "CRÍTICO");
-            msgsAcumuladasParaTelegram.push(`⚠️ Alerta de Degelo: Limite de ${tempoDegeloMinutos} min excedido.`);
+            msgsAcumuladasParaTelegram.push(`⚠️ ${nomeDegelo} (CRÍTICO)`);
           }
 
           if (temp > -14.0) {
             let nomeTempAlta = `Temperatura Alta (${temp.toFixed(1)} °C)`;
             if (!listaAlarmes.some(a => a.evento.includes("Temperatura Alta") && a.status === 'Ativo')) {
               adicionarAlarme(nomeTempAlta, "CRÍTICO");
-              msgsAcumuladasParaTelegram.push(`🚨 Alerta Crítico de Temperatura Alta: A câmara atingiu ${temp.toFixed(1)} °C (Limite máximo permitido: -14 °C).`);
+              msgsAcumuladasParaTelegram.push(`🚨 ${nomeTempAlta} (CRÍTICO)`);
             }
           } else {
             let nomeTempBaixa = `Temperatura Baixa (${temp.toFixed(1)} °C)`;
             if (!listaAlarmes.some(a => a.evento.includes("Temperatura Baixa") && a.status === 'Ativo')) {
               adicionarAlarme(nomeTempBaixa, "CRÍTICO");
-              msgsAcumuladasParaTelegram.push(`⚠️ Alerta de Temperatura Baixa: A câmara atingiu ${temp.toFixed(1)} °C (Limite mínimo permitido: -25 °C).`);
+              msgsAcumuladasParaTelegram.push(`⚠️ ${nomeTempBaixa} (CRÍTICO)`);
             }
           }
         }
@@ -876,8 +865,9 @@
           estadoAlarmeAtivo.temperaturaAnomala = true;
         }
 
+        // CORREÇÃO APLICADA: Envia todos os alarmes ativos acumulados em uma única mensagem agrupada
         if (msgsAcumuladasParaTelegram.length > 0) {
-          dispararTelegram(msgsAcumuladasParaTelegram.join("\n\n"));
+          dispararTelegram(`⚠️ *Eventos de Alerta Ativos na Câmara Fria:*\n\n` + msgsAcumuladasParaTelegram.join("\n"));
         }
       }
       gerenciarLoopReenvioAlarmes();
