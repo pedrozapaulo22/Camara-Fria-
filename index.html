@@ -353,14 +353,12 @@
       if (event.key === 'tempOffset') { tempOffset = parseFloat(event.newValue) || 0.0; document.getElementById('input-temp-offset').value = tempOffset; }
       if (event.key === 'tempoDegeloMinutos') { tempoDegeloMinutos = parseInt(event.newValue) || 5; document.getElementById('input-tempo-degelo').value = tempoDegeloMinutos; atualizarRotulosDegelo(); }
       
-      // Sincronização em tempo real do histórico de alarmes entre web e mobile
       if (event.key === 'historicoAlarmes' && event.newValue) {
         listaAlarmes = JSON.parse(event.newValue) || [];
         renderizarTabelaAlarmes();
       }
     });
 
-    // UNIFICAÇÃO DA BASE DE DADOS (Referência exata da Imagem Web completa)
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes'));
     if (!listaAlarmes || listaAlarmes.length === 0) {
       listaAlarmes = [
@@ -817,7 +815,7 @@
 
       const limiteSegundos = tempoDegeloMinutos * 60;
 
-      // Faixa normal ajustada: -25 °C a -14 °C
+      // Faixa normal: -25 °C a -14 °C
       if (temp >= -25.0 && temp <= -14.0) {
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-800 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5";
@@ -825,39 +823,61 @@
 
         if (estadoAlarmeAtivo.temperaturaAnomala) {
           normalizarAlarme("Temperatura Fora da Faixa");
+          normalizarAlarme("Degelo Excedido");
+          normalizarAlarme("Temperatura Alta");
+          normalizarAlarme("Temperatura Baixa");
           dispararTelegram("✅ Temperatura Normalizada: A câmara retornou à faixa segura de operação.");
           estadoAlarmeAtivo.temperaturaAnomala = false;
         }
       } 
       else {
-        let nomeEventoAlarme = "";
-        let textoMsgTelegram = "";
+        let msgsAcumuladasParaTelegram = [];
 
+        // 1. Regra de Degelo (se ultrapassar o tempo limite)
         if (segundosForaDaFaixa <= limiteSegundos) {
           elBadge.innerText = "DEGELO";
           elBadge.className = "bg-sky-600 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-degelo');
           
-          nomeEventoAlarme = `Degelo Excedido (> ${tempoDegeloMinutos} min)`;
-          textoMsgTelegram = `⚠️ Alerta de Degelo: A câmara encontra-se em ${temp.toFixed(1)} °C ultrapassando o tempo limite de tolerância.`;
-        } else {
+          let nomeDegelo = `Degelo Excedido (> ${tempoDegeloMinutos} min)`;
+          if (!listaAlarmes.some(a => a.evento.includes("Degelo Excedido") && a.status === 'Ativo')) {
+            adicionarAlarme(nomeDegelo, "CRÍTICO");
+            msgsAcumuladasParaTelegram.push(`⚠️ Alerta de Degelo: A câmara encontra-se em ${temp.toFixed(1)} °C ultrapassando o tempo limite de tolerância.`);
+          }
+        } 
+        else {
+          // 2. Passou do tempo de degelo: emite Degelo Excedido (se já não estiver) + Alarme de Temperatura Alta ou Baixa com base na leitura atual
           elBadge.innerText = temp > -14.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
           elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-error');
 
+          let nomeDegelo = `Degelo Excedido (> ${tempoDegeloMinutos} min)`;
+          if (!listaAlarmes.some(a => a.evento.includes("Degelo Excedido") && a.status === 'Ativo')) {
+            adicionarAlarme(nomeDegelo, "CRÍTICO");
+            msgsAcumuladasParaTelegram.push(`⚠️ Alerta de Degelo: Limite de ${tempoDegeloMinutos} min excedido.`);
+          }
+
           if (temp > -14.0) {
-            nomeEventoAlarme = `Temperatura Alta (${temp.toFixed(1)} °C)`;
-            textoMsgTelegram = `🚨 Alerta Crítico de Temperatura Alta: A câmara atingiu ${temp.toFixed(1)} °C (Limite máximo permitido: -14 °C).`;
+            let nomeTempAlta = `Temperatura Alta (${temp.toFixed(1)} °C)`;
+            if (!listaAlarmes.some(a => a.evento.includes("Temperatura Alta") && a.status === 'Ativo')) {
+              adicionarAlarme(nomeTempAlta, "CRÍTICO");
+              msgsAcumuladasParaTelegram.push(`🚨 Alerta Crítico de Temperatura Alta: A câmara atingiu ${temp.toFixed(1)} °C (Limite máximo permitido: -14 °C).`);
+            }
           } else {
-            nomeEventoAlarme = `Temperatura Baixa (${temp.toFixed(1)} °C)`;
-            textoMsgTelegram = `⚠️ Alerta de Temperatura Baixa: A câmara atingiu ${temp.toFixed(1)} °C (Limite mínimo permitido: -25 °C).`;
+            let nomeTempBaixa = `Temperatura Baixa (${temp.toFixed(1)} °C)`;
+            if (!listaAlarmes.some(a => a.evento.includes("Temperatura Baixa") && a.status === 'Ativo')) {
+              adicionarAlarme(nomeTempBaixa, "CRÍTICO");
+              msgsAcumuladasParaTelegram.push(`⚠️ Alerta de Temperatura Baixa: A câmara atingiu ${temp.toFixed(1)} °C (Limite mínimo permitido: -25 °C).`);
+            }
           }
         }
 
         if (!estadoAlarmeAtivo.temperaturaAnomala) {
-          adicionarAlarme(nomeEventoAlarme, "CRÍTICO");
-          dispararTelegram(textoMsgTelegram);
           estadoAlarmeAtivo.temperaturaAnomala = true;
+        }
+
+        if (msgsAcumuladasParaTelegram.length > 0) {
+          dispararTelegram(msgsAcumuladasParaTelegram.join("\n\n"));
         }
       }
       gerenciarLoopReenvioAlarmes();
