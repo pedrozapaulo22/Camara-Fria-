@@ -820,9 +820,8 @@
         }
       } 
       else {
+        let dispararImediato = !estadoAlarmeAtivo.temperaturaAnomala;
         let msgsAcumuladasParaTelegram = [];
-
-        // CORREÇÃO DEFINITIVA: IFs totalmente independentes para que o Degelo e a Temp Alta sejam verificados em paralelo
 
         // 1. Verificação independente de Degelo Excedido
         if (segundosForaDaFaixa > limiteSegundos) {
@@ -837,7 +836,7 @@
           gauge.classList.add('gauge-fill-degelo');
         }
 
-        // 2. Verificação independente de Temperatura Alta ou Baixa (roda junto com o degelo se aplicável)
+        // 2. Verificação independente de Temperatura Alta ou Baixa
         if (temp > -14.0) {
           elBadge.innerText = "TEMP. ALTA";
           elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
@@ -865,9 +864,9 @@
           estadoAlarmeAtivo.temperaturaAnomala = true;
         }
 
-        // Dispara todos os eventos ativos simultaneamente em uma única mensagem para o Telegram
-        if (msgsAcumuladasParaTelegram.length > 0) {
-          dispararTelegram(`⚠️ *Eventos de Alerta Ativos na Câmara Fria:*\n\n` + msgsAcumuladasParaTelegram.join("\n"));
+        // Dispara o alerta imediato na primeira detecção da anomalia (o loop de 2 minutos cuidará dos reenvios sequenciais seguintes)
+        if (dispararImediato && msgsAcumuladasParaTelegram.length > 0) {
+          dispararTelegram(`⚠️️ *Eventos de Alerta Ativos na Câmara Fria:*\n\n` + msgsAcumuladasParaTelegram.join("\n"));
         }
       }
       gerenciarLoopReenvioAlarmes();
