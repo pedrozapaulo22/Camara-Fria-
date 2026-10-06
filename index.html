@@ -822,32 +822,34 @@
       else {
         let msgsAcumuladasParaTelegram = [];
 
-        // CORREÇÃO DEFINITIVA: IFs totalmente independentes para que o Degelo e a Temp Alta sejam verificados em paralelo
-
-        // 1. Verificação independente de Degelo Excedido
+        // 1. Verificação de Degelo Excedido
         if (segundosForaDaFaixa > limiteSegundos) {
           let nomeDegelo = `Degelo Excedido (> ${tempoDegeloMinutos} min)`;
-          if (!listaAlarmes.some(a => a.evento.includes("Degelo Excedido") && a.status === 'Ativo')) {
+          let jaExisteDegeloAtivo = listaAlarmes.some(a => a.evento.includes("Degelo Excedido") && a.status === 'Ativo');
+          
+          if (!jaExisteDegeloAtivo) {
             adicionarAlarme(nomeDegelo, "CRÍTICO");
+            msgsAcumuladasParaTelegram.push(`⚠️ ${nomeDegelo} (CRÍTICO)`);
           }
-          msgsAcumuladasParaTelegram.push(`⚠️ ${nomeDegelo} (CRÍTICO)`);
           
           elBadge.innerText = "DEGELO";
           elBadge.className = "bg-sky-600 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-degelo');
         }
 
-        // 2. Verificação independente de Temperatura Alta ou Baixa (roda junto com o degelo se aplicável)
+        // 2. Verificação de Temperatura Alta ou Baixa
         if (temp > -14.0) {
           elBadge.innerText = "TEMP. ALTA";
           elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-error');
 
           let nomeTempAlta = `Temperatura Alta (${temp.toFixed(1)} °C)`;
-          if (!listaAlarmes.some(a => a.evento.includes("Temperatura Alta") && a.status === 'Ativo')) {
+          let jaExisteTempAltaAtiva = listaAlarmes.some(a => a.evento.includes("Temperatura Alta") && a.status === 'Ativo');
+
+          if (!jaExisteTempAltaAtiva) {
             adicionarAlarme(nomeTempAlta, "CRÍTICO");
+            msgsAcumuladasParaTelegram.push(`🚨 ${nomeTempAlta} (CRÍTICO)`);
           }
-          msgsAcumuladasParaTelegram.push(`🚨 ${nomeTempAlta} (CRÍTICO)`);
         } 
         else if (temp < -25.0) {
           elBadge.innerText = "TEMP. BAIXA";
@@ -855,19 +857,19 @@
           gauge.classList.add('gauge-fill-error');
 
           let nomeTempBaixa = `Temperatura Baixa (${temp.toFixed(1)} °C)`;
-          if (!listaAlarmes.some(a => a.evento.includes("Temperatura Baixa") && a.status === 'Ativo')) {
+          let jaExisteTempBaixaAtiva = listaAlarmes.some(a => a.evento.includes("Temperatura Baixa") && a.status === 'Ativo');
+
+          if (!jaExisteTempBaixaAtiva) {
             adicionarAlarme(nomeTempBaixa, "CRÍTICO");
+            msgsAcumuladasParaTelegram.push(`⚠️ ${nomeTempBaixa} (CRÍTICO)`);
           }
-          msgsAcumuladasParaTelegram.push(`⚠️ ${nomeTempBaixa} (CRÍTICO)`);
         }
 
-        if (!estadoAlarmeAtivo.temperaturaAnomala) {
-          estadoAlarmeAtivo.temperaturaAnomala = true;
-        }
+        estadoAlarmeAtivo.temperaturaAnomala = true;
 
-        // Dispara todos os eventos ativos simultaneamente em uma única mensagem para o Telegram
+        // Dispara o alerta imediato contendo quaisquer novas ocorrências que acabaram de entrar
         if (msgsAcumuladasParaTelegram.length > 0) {
-          dispararTelegram(`⚠️ *Eventos de Alerta Ativos na Câmara Fria:*\n\n` + msgsAcumuladasParaTelegram.join("\n"));
+          dispararTelegram(`⚠ *Eventos de Alerta Ativos na Câmara Fria:*\n\n` + msgsAcumuladasParaTelegram.join("\n"));
         }
       }
       gerenciarLoopReenvioAlarmes();
