@@ -308,9 +308,6 @@
           <button onclick="salvarConfiguracao()" id="btn-salvar-config" class="bg-blue-900 text-white font-bold text-xs px-4 py-3 rounded-xl hover:bg-blue-950 transition-colors shadow flex-1 flex items-center justify-center gap-2">
             <span>Salvar Parâmetros</span>
           </button>
-          <button onclick="testarTelegramManual()" class="bg-emerald-600 text-white font-bold text-xs px-4 py-3 rounded-xl hover:bg-emerald-700 transition-colors shadow flex items-center justify-center gap-1.5">
-            <span>Testar Telegram</span>
-          </button>
         </div>
       </div>
     </div>
@@ -343,7 +340,6 @@
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
-    // TOKEN E CHAT ID FIXOS NO CÓDIGO
     const telegramToken = "8910254546:AAF_w98tfvtoXxUMGF2c6PDRY9qaEE3Uw_Y";
     const telegramChatId = "-5089800564";
 
@@ -360,26 +356,12 @@
     });
 
     let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes'));
-    if (!listaAlarmes || listaAlarmes.length === 0) {
-      listaAlarmes = [
-        { data: "06/10/2026, 10:56:24", evento: "Temperatura Alta (22.7 °C)", nivel: "CRÍTICO", status: "Ativo" },
-        { data: "05/10/2026, 19:46:05", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-        { data: "05/10/2026, 16:14:53", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-        { data: "05/10/2026, 15:21:56", evento: "Degelo Excedido (> 5 min)", nivel: "CRÍTICO", status: "OK" },
-        { data: "05/10/2026, 12:42:53", evento: "Temperatura Alta (22.9 °C)", nivel: "CRÍTICO", status: "OK" },
-        { data: "05/10/2026, 11:51:46", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-        { data: "02/10/2026, 20:21:41", evento: "Queda na Rede Elétrica", nivel: "CRÍTICO", status: "OK" },
-        { data: "02/10/2026, 08:58:46", evento: "Temperatura Fora da Faixa (20.9 °C)", nivel: "CRÍTICO", status: "OK" },
-        { data: "02/10/2026, 08:24:33", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-        { data: "30/09/2026, 14:29:06", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-        { data: "30/09/2026, 13:55:44", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-        { data: "30/09/2026, 13:37:46", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
-        { data: "30/09/2026, 13:29:03", evento: "Degelo Excedido (>5 min)", nivel: "CRÍTICO", status: "OK" }
-      ];
+    if (!listaAlarmes) {
+      listaAlarmes = [];
       localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
     }
 
-    let timestampInicioForaFaixa = new Date("2026-09-30T13:29:03").getTime();
+    let timestampInicioForaFaixa = null;
     let segundosForaDaFaixa = 0;
     let ultimaTemperaturaCalculada = null;
 
@@ -389,8 +371,6 @@
       falhaSensor: false,
       temperaturaAnomala: false
     };
-
-    let intervaloReenvioAlarme = null;
 
     document.getElementById('input-channel-id').value = channelId;
     document.getElementById('input-write-api-key').value = writeApiKey;
@@ -406,74 +386,6 @@
 
     let ultimaRespostaComSucesso = 0;
     const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 120000;
-
-    function dispararTelegram(mensagem, forcarEnvio = false) {
-      const url = `https://api.telegram.org/bot${telegramToken}/sendMessage`;
-      const dados = {
-        chat_id: telegramChatId.trim(),
-        text: `❄ [REI DO GELO - ALERTA]\n\n${mensagem}`
-      };
-
-      fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dados)
-      })
-      .then(res => res.json())
-      .then(resp => {
-        if (resp.ok && forcarEnvio) {
-          alert("✅ Mensagem de teste enviada com sucesso para o Telegram!");
-        } else if (!resp.ok && forcarEnvio) {
-          alert("❌ Erro do Telegram: " + resp.description);
-        }
-      })
-      .catch(err => {
-        console.error("Erro de rede:", err);
-        if (forcarEnvio) alert("❌ Erro de rede ao conectar com o Telegram.");
-      });
-    }
-
-    function testarTelegramManual() {
-      dispararTelegram("🔔 Teste de funcionamento manual realizado com sucesso a partir do painel Rei do Gelo!", true);
-    }
-
-    function gerenciarLoopReenvioAlarmes() {
-      const temProblemaAtivo = estadoAlarmeAtivo.conexao || estadoAlarmeAtivo.redeEletrica || estadoAlarmeAtivo.falhaSensor || estadoAlarmeAtivo.temperaturaAnomala;
-
-      if (temProblemaAtivo) {
-        if (!intervaloReenvioAlarme) {
-          intervaloReenvioAlarme = setInterval(() => {
-            let atuaisAtivos = listaAlarmes.filter(a => a.status === 'Ativo');
-            if (atuaisAtivos.length > 0) {
-              let msgs = atuaisAtivos.map(a => `• ${a.evento}`);
-              let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 2 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + msgs.join("\n");
-              dispararTelegram(msgRecorrente);
-            }
-          }, 120000);
-        }
-      } else {
-        if (intervaloReenvioAlarme) {
-          clearInterval(intervaloReenvioAlarme);
-          intervaloReenvioAlarme = null;
-        }
-      }
-    }
-
-    function verificarVarreduraInicialAlarmes() {
-      let alarmesAtivosStorage = listaAlarmes.filter(a => a.status === 'Ativo');
-      if (alarmesAtivosStorage.length > 0) {
-        alarmesAtivosStorage.forEach(item => {
-          if (item.evento.includes("Conexão")) estadoAlarmeAtivo.conexao = true;
-          if (item.evento.includes("Rede Elétrica")) estadoAlarmeAtivo.redeEletrica = true;
-          if (item.evento.includes("Sensor")) estadoAlarmeAtivo.falhaSensor = true;
-          if (item.evento.includes("Temperatura") || item.evento.includes("Degelo")) estadoAlarmeAtivo.temperaturaAnomala = true;
-        });
-
-        let descricoesAtivas = alarmesAtivosStorage.map(a => `⚠️ ${a.evento} (${a.nivel})`);
-        dispararTelegram(`🚨 *ALERTA DE SISTEMA (Inicialização)*\nForam encontrados eventos ATIVOS no histórico da câmara fria:\n\n` + descricoesAtivas.join("\n"));
-        gerenciarLoopReenvioAlarmes();
-      }
-    }
 
     function atualizarDataHora() {
       document.getElementById('data-hora').innerText = new Date().toLocaleString('pt-BR');
@@ -692,10 +604,8 @@
 
       if (!estadoAlarmeAtivo.conexao) {
         adicionarAlarme("Perda de Conexão com Hardware", "CRÍTICO");
-        dispararTelegram("🚨 Alerta Crítico: Perda de Conexão com o Hardware da Câmara Fria.");
         estadoAlarmeAtivo.conexao = true;
       }
-      gerenciarLoopReenvioAlarmes();
     }
 
     function marcarConectado() {
@@ -705,10 +615,8 @@
 
       if (estadoAlarmeAtivo.conexao) {
         normalizarAlarme("Perda de Conexão com Hardware");
-        dispararTelegram("✅ Sistema Normalizado: Conexão com o Hardware restabelecida.");
         estadoAlarmeAtivo.conexao = false;
       }
-      gerenciarLoopReenvioAlarmes();
     }
 
     function processarDadosThingSpeak(feeds) {
@@ -718,7 +626,10 @@
 
       calcularTempoContemporaneo();
 
-      const isPowerOk = (String(ultimoFeed.field2) === "1" || String(ultimoFeed.field2) === "true");
+      // CONVERSÃO E VERIFICAÇÃO RIGOROSA DO FIELD2 (REDE ELÉTRICA)
+      const valField2 = parseFloat(ultimoFeed.field2);
+      const isPowerOk = (!isNaN(valField2) && valField2 === 1);
+
       const statusRede = document.getElementById('status-rede');
       const valBateria = document.getElementById('val-bateria');
       const subBateria = document.getElementById('sub-bateria');
@@ -733,7 +644,6 @@
 
         if (estadoAlarmeAtivo.redeEletrica) {
           normalizarAlarme("Queda na Rede Elétrica");
-          dispararTelegram("⚡ Rede Elétrica Normalizada: A energia da câmara fria foi restabelecida.");
           estadoAlarmeAtivo.redeEletrica = false;
         }
       } else {
@@ -746,14 +656,12 @@
 
         if (!estadoAlarmeAtivo.redeEletrica) {
           adicionarAlarme("Queda na Rede Elétrica", "CRÍTICO");
-          dispararTelegram("⚡ Alerta de Energia: Queda detectada na Rede Elétrica da câmara fria.");
           estadoAlarmeAtivo.redeEletrica = true;
         }
       }
 
       const isFalha = isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0;
       tratarTemperaturaESensor(ultimaTemperaturaCalculada, isFalha);
-      gerenciarLoopReenvioAlarmes();
 
       let labels = [];
       let dataValores = [];
@@ -795,16 +703,13 @@
 
         if (!estadoAlarmeAtivo.falhaSensor) {
           adicionarAlarme("Falha no Sensor de Temp.", "CRÍTICO");
-          dispararTelegram("🌡️ Falha no Sensor: Erro de leitura ou sensor desconectado na câmara fria.");
           estadoAlarmeAtivo.falhaSensor = true;
         }
-        gerenciarLoopReenvioAlarmes();
         return;
       }
 
       if (estadoAlarmeAtivo.falhaSensor) {
         normalizarAlarme("Falha no Sensor de Temp.");
-        dispararTelegram("✅ Sensor Normalizado: Leitura de temperatura restabelecida.");
         estadoAlarmeAtivo.falhaSensor = false;
       }
 
@@ -815,7 +720,6 @@
 
       const limiteSegundos = tempoDegeloMinutos * 60;
 
-      // Faixa normal: -25 °C a -14 °C
       if (temp >= -25.0 && temp <= -14.0) {
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-800 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5";
@@ -826,14 +730,10 @@
           normalizarAlarme("Degelo Excedido");
           normalizarAlarme("Temperatura Alta");
           normalizarAlarme("Temperatura Baixa");
-          dispararTelegram("✅ Temperatura Normalizada: A câmara retornou à faixa segura de operação.");
           estadoAlarmeAtivo.temperaturaAnomala = false;
         }
       } 
       else {
-        let msgsAcumuladasParaTelegram = [];
-
-        // 1. Regra de Degelo (se ultrapassar o tempo limite)
         if (segundosForaDaFaixa <= limiteSegundos) {
           elBadge.innerText = "DEGELO";
           elBadge.className = "bg-sky-600 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
@@ -842,11 +742,9 @@
           let nomeDegelo = `Degelo Excedido (> ${tempoDegeloMinutos} min)`;
           if (!listaAlarmes.some(a => a.evento.includes("Degelo Excedido") && a.status === 'Ativo')) {
             adicionarAlarme(nomeDegelo, "CRÍTICO");
-            msgsAcumuladasParaTelegram.push(`⚠️ Alerta de Degelo: A câmara encontra-se em ${temp.toFixed(1)} °C ultrapassando o tempo limite de tolerância.`);
           }
         } 
         else {
-          // 2. Passou do tempo de degelo: emite Degelo Excedido (se já não estiver) + Alarme de Temperatura Alta ou Baixa com base na leitura atual
           elBadge.innerText = temp > -14.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
           elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-error');
@@ -854,20 +752,17 @@
           let nomeDegelo = `Degelo Excedido (> ${tempoDegeloMinutos} min)`;
           if (!listaAlarmes.some(a => a.evento.includes("Degelo Excedido") && a.status === 'Ativo')) {
             adicionarAlarme(nomeDegelo, "CRÍTICO");
-            msgsAcumuladasParaTelegram.push(`⚠️ Alerta de Degelo: Limite de ${tempoDegeloMinutos} min excedido.`);
           }
 
           if (temp > -14.0) {
             let nomeTempAlta = `Temperatura Alta (${temp.toFixed(1)} °C)`;
             if (!listaAlarmes.some(a => a.evento.includes("Temperatura Alta") && a.status === 'Ativo')) {
               adicionarAlarme(nomeTempAlta, "CRÍTICO");
-              msgsAcumuladasParaTelegram.push(`🚨 Alerta Crítico de Temperatura Alta: A câmara atingiu ${temp.toFixed(1)} °C (Limite máximo permitido: -14 °C).`);
             }
           } else {
             let nomeTempBaixa = `Temperatura Baixa (${temp.toFixed(1)} °C)`;
             if (!listaAlarmes.some(a => a.evento.includes("Temperatura Baixa") && a.status === 'Ativo')) {
               adicionarAlarme(nomeTempBaixa, "CRÍTICO");
-              msgsAcumuladasParaTelegram.push(`⚠️ Alerta de Temperatura Baixa: A câmara atingiu ${temp.toFixed(1)} °C (Limite mínimo permitido: -25 °C).`);
             }
           }
         }
@@ -875,12 +770,7 @@
         if (!estadoAlarmeAtivo.temperaturaAnomala) {
           estadoAlarmeAtivo.temperaturaAnomala = true;
         }
-
-        if (msgsAcumuladasParaTelegram.length > 0) {
-          dispararTelegram(msgsAcumuladasParaTelegram.join("\n\n"));
-        }
       }
-      gerenciarLoopReenvioAlarmes();
     }
 
     function atualizarDisplayForaDaFaixa() {
@@ -1020,8 +910,6 @@
       renderizarTabelaAlarmes();
       iniciarGraficoPeriodo();
       iniciarGraficos();
-      
-      verificarVarreduraInicialAlarmes();
 
       buscarDados();
       setInterval(buscarDados, 5000);
