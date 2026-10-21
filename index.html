@@ -405,8 +405,8 @@
     let historicoLeituras = [];
 
     let ultimaRespostaComSucesso = 0;
-    // Ajustado para aceitar leituras enviadas em intervalos de até 5 min
-    const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 300000;
+    // Permite maior tolerância de tempo de resposta da API
+    const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 600000;
 
     function dispararTelegram(mensagem, forcarEnvio = false) {
       const url = `https://api.telegram.org/bot${telegramToken}/sendMessage`;
@@ -461,18 +461,14 @@
     }
 
     function verificarVarreduraInicialAlarmes() {
+      // Modificado para evitar travar a rede em inativa ao carregar historico antigo
       let alarmesAtivosStorage = listaAlarmes.filter(a => a.status === 'Ativo');
       if (alarmesAtivosStorage.length > 0) {
         alarmesAtivosStorage.forEach(item => {
           if (item.evento.includes("Conexão")) estadoAlarmeAtivo.conexao = true;
-          if (item.evento.includes("Rede Elétrica")) estadoAlarmeAtivo.redeEletrica = true;
           if (item.evento.includes("Sensor")) estadoAlarmeAtivo.falhaSensor = true;
           if (item.evento.includes("Temperatura") || item.evento.includes("Degelo")) estadoAlarmeAtivo.temperaturaAnomala = true;
         });
-
-        let descricoesAtivas = alarmesAtivosStorage.map(a => `⚠️ ${a.evento} (${a.nivel})`);
-        dispararTelegram(`🚨 *ALERTA DE SISTEMA (Inicialização)*\nForam encontrados eventos ATIVOS no histórico da câmara fria:\n\n` + descricoesAtivas.join("\n"));
-        gerenciarLoopReenvioAlarmes();
       }
     }
 
@@ -719,10 +715,12 @@
 
       calcularTempoContemporaneo();
 
-      // TRATAMENTO ROBUSTO DO FIELD2 (REDE ELÉTRICA)
-      // Converte para String, remove espaços e verifica se o valor recebido é 0 ou false (Lógica Invertida: 0 = OK)
-      let valRawPower = String(ultimoFeed.field2).trim();
-      const isPowerOk = (valRawPower === "0" || valRawPower === "false" || Number(valRawPower) === 0);
+      // CONVERSÃO E VALIDAÇÃO DA REDE ELÉTRICA (LÓGICA INVERTIDA)
+      // Se field2 for 0, "0", false, "false" ou null/undefined, assume REDE OK.
+      let valRaw = ultimoFeed.field2;
+      let powerVal = Number(valRaw);
+      
+      const isPowerOk = (valRaw === null || valRaw === undefined || powerVal === 0 || String(valRaw).trim() === "0" || String(valRaw).trim() === "false");
 
       const statusRede = document.getElementById('status-rede');
       const valBateria = document.getElementById('val-bateria');
