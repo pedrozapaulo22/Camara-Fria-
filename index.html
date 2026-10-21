@@ -405,7 +405,6 @@
     let historicoLeituras = [];
 
     let ultimaRespostaComSucesso = 0;
-    // Permite maior tolerância de tempo de resposta da API
     const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 600000;
 
     function dispararTelegram(mensagem, forcarEnvio = false) {
@@ -438,30 +437,21 @@
       dispararTelegram("🔔 Teste de funcionamento manual realizado com sucesso a partir do painel Rei do Gelo!", true);
     }
 
+    // CICLO RECORRENTE A CADA 2 MINUTOS (120.000 ms)
     function gerenciarLoopReenvioAlarmes() {
-      const temProblemaAtivo = estadoAlarmeAtivo.conexao || estadoAlarmeAtivo.redeEletrica || estadoAlarmeAtivo.falhaSensor || estadoAlarmeAtivo.temperaturaAnomala;
-
-      if (temProblemaAtivo) {
-        if (!intervaloReenvioAlarme) {
-          intervaloReenvioAlarme = setInterval(() => {
-            let atuaisAtivos = listaAlarmes.filter(a => a.status === 'Ativo');
-            if (atuaisAtivos.length > 0) {
-              let msgs = atuaisAtivos.map(a => `• ${a.evento}`);
-              let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 2 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + msgs.join("\n");
-              dispararTelegram(msgRecorrente);
-            }
-          }, 120000);
-        }
-      } else {
-        if (intervaloReenvioAlarme) {
-          clearInterval(intervaloReenvioAlarme);
-          intervaloReenvioAlarme = null;
-        }
+      if (!intervaloReenvioAlarme) {
+        intervaloReenvioAlarme = setInterval(() => {
+          let atuaisAtivos = listaAlarmes.filter(a => a.status === 'Ativo');
+          if (atuaisAtivos.length > 0) {
+            let msgs = atuaisAtivos.map(a => `• ${a.evento}`);
+            let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 2 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + msgs.join("\n");
+            dispararTelegram(msgRecorrente);
+          }
+        }, 120000);
       }
     }
 
     function verificarVarreduraInicialAlarmes() {
-      // Modificado para evitar travar a rede em inativa ao carregar historico antigo
       let alarmesAtivosStorage = listaAlarmes.filter(a => a.status === 'Ativo');
       if (alarmesAtivosStorage.length > 0) {
         alarmesAtivosStorage.forEach(item => {
@@ -692,7 +682,6 @@
         dispararTelegram("🚨 Alerta Crítico: Perda de Conexão com o Hardware da Câmara Fria.");
         estadoAlarmeAtivo.conexao = true;
       }
-      gerenciarLoopReenvioAlarmes();
     }
 
     function marcarConectado() {
@@ -705,7 +694,6 @@
         dispararTelegram("✅ Sistema Normalizado: Conexão com o Hardware restabelecida.");
         estadoAlarmeAtivo.conexao = false;
       }
-      gerenciarLoopReenvioAlarmes();
     }
 
     function processarDadosThingSpeak(feeds) {
@@ -715,8 +703,6 @@
 
       calcularTempoContemporaneo();
 
-      // CONVERSÃO E VALIDAÇÃO DA REDE ELÉTRICA (LÓGICA INVERTIDA)
-      // Se field2 for 0, "0", false, "false" ou null/undefined, assume REDE OK.
       let valRaw = ultimoFeed.field2;
       let powerVal = Number(valRaw);
       
@@ -756,7 +742,6 @@
 
       const isFalha = isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0;
       tratarTemperaturaESensor(ultimaTemperaturaCalculada, isFalha);
-      gerenciarLoopReenvioAlarmes();
 
       let labels = [];
       let dataValores = [];
@@ -801,7 +786,6 @@
           dispararTelegram("🌡️ Falha no Sensor: Erro de leitura ou sensor desconectado na câmara fria.");
           estadoAlarmeAtivo.falhaSensor = true;
         }
-        gerenciarLoopReenvioAlarmes();
         return;
       }
 
@@ -818,7 +802,6 @@
 
       const limiteSegundos = tempoDegeloMinutos * 60;
 
-      // Faixa normal: -25 °C a -14 °C
       if (temp >= -25.0 && temp <= -14.0) {
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-800 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5";
@@ -881,7 +864,6 @@
           dispararTelegram(msgsAcumuladasParaTelegram.join("\n\n"));
         }
       }
-      gerenciarLoopReenvioAlarmes();
     }
 
     function atualizarDisplayForaDaFaixa() {
@@ -1023,6 +1005,7 @@
       iniciarGraficos();
       
       verificarVarreduraInicialAlarmes();
+      gerenciarLoopReenvioAlarmes();
 
       buscarDados();
       setInterval(buscarDados, 5000);
