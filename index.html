@@ -405,7 +405,8 @@
     let historicoLeituras = [];
 
     let ultimaRespostaComSucesso = 0;
-    const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 120000;
+    // Ajustado para aceitar leituras enviadas em intervalos de até 5 min
+    const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 300000;
 
     function dispararTelegram(mensagem, forcarEnvio = false) {
       const url = `https://api.telegram.org/bot${telegramToken}/sendMessage`;
@@ -659,7 +660,7 @@
       }
 
       const tempoSemResposta = Date.now() - ultimaRespostaComSucesso;
-      if (!navigator.onLine || tempoSemResposta > TEMPO_MAXIMO_DADO_EXPIRADO_MS) {
+      if (!navigator.onLine || (ultimaRespostaComSucesso > 0 && tempoSemResposta > TEMPO_MAXIMO_DADO_EXPIRADO_MS)) {
         marcarDesconectado();
       }
     }
@@ -718,8 +719,11 @@
 
       calcularTempoContemporaneo();
 
-      // AJUSTE: Lógica Invertida (0/false significa Rede Elétrica OK - LOW no pino 3)
-      const isPowerOk = (String(ultimoFeed.field2) === "0" || String(ultimoFeed.field2) === "false");
+      // TRATAMENTO ROBUSTO DO FIELD2 (REDE ELÉTRICA)
+      // Converte para String, remove espaços e verifica se o valor recebido é 0 ou false (Lógica Invertida: 0 = OK)
+      let valRawPower = String(ultimoFeed.field2).trim();
+      const isPowerOk = (valRawPower === "0" || valRawPower === "false" || Number(valRawPower) === 0);
+
       const statusRede = document.getElementById('status-rede');
       const valBateria = document.getElementById('val-bateria');
       const subBateria = document.getElementById('sub-bateria');
@@ -834,7 +838,6 @@
       else {
         let msgsAcumuladasParaTelegram = [];
 
-        // 1. Regra de Degelo (se ultrapassar o tempo limite)
         if (segundosForaDaFaixa <= limiteSegundos) {
           elBadge.innerText = "DEGELO";
           elBadge.className = "bg-sky-600 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
@@ -847,7 +850,6 @@
           }
         } 
         else {
-          // 2. Passou do tempo de degelo: emite Degelo Excedido + Alarme de Temperatura Alta ou Baixa
           elBadge.innerText = temp > -14.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
           elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-error');
