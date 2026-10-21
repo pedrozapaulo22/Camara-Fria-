@@ -437,7 +437,6 @@
       dispararTelegram("🔔 Teste de funcionamento manual realizado com sucesso a partir do painel Rei do Gelo!", true);
     }
 
-    // DISPARADOR INDEPENDENTE A CADA 2 MINUTOS
     function gerenciarLoopReenvioAlarmes() {
       if (!intervaloReenvioAlarme) {
         intervaloReenvioAlarme = setInterval(() => {
@@ -707,7 +706,8 @@
       let valRaw = ultimoFeed.field2;
       let powerVal = Number(valRaw);
       
-      const isPowerOk = (valRaw === null || valRaw === undefined || powerVal === 0 || String(valRaw).trim() === "0" || String(valRaw).trim() === "false");
+      // LOGICA COMPATÍVEL COM ENTRADA EM GND: 0 (GND) = REDE ATIVA
+      const isPowerOk = (valRaw !== null && valRaw !== undefined && (powerVal === 0 || String(valRaw).trim() === "0" || String(valRaw).trim().toLowerCase() === "false"));
 
       const statusRede = document.getElementById('status-rede');
       const valBateria = document.getElementById('val-bateria');
@@ -728,7 +728,7 @@
         }
       } else {
         statusRede.innerText = "INATIVA";
-        statusRede.className = "font-black text-sm text-slate-500";
+        statusRede.className = "font-black text-sm text-red-600";
         valBateria.innerText = "OPERANDO";
         valBateria.className = "font-black text-sm text-blue-600 animate-pulse";
         subBateria.innerText = "Em uso";
