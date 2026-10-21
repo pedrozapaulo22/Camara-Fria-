@@ -718,7 +718,8 @@
 
       calcularTempoContemporaneo();
 
-      const isPowerOk = (String(ultimoFeed.field2) === "1" || String(ultimoFeed.field2) === "true");
+      // AJUSTE: Lógica Invertida (0/false significa Rede Elétrica OK - LOW no pino 3)
+      const isPowerOk = (String(ultimoFeed.field2) === "0" || String(ultimoFeed.field2) === "false");
       const statusRede = document.getElementById('status-rede');
       const valBateria = document.getElementById('val-bateria');
       const subBateria = document.getElementById('sub-bateria');
@@ -846,7 +847,7 @@
           }
         } 
         else {
-          // 2. Passou do tempo de degelo: emite Degelo Excedido (se já não estiver) + Alarme de Temperatura Alta ou Baixa com base na leitura atual
+          // 2. Passou do tempo de degelo: emite Degelo Excedido + Alarme de Temperatura Alta ou Baixa
           elBadge.innerText = temp > -14.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
           elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-error');
