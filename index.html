@@ -437,26 +437,17 @@
       dispararTelegram("🔔 Teste de funcionamento manual realizado com sucesso a partir do painel Rei do Gelo!", true);
     }
 
-    // GERENCIADOR DE REENVIO RECORRENTE A CADA 2 MINUTOS
+    // DISPARADOR INDEPENDENTE A CADA 2 MINUTOS
     function gerenciarLoopReenvioAlarmes() {
-      const temProblemaAtivo = estadoAlarmeAtivo.conexao || estadoAlarmeAtivo.redeEletrica || estadoAlarmeAtivo.falhaSensor || estadoAlarmeAtivo.temperaturaAnomala || listaAlarmes.some(a => a.status === 'Ativo');
-
-      if (temProblemaAtivo) {
-        if (!intervaloReenvioAlarme) {
-          intervaloReenvioAlarme = setInterval(() => {
-            let atuaisAtivos = listaAlarmes.filter(a => a.status === 'Ativo');
-            if (atuaisAtivos.length > 0) {
-              let msgs = atuaisAtivos.map(a => `• ${a.evento}`);
-              let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 2 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + msgs.join("\n");
-              dispararTelegram(msgRecorrente);
-            }
-          }, 120000);
-        }
-      } else {
-        if (intervaloReenvioAlarme) {
-          clearInterval(intervaloReenvioAlarme);
-          intervaloReenvioAlarme = null;
-        }
+      if (!intervaloReenvioAlarme) {
+        intervaloReenvioAlarme = setInterval(() => {
+          let atuaisAtivos = listaAlarmes.filter(a => a.status === 'Ativo');
+          if (atuaisAtivos.length > 0) {
+            let msgs = atuaisAtivos.map(a => `• ${a.evento}`);
+            let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 2 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + msgs.join("\n");
+            dispararTelegram(msgRecorrente);
+          }
+        }, 120000);
       }
     }
 
@@ -465,6 +456,7 @@
       if (alarmesAtivosStorage.length > 0) {
         alarmesAtivosStorage.forEach(item => {
           if (item.evento.includes("Conexão")) estadoAlarmeAtivo.conexao = true;
+          if (item.evento.includes("Rede Elétrica")) estadoAlarmeAtivo.redeEletrica = true;
           if (item.evento.includes("Sensor")) estadoAlarmeAtivo.falhaSensor = true;
           if (item.evento.includes("Temperatura") || item.evento.includes("Degelo")) estadoAlarmeAtivo.temperaturaAnomala = true;
         });
@@ -691,7 +683,6 @@
         dispararTelegram("🚨 Alerta Crítico: Perda de Conexão com o Hardware da Câmara Fria.");
         estadoAlarmeAtivo.conexao = true;
       }
-      gerenciarLoopReenvioAlarmes();
     }
 
     function marcarConectado() {
@@ -704,7 +695,6 @@
         dispararTelegram("✅ Sistema Normalizado: Conexão com o Hardware restabelecida.");
         estadoAlarmeAtivo.conexao = false;
       }
-      gerenciarLoopReenvioAlarmes();
     }
 
     function processarDadosThingSpeak(feeds) {
@@ -797,7 +787,6 @@
           dispararTelegram("🌡️ Falha no Sensor: Erro de leitura ou sensor desconectado na câmara fria.");
           estadoAlarmeAtivo.falhaSensor = true;
         }
-        gerenciarLoopReenvioAlarmes();
         return;
       }
 
@@ -876,7 +865,6 @@
           dispararTelegram(msgsAcumuladasParaTelegram.join("\n\n"));
         }
       }
-      gerenciarLoopReenvioAlarmes();
     }
 
     function atualizarDisplayForaDaFaixa() {
