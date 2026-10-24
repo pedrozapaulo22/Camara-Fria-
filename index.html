@@ -437,6 +437,7 @@
       dispararTelegram("🔔 Teste de funcionamento manual realizado com sucesso a partir do painel Rei do Gelo!", true);
     }
 
+    // AJUSTE REALIZADO: LEITURA EM TEMPO REAL NO REENVIO DOS ALARMES
     function gerenciarLoopReenvioAlarmes() {
       const temProblemaAtivo = estadoAlarmeAtivo.conexao || estadoAlarmeAtivo.redeEletrica || estadoAlarmeAtivo.falhaSensor || estadoAlarmeAtivo.temperaturaAnomala;
 
@@ -445,8 +446,23 @@
           intervaloReenvioAlarme = setInterval(() => {
             let atuaisAtivos = listaAlarmes.filter(a => a.status === 'Ativo');
             if (atuaisAtivos.length > 0) {
-              let msgs = atuaisAtivos.map(a => `• ${a.evento}`);
-              let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 2 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + msgs.join("\n");
+              
+              // Captura a temperatura atualizada no momento exato do envio do lembrete
+              let tempAtualTxt = (ultimaTemperaturaCalculada !== null) 
+                ? `${ultimaTemperaturaCalculada.toFixed(1)} °C` 
+                : "FALHA / SEM LEITURA";
+
+              let msgs = atuaisAtivos.map(a => {
+                if (a.evento.includes("Temperatura")) {
+                  return `• Temperatura Fora da Faixa (Leitura Atual: ${tempAtualTxt})`;
+                }
+                return `• ${a.evento}`;
+              });
+
+              let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (Tempo Real - A cada 2 min)*\n` +
+                                  `Temperatura Atualizada: ${tempAtualTxt}\n\n` +
+                                  `Evento(s) que permanece(m) ATIVO(S):\n` + msgs.join("\n");
+
               dispararTelegram(msgRecorrente);
             }
           }, 120000);
@@ -718,8 +734,6 @@
 
       calcularTempoContemporaneo();
 
-      // CORREÇÃO EXCLUSIVA DE REDE ELÉTRICA:
-      // Arduino envia powerOK = 1 (GND Conectado / Rede OK) e 0 (Pino Solto / Queda de Energia)
       const valRaw = String(ultimoFeed.field2).trim();
       const isPowerOk = (valRaw === "1" || valRaw.toLowerCase() === "true");
 
@@ -850,7 +864,6 @@
           }
         } 
         else {
-          // 2. Passou do tempo de degelo: emite Degelo Excedido (se já não estiver) + Alarme de Temperatura Alta ou Baixa com base na leitura atual
           elBadge.innerText = temp > -14.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
           elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-error');
