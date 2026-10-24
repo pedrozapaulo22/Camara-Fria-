@@ -183,6 +183,32 @@
 
       </div>
 
+      <!-- STATUS DOS EQUIPAMENTOS -->
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3.5">
+        <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center justify-between">
+          <span>⚙️ STATUS DOS EQUIPAMENTOS</span>
+        </h3>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
+            <span class="text-[10px] font-extrabold text-slate-500 uppercase block">COMPRESSOR</span>
+            <span id="st-compressor" class="text-xs font-black text-slate-400 block">--</span>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
+            <span class="text-[10px] font-extrabold text-slate-500 uppercase block">PORTA</span>
+            <span id="st-porta" class="text-xs font-black text-slate-400 block">--</span>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
+            <span class="text-[10px] font-extrabold text-slate-500 uppercase block">VENTILAÇÃO</span>
+            <span id="st-ventilacao" class="text-xs font-black text-slate-400 block">--</span>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
+            <span class="text-[10px] font-extrabold text-slate-500 uppercase block">ALARME</span>
+            <span id="st-alarme" class="text-xs font-black text-slate-400 block">--</span>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- ABA 2: TEMPERATURA E RELATÓRIOS -->
@@ -266,9 +292,24 @@
           <input type="number" min="1" max="120" id="input-tempo-degelo" placeholder="Ex: 5" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-900 outline-none">
         </div>
 
+        <hr class="border-slate-200 my-2">
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Telegram Bot Token (Fixo)</label>
+          <input type="text" id="input-telegram-token" disabled class="w-full border border-slate-200 bg-slate-100 rounded-lg p-2.5 text-xs font-mono text-slate-500 cursor-not-allowed">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Telegram Chat ID (Fixo)</label>
+          <input type="text" id="input-telegram-chatid" disabled class="w-full border border-slate-200 bg-slate-100 rounded-lg p-2.5 text-xs font-mono text-slate-500 cursor-not-allowed">
+        </div>
+
         <div class="flex gap-2 pt-1">
           <button onclick="salvarConfiguracao()" id="btn-salvar-config" class="bg-blue-900 text-white font-bold text-xs px-4 py-3 rounded-xl hover:bg-blue-950 transition-colors shadow flex-1 flex items-center justify-center gap-2">
             <span>Salvar Parâmetros</span>
+          </button>
+          <button onclick="testarTelegramManual()" class="bg-emerald-600 text-white font-bold text-xs px-4 py-3 rounded-xl hover:bg-emerald-700 transition-colors shadow flex items-center justify-center gap-1.5">
+            <span>Testar Telegram</span>
           </button>
         </div>
       </div>
@@ -302,6 +343,10 @@
     let tempOffset = parseFloat(localStorage.getItem('tempOffset')) || 0.0;
     let tempoDegeloMinutos = parseInt(localStorage.getItem('tempoDegeloMinutos')) || 5;
 
+    // TOKEN E CHAT ID FIXOS NO CÓDIGO
+    const telegramToken = "8910254546:AAF_w98tfvtoXxUMGF2c6PDRY9qaEE3Uw_Y";
+    const telegramChatId = "-5089800564";
+
     window.addEventListener('storage', (event) => {
       if (event.key === 'channelId' && event.newValue) { channelId = event.newValue; document.getElementById('input-channel-id').value = channelId; }
       if (event.key === 'writeApiKey') { writeApiKey = event.newValue || ''; document.getElementById('input-write-api-key').value = writeApiKey; }
@@ -314,12 +359,27 @@
       }
     });
 
-    // MANTÉM HISTÓRICO PERSISTIDO
-    let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes')) || [];
+    let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes'));
+    if (!listaAlarmes || listaAlarmes.length === 0) {
+      listaAlarmes = [
+        { data: "06/10/2026, 10:56:24", evento: "Temperatura Alta (22.7 °C)", nivel: "CRÍTICO", status: "Ativo" },
+        { data: "05/10/2026, 19:46:05", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "05/10/2026, 16:14:53", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "05/10/2026, 15:21:56", evento: "Degelo Excedido (> 5 min)", nivel: "CRÍTICO", status: "OK" },
+        { data: "05/10/2026, 12:42:53", evento: "Temperatura Alta (22.9 °C)", nivel: "CRÍTICO", status: "OK" },
+        { data: "05/10/2026, 11:51:46", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "02/10/2026, 20:21:41", evento: "Queda na Rede Elétrica", nivel: "CRÍTICO", status: "OK" },
+        { data: "02/10/2026, 08:58:46", evento: "Temperatura Fora da Faixa (20.9 °C)", nivel: "CRÍTICO", status: "OK" },
+        { data: "02/10/2026, 08:24:33", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "30/09/2026, 14:29:06", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "30/09/2026, 13:55:44", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "30/09/2026, 13:37:46", evento: "Perda de Conexão com Hardware", nivel: "CRÍTICO", status: "OK" },
+        { data: "30/09/2026, 13:29:03", evento: "Degelo Excedido (>5 min)", nivel: "CRÍTICO", status: "OK" }
+      ];
+      localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
+    }
 
-    // MANTÉM REGISTRO DO TEMPO DE EVENTO FORA DA FAIXA PERSISTIDO
-    let savedTimestampForaFaixa = localStorage.getItem('timestampInicioForaFaixa');
-    let timestampInicioForaFaixa = savedTimestampForaFaixa ? parseInt(savedTimestampForaFaixa) : null;
+    let timestampInicioForaFaixa = new Date("2026-09-30T13:29:03").getTime();
     let segundosForaDaFaixa = 0;
     let ultimaTemperaturaCalculada = null;
 
@@ -330,10 +390,15 @@
       temperaturaAnomala: false
     };
 
+    let intervaloReenvioAlarme = null;
+
     document.getElementById('input-channel-id').value = channelId;
     document.getElementById('input-write-api-key').value = writeApiKey;
     document.getElementById('input-temp-offset').value = tempOffset;
     document.getElementById('input-tempo-degelo').value = tempoDegeloMinutos;
+    
+    document.getElementById('input-telegram-token').value = telegramToken;
+    document.getElementById('input-telegram-chatid').value = telegramChatId;
 
     let chartTemp = null;
     let chartPeriodo = null;
@@ -342,12 +407,79 @@
     let ultimaRespostaComSucesso = 0;
     const TEMPO_MAXIMO_DADO_EXPIRADO_MS = 120000;
 
+    function dispararTelegram(mensagem, forcarEnvio = false) {
+      const url = `https://api.telegram.org/bot${telegramToken}/sendMessage`;
+      const dados = {
+        chat_id: telegramChatId.trim(),
+        text: `❄ [REI DO GELO - ALERTA]\n\n${mensagem}`
+      };
+
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados)
+      })
+      .then(res => res.json())
+      .then(resp => {
+        if (resp.ok && forcarEnvio) {
+          alert("✅ Mensagem de teste enviada com sucesso para o Telegram!");
+        } else if (!resp.ok && forcarEnvio) {
+          alert("❌ Erro do Telegram: " + resp.description);
+        }
+      })
+      .catch(err => {
+        console.error("Erro de rede:", err);
+        if (forcarEnvio) alert("❌ Erro de rede ao conectar com o Telegram.");
+      });
+    }
+
+    function testarTelegramManual() {
+      dispararTelegram("🔔 Teste de funcionamento manual realizado com sucesso a partir do painel Rei do Gelo!", true);
+    }
+
+    function gerenciarLoopReenvioAlarmes() {
+      const temProblemaAtivo = estadoAlarmeAtivo.conexao || estadoAlarmeAtivo.redeEletrica || estadoAlarmeAtivo.falhaSensor || estadoAlarmeAtivo.temperaturaAnomala;
+
+      if (temProblemaAtivo) {
+        if (!intervaloReenvioAlarme) {
+          intervaloReenvioAlarme = setInterval(() => {
+            let atuaisAtivos = listaAlarmes.filter(a => a.status === 'Ativo');
+            if (atuaisAtivos.length > 0) {
+              let msgs = atuaisAtivos.map(a => `• ${a.evento}`);
+              let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (A cada 2 min)*\nO(s) seguinte(s) evento(s) continua(m) ATIVO(S):\n\n` + msgs.join("\n");
+              dispararTelegram(msgRecorrente);
+            }
+          }, 120000);
+        }
+      } else {
+        if (intervaloReenvioAlarme) {
+          clearInterval(intervaloReenvioAlarme);
+          intervaloReenvioAlarme = null;
+        }
+      }
+    }
+
+    function verificarVarreduraInicialAlarmes() {
+      let alarmesAtivosStorage = listaAlarmes.filter(a => a.status === 'Ativo');
+      if (alarmesAtivosStorage.length > 0) {
+        alarmesAtivosStorage.forEach(item => {
+          if (item.evento.includes("Conexão")) estadoAlarmeAtivo.conexao = true;
+          if (item.evento.includes("Rede Elétrica")) estadoAlarmeAtivo.redeEletrica = true;
+          if (item.evento.includes("Sensor")) estadoAlarmeAtivo.falhaSensor = true;
+          if (item.evento.includes("Temperatura") || item.evento.includes("Degelo")) estadoAlarmeAtivo.temperaturaAnomala = true;
+        });
+
+        let descricoesAtivas = alarmesAtivosStorage.map(a => `⚠️ ${a.evento} (${a.nivel})`);
+        dispararTelegram(`🚨 *ALERTA DE SISTEMA (Inicialização)*\nForam encontrados eventos ATIVOS no histórico da câmara fria:\n\n` + descricoesAtivas.join("\n"));
+        gerenciarLoopReenvioAlarmes();
+      }
+    }
+
     function atualizarDataHora() {
       document.getElementById('data-hora').innerText = new Date().toLocaleString('pt-BR');
     }
     setInterval(atualizarDataHora, 1000);
 
-    // CÁLCULO DE TEMPO DE EVENTO EM TEMPO REAL CONTINUO
     function calcularTempoContemporaneo() {
       if (timestampInicioForaFaixa !== null && timestampInicioForaFaixa > 0) {
         let agoraUniversal = Date.now();
@@ -527,7 +659,7 @@
       }
 
       const tempoSemResposta = Date.now() - ultimaRespostaComSucesso;
-      if (!navigator.onLine || (ultimaRespostaComSucesso > 0 && tempoSemResposta > TEMPO_MAXIMO_DADO_EXPIRADO_MS)) {
+      if (!navigator.onLine || tempoSemResposta > TEMPO_MAXIMO_DADO_EXPIRADO_MS) {
         marcarDesconectado();
       }
     }
@@ -560,8 +692,10 @@
 
       if (!estadoAlarmeAtivo.conexao) {
         adicionarAlarme("Perda de Conexão com Hardware", "CRÍTICO");
+        dispararTelegram("🚨 Alerta Crítico: Perda de Conexão com o Hardware da Câmara Fria.");
         estadoAlarmeAtivo.conexao = true;
       }
+      gerenciarLoopReenvioAlarmes();
     }
 
     function marcarConectado() {
@@ -571,8 +705,10 @@
 
       if (estadoAlarmeAtivo.conexao) {
         normalizarAlarme("Perda de Conexão com Hardware");
+        dispararTelegram("✅ Sistema Normalizado: Conexão com o Hardware restabelecida.");
         estadoAlarmeAtivo.conexao = false;
       }
+      gerenciarLoopReenvioAlarmes();
     }
 
     function processarDadosThingSpeak(feeds) {
@@ -580,10 +716,12 @@
       let tempBrutaAtual = parseFloat(ultimoFeed.field1);
       ultimaTemperaturaCalculada = (isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0) ? null : (tempBrutaAtual + tempOffset);
 
-      // REGRA DE ENERGIA: 1 (GND) = REDE ATIVA
-      let valRaw = String(ultimoFeed.field2).trim();
-      let powerVal = Number(valRaw);
-      const isPowerOk = (!isNaN(powerVal) && powerVal === 1) || valRaw.toLowerCase() === "true";
+      calcularTempoContemporaneo();
+
+      // CORREÇÃO EXCLUSIVA DE REDE ELÉTRICA:
+      // Arduino envia powerOK = 1 (GND Conectado / Rede OK) e 0 (Pino Solto / Queda de Energia)
+      const valRaw = String(ultimoFeed.field2).trim();
+      const isPowerOk = (valRaw === "1" || valRaw.toLowerCase() === "true");
 
       const statusRede = document.getElementById('status-rede');
       const valBateria = document.getElementById('val-bateria');
@@ -599,11 +737,12 @@
 
         if (estadoAlarmeAtivo.redeEletrica) {
           normalizarAlarme("Queda na Rede Elétrica");
+          dispararTelegram("⚡ Rede Elétrica Normalizada: A energia da câmara fria foi restabelecida.");
           estadoAlarmeAtivo.redeEletrica = false;
         }
       } else {
         statusRede.innerText = "INATIVA";
-        statusRede.className = "font-black text-sm text-red-600";
+        statusRede.className = "font-black text-sm text-slate-500";
         valBateria.innerText = "OPERANDO";
         valBateria.className = "font-black text-sm text-blue-600 animate-pulse";
         subBateria.innerText = "Em uso";
@@ -611,12 +750,14 @@
 
         if (!estadoAlarmeAtivo.redeEletrica) {
           adicionarAlarme("Queda na Rede Elétrica", "CRÍTICO");
+          dispararTelegram("⚡ Alerta de Energia: Queda detectada na Rede Elétrica da câmara fria.");
           estadoAlarmeAtivo.redeEletrica = true;
         }
       }
 
       const isFalha = isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0;
-      tratarTemperaturaESensor(ultimaTemperaturaCalculada, isFalha, new Date(ultimoFeed.created_at).getTime());
+      tratarTemperaturaESensor(ultimaTemperaturaCalculada, isFalha);
+      gerenciarLoopReenvioAlarmes();
 
       let labels = [];
       let dataValores = [];
@@ -642,7 +783,7 @@
       }
     }
 
-    function tratarTemperaturaESensor(temp, isFalha, timestampFeed) {
+    function tratarTemperaturaESensor(temp, isFalha) {
       const elVal = document.getElementById('val-temperatura');
       const elBadge = document.getElementById('badge-sensor-status');
       const gauge = document.getElementById('gauge-circle');
@@ -658,13 +799,16 @@
 
         if (!estadoAlarmeAtivo.falhaSensor) {
           adicionarAlarme("Falha no Sensor de Temp.", "CRÍTICO");
+          dispararTelegram("🌡️ Falha no Sensor: Erro de leitura ou sensor desconectado na câmara fria.");
           estadoAlarmeAtivo.falhaSensor = true;
         }
+        gerenciarLoopReenvioAlarmes();
         return;
       }
 
       if (estadoAlarmeAtivo.falhaSensor) {
         normalizarAlarme("Falha no Sensor de Temp.");
+        dispararTelegram("✅ Sensor Normalizado: Leitura de temperatura restabelecida.");
         estadoAlarmeAtivo.falhaSensor = false;
       }
 
@@ -675,31 +819,25 @@
 
       const limiteSegundos = tempoDegeloMinutos * 60;
 
-      // FAIXA NORMAL
+      // Faixa normal: -25 °C a -14 °C
       if (temp >= -25.0 && temp <= -14.0) {
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-800 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5";
         gauge.classList.add('gauge-fill-normal');
-
-        // RESETA CONTAGEM DE TEMPO FORA DA FAIXA QUANDO VOLTA AO NORMAL
-        timestampInicioForaFaixa = null;
-        localStorage.removeItem('timestampInicioForaFaixa');
 
         if (estadoAlarmeAtivo.temperaturaAnomala) {
           normalizarAlarme("Temperatura Fora da Faixa");
           normalizarAlarme("Degelo Excedido");
           normalizarAlarme("Temperatura Alta");
           normalizarAlarme("Temperatura Baixa");
+          dispararTelegram("✅ Temperatura Normalizada: A câmara retornou à faixa segura de operação.");
           estadoAlarmeAtivo.temperaturaAnomala = false;
         }
       } 
       else {
-        // GRAVA O MOMENTO EXATO EM QUE A TEMPERATURA SAIU DA FAIXA
-        if (timestampInicioForaFaixa === null) {
-          timestampInicioForaFaixa = timestampFeed || Date.now();
-          localStorage.setItem('timestampInicioForaFaixa', timestampInicioForaFaixa);
-        }
+        let msgsAcumuladasParaTelegram = [];
 
+        // 1. Regra de Degelo (se ultrapassar o tempo limite)
         if (segundosForaDaFaixa <= limiteSegundos) {
           elBadge.innerText = "DEGELO";
           elBadge.className = "bg-sky-600 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
@@ -708,9 +846,11 @@
           let nomeDegelo = `Degelo Excedido (> ${tempoDegeloMinutos} min)`;
           if (!listaAlarmes.some(a => a.evento.includes("Degelo Excedido") && a.status === 'Ativo')) {
             adicionarAlarme(nomeDegelo, "CRÍTICO");
+            msgsAcumuladasParaTelegram.push(`⚠️ Alerta de Degelo: A câmara encontra-se em ${temp.toFixed(1)} °C ultrapassando o tempo limite de tolerância.`);
           }
         } 
         else {
+          // 2. Passou do tempo de degelo: emite Degelo Excedido (se já não estiver) + Alarme de Temperatura Alta ou Baixa com base na leitura atual
           elBadge.innerText = temp > -14.0 ? "TEMP. ALTA" : "TEMP. BAIXA";
           elBadge.className = "bg-blue-950 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
           gauge.classList.add('gauge-fill-error');
@@ -718,17 +858,20 @@
           let nomeDegelo = `Degelo Excedido (> ${tempoDegeloMinutos} min)`;
           if (!listaAlarmes.some(a => a.evento.includes("Degelo Excedido") && a.status === 'Ativo')) {
             adicionarAlarme(nomeDegelo, "CRÍTICO");
+            msgsAcumuladasParaTelegram.push(`⚠️ Alerta de Degelo: Limite de ${tempoDegeloMinutos} min excedido.`);
           }
 
           if (temp > -14.0) {
             let nomeTempAlta = `Temperatura Alta (${temp.toFixed(1)} °C)`;
             if (!listaAlarmes.some(a => a.evento.includes("Temperatura Alta") && a.status === 'Ativo')) {
               adicionarAlarme(nomeTempAlta, "CRÍTICO");
+              msgsAcumuladasParaTelegram.push(`🚨 Alerta Crítico de Temperatura Alta: A câmara atingiu ${temp.toFixed(1)} °C (Limite máximo permitido: -14 °C).`);
             }
           } else {
             let nomeTempBaixa = `Temperatura Baixa (${temp.toFixed(1)} °C)`;
             if (!listaAlarmes.some(a => a.evento.includes("Temperatura Baixa") && a.status === 'Ativo')) {
               adicionarAlarme(nomeTempBaixa, "CRÍTICO");
+              msgsAcumuladasParaTelegram.push(`⚠️ Alerta de Temperatura Baixa: A câmara atingiu ${temp.toFixed(1)} °C (Limite mínimo permitido: -25 °C).`);
             }
           }
         }
@@ -736,7 +879,12 @@
         if (!estadoAlarmeAtivo.temperaturaAnomala) {
           estadoAlarmeAtivo.temperaturaAnomala = true;
         }
+
+        if (msgsAcumuladasParaTelegram.length > 0) {
+          dispararTelegram(msgsAcumuladasParaTelegram.join("\n\n"));
+        }
       }
+      gerenciarLoopReenvioAlarmes();
     }
 
     function atualizarDisplayForaDaFaixa() {
@@ -876,6 +1024,8 @@
       renderizarTabelaAlarmes();
       iniciarGraficoPeriodo();
       iniciarGraficos();
+      
+      verificarVarreduraInicialAlarmes();
 
       buscarDados();
       setInterval(buscarDados, 5000);
