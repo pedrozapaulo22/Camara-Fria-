@@ -437,7 +437,7 @@
       dispararTelegram("🔔 Teste de funcionamento manual realizado com sucesso a partir do painel Rei do Gelo!", true);
     }
 
-    // AJUSTE REALIZADO: LEITURA EM TEMPO REAL NO REENVIO DOS ALARMES
+    // LEITURA EM TEMPO REAL NO REENVIO + REGISTRO NA LISTA DE ALARMES DA TELA A CADA 2 MIN
     function gerenciarLoopReenvioAlarmes() {
       const temProblemaAtivo = estadoAlarmeAtivo.conexao || estadoAlarmeAtivo.redeEletrica || estadoAlarmeAtivo.falhaSensor || estadoAlarmeAtivo.temperaturaAnomala;
 
@@ -447,10 +447,18 @@
             let atuaisAtivos = listaAlarmes.filter(a => a.status === 'Ativo');
             if (atuaisAtivos.length > 0) {
               
-              // Captura a temperatura atualizada no momento exato do envio do lembrete
               let tempAtualTxt = (ultimaTemperaturaCalculada !== null) 
                 ? `${ultimaTemperaturaCalculada.toFixed(1)} °C` 
                 : "FALHA / SEM LEITURA";
+
+              // 1. Atualiza e registra novos eventos em tempo real no histórico de alarmes
+              if (estadoAlarmeAtivo.temperaturaAnomala && ultimaTemperaturaCalculada !== null) {
+                let nomeEventoContemporaneo = ultimaTemperaturaCalculada > -14.0 
+                  ? `Temperatura Alta (${tempAtualTxt})` 
+                  : `Temperatura Baixa (${tempAtualTxt})`;
+                
+                adicionarAlarme(nomeEventoContemporaneo, "CRÍTICO");
+              }
 
               let msgs = atuaisAtivos.map(a => {
                 if (a.evento.includes("Temperatura")) {
@@ -459,6 +467,7 @@
                 return `• ${a.evento}`;
               });
 
+              // 2. Transmite ao Telegram
               let msgRecorrente = `📢 *RELATÓRIO PERIÓDICO (Tempo Real - A cada 2 min)*\n` +
                                   `Temperatura Atualizada: ${tempAtualTxt}\n\n` +
                                   `Evento(s) que permanece(m) ATIVO(S):\n` + msgs.join("\n");
