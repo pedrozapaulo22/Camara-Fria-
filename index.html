@@ -276,6 +276,26 @@
 
   </main>
 
+  <!-- BARRA DE NAVEGAÇÃO INFERIOR (MOBILE) -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-[#0f172a] border-t border-slate-800 flex justify-around items-center pt-2 pb-safe z-50 shadow-2xl">
+    <button onclick="mudarAba('dashboard')" id="btn-dash-mb" class="flex flex-col items-center gap-1 text-blue-500 py-1 px-3">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+      <span class="text-[9px] font-bold">Dashboard</span>
+    </button>
+    <button onclick="mudarAba('temperatura')" id="btn-temp-mb" class="flex flex-col items-center gap-1 text-slate-400 py-1 px-3">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      <span class="text-[9px] font-bold">Temperatura</span>
+    </button>
+    <button onclick="mudarAba('alarmes')" id="btn-alarm-mb" class="flex flex-col items-center gap-1 text-slate-400 py-1 px-3">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 01-6 0v-1m6 0H9"/></svg>
+      <span class="text-[9px] font-bold">Alarmes</span>
+    </button>
+    <button onclick="mudarAba('configuracoes')" id="btn-config-mb" class="flex flex-col items-center gap-1 text-slate-400 py-1 px-3">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      <span class="text-[9px] font-bold">Configuração</span>
+    </button>
+  </nav>
+
   <script>
     let channelId = localStorage.getItem('channelId') || '3498175';
     let writeApiKey = localStorage.getItem('writeApiKey') || '';
@@ -294,9 +314,12 @@
       }
     });
 
-    let listaAlarmes = [];
+    // MANTÉM HISTÓRICO PERSISTIDO
+    let listaAlarmes = JSON.parse(localStorage.getItem('historicoAlarmes')) || [];
 
-    let timestampInicioForaFaixa = null;
+    // MANTÉM REGISTRO DO TEMPO DE EVENTO FORA DA FAIXA PERSISTIDO
+    let savedTimestampForaFaixa = localStorage.getItem('timestampInicioForaFaixa');
+    let timestampInicioForaFaixa = savedTimestampForaFaixa ? parseInt(savedTimestampForaFaixa) : null;
     let segundosForaDaFaixa = 0;
     let ultimaTemperaturaCalculada = null;
 
@@ -324,6 +347,7 @@
     }
     setInterval(atualizarDataHora, 1000);
 
+    // CÁLCULO DE TEMPO DE EVENTO EM TEMPO REAL CONTINUO
     function calcularTempoContemporaneo() {
       if (timestampInicioForaFaixa !== null && timestampInicioForaFaixa > 0) {
         let agoraUniversal = Date.now();
@@ -556,12 +580,9 @@
       let tempBrutaAtual = parseFloat(ultimoFeed.field1);
       ultimaTemperaturaCalculada = (isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0) ? null : (tempBrutaAtual + tempOffset);
 
-      calcularTempoContemporaneo();
-
-      // REGRA: Arduino envia 1 no field2 para GND no Pino 3 (REDE OK / ATIVA)
+      // REGRA DE ENERGIA: 1 (GND) = REDE ATIVA
       let valRaw = String(ultimoFeed.field2).trim();
       let powerVal = Number(valRaw);
-      
       const isPowerOk = (!isNaN(powerVal) && powerVal === 1) || valRaw.toLowerCase() === "true";
 
       const statusRede = document.getElementById('status-rede');
@@ -595,7 +616,7 @@
       }
 
       const isFalha = isNaN(tempBrutaAtual) || tempBrutaAtual <= -127.0 || tempBrutaAtual >= 85.0;
-      tratarTemperaturaESensor(ultimaTemperaturaCalculada, isFalha);
+      tratarTemperaturaESensor(ultimaTemperaturaCalculada, isFalha, new Date(ultimoFeed.created_at).getTime());
 
       let labels = [];
       let dataValores = [];
@@ -621,7 +642,7 @@
       }
     }
 
-    function tratarTemperaturaESensor(temp, isFalha) {
+    function tratarTemperaturaESensor(temp, isFalha, timestampFeed) {
       const elVal = document.getElementById('val-temperatura');
       const elBadge = document.getElementById('badge-sensor-status');
       const gauge = document.getElementById('gauge-circle');
@@ -654,10 +675,15 @@
 
       const limiteSegundos = tempoDegeloMinutos * 60;
 
+      // FAIXA NORMAL
       if (temp >= -25.0 && temp <= -14.0) {
         elBadge.innerText = "NORMAL";
         elBadge.className = "bg-blue-800 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5";
         gauge.classList.add('gauge-fill-normal');
+
+        // RESETA CONTAGEM DE TEMPO FORA DA FAIXA QUANDO VOLTA AO NORMAL
+        timestampInicioForaFaixa = null;
+        localStorage.removeItem('timestampInicioForaFaixa');
 
         if (estadoAlarmeAtivo.temperaturaAnomala) {
           normalizarAlarme("Temperatura Fora da Faixa");
@@ -668,6 +694,12 @@
         }
       } 
       else {
+        // GRAVA O MOMENTO EXATO EM QUE A TEMPERATURA SAIU DA FAIXA
+        if (timestampInicioForaFaixa === null) {
+          timestampInicioForaFaixa = timestampFeed || Date.now();
+          localStorage.setItem('timestampInicioForaFaixa', timestampInicioForaFaixa);
+        }
+
         if (segundosForaDaFaixa <= limiteSegundos) {
           elBadge.innerText = "DEGELO";
           elBadge.className = "bg-sky-600 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase my-1.5 animate-pulse";
@@ -839,10 +871,6 @@
     window.addEventListener('online', buscarDados);
 
     window.onload = () => {
-      // Limpa dados de histórico antigos ao carregar para recomeçar sincronizado
-      localStorage.removeItem('historicoAlarmes');
-      listaAlarmes = [];
-
       atualizarRotulosDegelo();
       calcularTempoContemporaneo();
       renderizarTabelaAlarmes();
