@@ -214,7 +214,7 @@
     <!-- ABA 2: TEMPERATURA E RELATÓRIOS -->
     <div id="aba-temperatura" class="hidden space-y-4 sm:space-y-5">
       <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4">FILTRO TEMPORAL DE TEMPERATURA (MEDIANA A CADA 5 MIN)</h3>
+        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4">FILTRO TEMPORAL DE TEMPERATURA (AGRUPADO A CADA 5 MIN)</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 items-end">
           <div>
             <label class="block text-xs font-bold text-slate-500 mb-1">Data/Hora Início</label>
@@ -1008,7 +1008,6 @@
       }
     }
 
-    // FUNÇÃO AUXILIAR DE CÁLCULO DE MEDIANA
     function calcularMediana(valores) {
       const validos = valores.filter(v => v !== null && !isNaN(v)).sort((a, b) => a - b);
       if (validos.length === 0) return null;
@@ -1019,7 +1018,6 @@
       return validos[meio];
     }
 
-    // BUSCA COMPLETA COM AGRUPAMENTO E MEDIANA DE 5 MINUTOS NO CLIENTE
     function filtrarGraficoTemperatura() {
       const inicioInput = document.getElementById('temp-inicio').value;
       const fimInput = document.getElementById('temp-fim').value;
@@ -1058,13 +1056,10 @@
             return;
           }
 
-          // AGRUPAMENTO DE PONTOS EM JANELAS DE 5 MINUTOS (MEDIANA)
           const blocos = {};
 
           data.feeds.forEach(f => {
             let objDate = new Date(f.created_at);
-            
-            // Arredonda a data/hora para o bloco inferior de 5 minutos
             let minMinuto = Math.floor(objDate.getMinutes() / 5) * 5;
             let dataChave = new Date(objDate.getFullYear(), objDate.getMonth(), objDate.getDate(), objDate.getHours(), minMinuto, 0);
             let chaveStr = dataChave.getTime();
@@ -1085,7 +1080,6 @@
 
           leiturasExibicaoFiltradas = [];
 
-          // Calcula a mediana de cada bloco de 5 minutos
           Object.keys(blocos).sort((a, b) => a - b).forEach(k => {
             let bloco = blocos[k];
             let valMediana = calcularMediana(bloco.valores);
