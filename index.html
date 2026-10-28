@@ -211,21 +211,24 @@
 
     </div>
 
-    <!-- ABA 2: TEMPERATURA E RELATÓRIOS -->
+    <!-- ABA 2: TEMPERATURA E RELATÓRIOS (COM FILTRO TEMPORAL INTEGRADO) -->
     <div id="aba-temperatura" class="hidden space-y-4 sm:space-y-5">
       <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4">FILTRO DE PERÍODO E RELATÓRIOS</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-end">
+        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4">FILTRO TEMPORAL DE TEMPERATURA E RELATÓRIOS</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 items-end">
           <div>
             <label class="block text-xs font-bold text-slate-500 mb-1">Data/Hora Início</label>
-            <input type="datetime-local" id="temp-inicio" class="w-full border border-slate-300 rounded-lg p-2 text-xs">
+            <input type="datetime-local" id="temp-inicio" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-blue-900 outline-none">
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-500 mb-1">Data/Hora Fim</label>
-            <input type="datetime-local" id="temp-fim" class="w-full border border-slate-300 rounded-lg p-2 text-xs">
+            <input type="datetime-local" id="temp-fim" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-blue-900 outline-none">
           </div>
           <div>
-            <button onclick="filtrarGraficoTemperatura()" class="bg-blue-900 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-blue-950 transition-colors w-full">Filtrar Período</button>
+            <button onclick="filtrarGraficoTemperatura()" class="bg-blue-900 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-blue-950 transition-colors w-full shadow">Filtrar Período</button>
+          </div>
+          <div>
+            <button onclick="limparFiltroTemperaturaData()" class="bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-slate-300 transition-colors w-full">Mostrar Todos</button>
           </div>
           <div class="flex gap-2">
             <button onclick="exportarCSV()" class="bg-blue-700 text-white font-bold text-xs px-3 py-2.5 rounded-lg hover:bg-blue-800 transition-colors w-1/2">CSV</button>
@@ -235,7 +238,7 @@
       </div>
 
       <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4">GRÁFICO HISTÓRICO</h3>
+        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4">GRÁFICO DO PERÍODO SELECIONADO</h3>
         <div class="h-56 sm:h-72 w-full relative">
           <canvas id="chartPeriodo"></canvas>
         </div>
@@ -408,6 +411,7 @@
     }
 
     let alarmesExibicaoFiltrados = null; // Guardará o subset filtrado por datas
+    let leiturasExibicaoFiltradas = null; // Guardará as leituras de temperatura filtradas
 
     let timestampInicioForaFaixa = new Date("2026-09-30T13:29:03").getTime();
     let segundosForaDaFaixa = 0;
@@ -631,13 +635,14 @@
     function iniciarGraficoPeriodo() {
       const ctx2 = document.getElementById('chartPeriodo');
       if (ctx2) {
+        const dadosExibicao = leiturasExibicaoFiltradas !== null ? leiturasExibicaoFiltradas : historicoLeituras;
         chartPeriodo = new Chart(ctx2, {
           type: 'line',
           data: {
-            labels: historicoLeituras.map(i => i.hora),
+            labels: dadosExibicao.map(i => i.hora),
             datasets: [{
               label: 'Histórico (°C)',
-              data: historicoLeituras.map(i => i.temp),
+              data: dadosExibicao.map(i => i.temp),
               borderColor: '#0284c7',
               backgroundColor: 'rgba(2, 132, 199, 0.08)',
               borderWidth: 2,
@@ -813,23 +818,28 @@
       let dataValores = [];
       historicoLeituras = [];
 
-      const feedsRecentes = feeds.slice(-20);
-
-      feedsRecentes.forEach(f => {
+      feeds.forEach(f => {
         let tRaw = parseFloat(f.field1);
         let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
         let horaFormatada = new Date(f.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         let dataHoraFull = new Date(f.created_at).toLocaleString('pt-BR');
+        let objDate = new Date(f.created_at);
 
         labels.push(horaFormatada);
         dataValores.push(tVal);
-        historicoLeituras.push({ hora: dataHoraFull, temp: tVal });
+        historicoLeituras.push({ hora: dataHoraFull, temp: tVal, timestamp: objDate });
       });
 
       if (chartTemp) {
-        chartTemp.data.labels = labels;
-        chartTemp.data.datasets[0].data = dataValores;
+        chartTemp.data.labels = labels.slice(-20);
+        chartTemp.data.datasets[0].data = dataValores.slice(-20);
         chartTemp.update('none');
+      }
+
+      if (chartPeriodo && leiturasExibicaoFiltradas === null) {
+        chartPeriodo.data.labels = historicoLeituras.map(i => i.hora);
+        chartPeriodo.data.datasets[0].data = historicoLeituras.map(i => i.temp);
+        chartPeriodo.update('none');
       }
     }
 
@@ -978,7 +988,6 @@
       }
     }
 
-    // CONVERSÃO DE STRING DE DATA PT-BR PARA OBJETO DATE DO JAVASCRIPT
     function converterDataPtBrParaDate(strDataPtBr) {
       if (!strDataPtBr) return null;
       try {
@@ -1000,6 +1009,48 @@
       }
     }
 
+    // FILTRO TEMPORAL DE TEMPERATURA
+    function filtrarGraficoTemperatura() {
+      const inicioInput = document.getElementById('temp-inicio').value;
+      const fimInput = document.getElementById('temp-fim').value;
+
+      if (!inicioInput || !fimInput) {
+        alert("⚠️ Por favor, informe a Data/Hora de Início e de Fim para aplicar o filtro.");
+        return;
+      }
+
+      const dateInicio = new Date(inicioInput);
+      const dateFim = new Date(fimInput);
+
+      if (dateInicio > dateFim) {
+        alert("⚠️ A data inicial não pode ser posterior à data final.");
+        return;
+      }
+
+      leiturasExibicaoFiltradas = historicoLeituras.filter(item => {
+        if (!item.timestamp) return false;
+        return item.timestamp >= dateInicio && item.timestamp <= dateFim;
+      });
+
+      if (chartPeriodo) {
+        chartPeriodo.data.labels = leiturasExibicaoFiltradas.map(i => i.hora);
+        chartPeriodo.data.datasets[0].data = leiturasExibicaoFiltradas.map(i => i.temp);
+        chartPeriodo.update();
+      }
+    }
+
+    function limparFiltroTemperaturaData() {
+      document.getElementById('temp-inicio').value = '';
+      document.getElementById('temp-fim').value = '';
+      leiturasExibicaoFiltradas = null;
+      if (chartPeriodo) {
+        chartPeriodo.data.labels = historicoLeituras.map(i => i.hora);
+        chartPeriodo.data.datasets[0].data = historicoLeituras.map(i => i.temp);
+        chartPeriodo.update();
+      }
+    }
+
+    // FILTRO TEMPORAL DE ALARMES
     function filtrarTabelaAlarmesPorData() {
       const inicioInput = document.getElementById('alarmes-inicio').value;
       const fimInput = document.getElementById('alarmes-fim').value;
@@ -1100,34 +1151,10 @@
       doc.save('relatorio_historico_alarmes.pdf');
     }
 
-    function limparHistoricoAlarmes() {
-      let temAlarmeAtivo = listaAlarmes.some(a => a.status === 'Ativo');
-      let temperaturaForaDaFaixa = (ultimaTemperaturaCalculada !== null && (ultimaTemperaturaCalculada < -25.0 || ultimaTemperaturaCalculada > -14.0));
-
-      if (temAlarmeAtivo || temperaturaForaDaFaixa) {
-        alert("⚠️ Ação não permitida! O histórico só pode ser limpo quando a câmara estiver em condição normal de processo e sem alarmes ativos.");
-        return;
-      }
-
-      if (confirm("Deseja apagar todo o histórico de alarmes em todos os dispositivos?")) {
-        listaAlarmes = [];
-        alarmesExibicaoFiltrados = null;
-        localStorage.removeItem('historicoAlarmes');
-        renderizarTabelaAlarmes();
-      }
-    }
-
-    function filtrarGraficoTemperatura() {
-      if (chartPeriodo) {
-        chartPeriodo.data.labels = historicoLeituras.map(i => i.hora);
-        chartPeriodo.data.datasets[0].data = historicoLeituras.map(i => i.temp);
-        chartPeriodo.update();
-      }
-    }
-
     function exportarCSV() {
+      const dadosExibicao = leiturasExibicaoFiltradas !== null ? leiturasExibicaoFiltradas : historicoLeituras;
       let csv = "Data/Hora,Temperatura (°C)\n";
-      historicoLeituras.forEach(item => {
+      dadosExibicao.forEach(item => {
         csv += `"${item.hora}",${item.temp !== null ? item.temp : ''}\n`;
       });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1144,13 +1171,32 @@
       doc.setFont("helvetica", "bold");
       doc.text("REI DO GELO - Relatório de Temperatura", 14, 15);
       
-      const rows = historicoLeituras.map(i => [i.hora, i.temp !== null ? `${i.temp} °C` : 'FALHA']);
+      const dadosExibicao = leiturasExibicaoFiltradas !== null ? leiturasExibicaoFiltradas : historicoLeituras;
+      const rows = dadosExibicao.map(i => [i.hora, i.temp !== null ? `${i.temp} °C` : 'FALHA']);
+      
       doc.autoTable({
         head: [['Data / Hora', 'Temperatura']],
         body: rows,
         startY: 25
       });
       doc.save('relatorio_temperatura.pdf');
+    }
+
+    function limparHistoricoAlarmes() {
+      let temAlarmeAtivo = listaAlarmes.some(a => a.status === 'Ativo');
+      let temperaturaForaDaFaixa = (ultimaTemperaturaCalculada !== null && (ultimaTemperaturaCalculada < -25.0 || ultimaTemperaturaCalculada > -14.0));
+
+      if (temAlarmeAtivo || temperaturaForaDaFaixa) {
+        alert("⚠️ Ação não permitida! O histórico só pode ser limpo quando a câmara estiver em condição normal de processo e sem alarmes ativos.");
+        return;
+      }
+
+      if (confirm("Deseja apagar todo o histórico de alarmes em todos os dispositivos?")) {
+        listaAlarmes = [];
+        alarmesExibicaoFiltrados = null;
+        localStorage.removeItem('historicoAlarmes');
+        renderizarTabelaAlarmes();
+      }
     }
 
     window.addEventListener('offline', () => marcarDesconectado());
