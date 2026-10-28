@@ -211,7 +211,7 @@
 
     </div>
 
-    <!-- ABA 2: TEMPERATURA E RELATÓRIOS (COM FILTRO TEMPORAL INTEGRADO) -->
+    <!-- ABA 2: TEMPERATURA E RELATÓRIOS -->
     <div id="aba-temperatura" class="hidden space-y-4 sm:space-y-5">
       <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm">
         <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4">FILTRO TEMPORAL DE TEMPERATURA E RELATÓRIOS</h3>
@@ -225,7 +225,7 @@
             <input type="datetime-local" id="temp-fim" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-blue-900 outline-none">
           </div>
           <div>
-            <button onclick="filtrarGraficoTemperatura()" class="bg-blue-900 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-blue-950 transition-colors w-full shadow">Filtrar Período</button>
+            <button onclick="filtrarGraficoTemperatura()" id="btn-filtrar-temp" class="bg-blue-900 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-blue-950 transition-colors w-full shadow">Filtrar Período</button>
           </div>
           <div>
             <button onclick="limparFiltroTemperaturaData()" class="bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-slate-300 transition-colors w-full">Mostrar Todos</button>
@@ -245,7 +245,7 @@
       </div>
     </div>
 
-    <!-- ABA 3: ALARMES (COM FILTRO TEMPORAL INTEGRADO) -->
+    <!-- ABA 3: ALARMES -->
     <div id="aba-alarmes" class="hidden space-y-5">
       <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
         
@@ -410,8 +410,8 @@
       localStorage.setItem('historicoAlarmes', JSON.stringify(listaAlarmes));
     }
 
-    let alarmesExibicaoFiltrados = null; // Guardará o subset filtrado por datas
-    let leiturasExibicaoFiltradas = null; // Guardará as leituras de temperatura filtradas
+    let alarmesExibicaoFiltrados = null;
+    let leiturasExibicaoFiltradas = null; // Guardará o histórico retornado pelo filtro do ThingSpeak
 
     let timestampInicioForaFaixa = new Date("2026-09-30T13:29:03").getTime();
     let segundosForaDaFaixa = 0;
@@ -821,13 +821,12 @@
       feeds.forEach(f => {
         let tRaw = parseFloat(f.field1);
         let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
-        let horaFormatada = new Date(f.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        let dataHoraFull = new Date(f.created_at).toLocaleString('pt-BR');
+        let horaFormatada = new Date(f.created_at).toLocaleString('pt-BR');
         let objDate = new Date(f.created_at);
 
         labels.push(horaFormatada);
         dataValores.push(tVal);
-        historicoLeituras.push({ hora: dataHoraFull, temp: tVal, timestamp: objDate });
+        historicoLeituras.push({ hora: horaFormatada, temp: tVal, timestamp: objDate });
       });
 
       if (chartTemp) {
@@ -1009,7 +1008,7 @@
       }
     }
 
-    // FILTRO TEMPORAL DE TEMPERATURA
+    // BUSCA DIRETAMENTE NO THINGSPEAK USANDO OS PARÂMETROS 'start' E 'end'
     function filtrarGraficoTemperatura() {
       const inicioInput = document.getElementById('temp-inicio').value;
       const fimInput = document.getElementById('temp-fim').value;
@@ -1019,24 +1018,62 @@
         return;
       }
 
-      const dateInicio = new Date(inicioInput);
-      const dateFim = new Date(fimInput);
+      const dInicio = new Date(inicioInput);
+      const dFim = new Date(fimInput);
 
-      if (dateInicio > dateFim) {
+      if (dInicio > dFim) {
         alert("⚠️ A data inicial não pode ser posterior à data final.");
         return;
       }
 
-      leiturasExibicaoFiltradas = historicoLeituras.filter(item => {
-        if (!item.timestamp) return false;
-        return item.timestamp >= dateInicio && item.timestamp <= dateFim;
-      });
+      // Formatação no padrão ISO UTC do ThingSpeak (YYYY-MM-DD HH:MM:SS)
+      const formatarDataThingSpeak = (d) => {
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}%20${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+      };
 
-      if (chartPeriodo) {
-        chartPeriodo.data.labels = leiturasExibicaoFiltradas.map(i => i.hora);
-        chartPeriodo.data.datasets[0].data = leiturasExibicaoFiltradas.map(i => i.temp);
-        chartPeriodo.update();
-      }
+      const startParam = formatarDataThingSpeak(dInicio);
+      const endParam = formatarDataThingSpeak(dFim);
+      let readKeyParam = writeApiKey ? `&api_key=${writeApiKey}` : '';
+
+      const btnFiltrar = document.getElementById('btn-filtrar-temp');
+      btnFiltrar.innerText = "Buscando...";
+      btnFiltrar.disabled = true;
+
+      fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?start=${startParam}&end=${endParam}${readKeyParam}`)
+        .then(res => res.json())
+        .then(data => {
+          btnFiltrar.innerText = "Filtrar Período";
+          btnFiltrar.disabled = false;
+
+          if (!data || !data.feeds || data.feeds.length === 0) {
+            alert("Nenhum dado registrado encontrado no canal ThingSpeak para o período informado.");
+            return;
+          }
+
+          leiturasExibicaoFiltradas = [];
+
+          data.feeds.forEach(f => {
+            let tRaw = parseFloat(f.field1);
+            let tVal = (isNaN(tRaw) || tRaw <= -127.0 || tRaw >= 85.0) ? null : (tRaw + tempOffset);
+            let dataHoraFull = new Date(f.created_at).toLocaleString('pt-BR');
+            let objDate = new Date(f.created_at);
+
+            leiturasExibicaoFiltradas.push({ hora: dataHoraFull, temp: tVal, timestamp: objDate });
+          });
+
+          if (chartPeriodo) {
+            chartPeriodo.data.labels = leiturasExibicaoFiltradas.map(i => i.hora);
+            chartPeriodo.data.datasets[0].data = leiturasExibicaoFiltradas.map(i => i.temp);
+            chartPeriodo.update();
+          }
+        })
+        .catch(err => {
+          console.error("Erro na busca remota do ThingSpeak:", err);
+          btnFiltrar.innerText = "Filtrar Período";
+          btnFiltrar.disabled = false;
+          alert("❌ Erro ao conectar à API do ThingSpeak para buscar o período selecionado.");
+        });
     }
 
     function limparFiltroTemperaturaData() {
