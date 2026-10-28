@@ -214,7 +214,7 @@
     <!-- ABA 2: TEMPERATURA E RELATÓRIOS -->
     <div id="aba-temperatura" class="hidden space-y-4 sm:space-y-5">
       <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4">FILTRO TEMPORAL DE TEMPERATURA E RELATÓRIOS</h3>
+        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4">FILTRO TEMPORAL DE TEMPERATURA (AGRUPAMENTO 5 MIN)</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 items-end">
           <div>
             <label class="block text-xs font-bold text-slate-500 mb-1">Data/Hora Início</label>
@@ -1008,7 +1008,7 @@
       }
     }
 
-    // REQUISIÇÃO EXPANDIDA AO THINGSPEAK (RESULTS=8000)
+    // BUSCA COM MÉDIA DE 5 MINUTOS (AVERAGE=5) PARA COBRIR MESES DE HISTÓRICO
     function filtrarGraficoTemperatura() {
       const inicioInput = document.getElementById('temp-inicio').value;
       const fimInput = document.getElementById('temp-fim').value;
@@ -1036,7 +1036,8 @@
       btnFiltrar.innerText = "Buscando...";
       btnFiltrar.disabled = true;
 
-      fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=8000&start=${startParam}&end=${endParam}${readKeyParam}`)
+      // average=5 condensa os dados a cada 5 minutos
+      fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=8000&average=5&start=${startParam}&end=${endParam}${readKeyParam}`)
         .then(res => res.json())
         .then(data => {
           btnFiltrar.innerText = "Filtrar Período";
