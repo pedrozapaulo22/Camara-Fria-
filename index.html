@@ -411,7 +411,7 @@
     }
 
     let alarmesExibicaoFiltrados = null;
-    let leiturasExibicaoFiltradas = null; // Guardará o histórico retornado pelo filtro do ThingSpeak
+    let leiturasExibicaoFiltradas = null;
 
     let timestampInicioForaFaixa = new Date("2026-09-30T13:29:03").getTime();
     let segundosForaDaFaixa = 0;
@@ -1008,7 +1008,7 @@
       }
     }
 
-    // BUSCA DIRETAMENTE NO THINGSPEAK USANDO OS PARÂMETROS 'start' E 'end'
+    // REQUISIÇÃO EXPANDIDA AO THINGSPEAK (RESULTS=8000)
     function filtrarGraficoTemperatura() {
       const inicioInput = document.getElementById('temp-inicio').value;
       const fimInput = document.getElementById('temp-fim').value;
@@ -1026,21 +1026,17 @@
         return;
       }
 
-      // Formatação no padrão ISO UTC do ThingSpeak (YYYY-MM-DD HH:MM:SS)
-      const formatarDataThingSpeak = (d) => {
-        const pad = (n) => String(n).padStart(2, '0');
-        return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}%20${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
-      };
-
-      const startParam = formatarDataThingSpeak(dInicio);
-      const endParam = formatarDataThingSpeak(dFim);
+      const pad = (n) => String(n).padStart(2, '0');
+      const startParam = `${dInicio.getFullYear()}-${pad(dInicio.getMonth()+1)}-${pad(dInicio.getDate())}%20${pad(dInicio.getHours())}:${pad(dInicio.getMinutes())}:00`;
+      const endParam = `${dFim.getFullYear()}-${pad(dFim.getMonth()+1)}-${pad(dFim.getDate())}%20${pad(dFim.getHours())}:${pad(dFim.getMinutes())}:59`;
+      
       let readKeyParam = writeApiKey ? `&api_key=${writeApiKey}` : '';
 
       const btnFiltrar = document.getElementById('btn-filtrar-temp');
       btnFiltrar.innerText = "Buscando...";
       btnFiltrar.disabled = true;
 
-      fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?start=${startParam}&end=${endParam}${readKeyParam}`)
+      fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?results=8000&start=${startParam}&end=${endParam}${readKeyParam}`)
         .then(res => res.json())
         .then(data => {
           btnFiltrar.innerText = "Filtrar Período";
